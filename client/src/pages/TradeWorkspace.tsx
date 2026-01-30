@@ -19,6 +19,8 @@ import {
   Globe,
   FileCheck,
   Zap,
+  Plus,
+  UserPlus,
 } from "lucide-react";
 import { useAppStore, type TradeTimelineStep } from "@/lib/store";
 
@@ -288,8 +290,14 @@ export default function TradeWorkspace() {
               <TabsTrigger value="context" className="text-xs" data-testid="tab-inspector-context">
                 Context
               </TabsTrigger>
+              <TabsTrigger value="parties" className="text-xs" data-testid="tab-inspector-parties">
+                Parties
+              </TabsTrigger>
               <TabsTrigger value="documents" className="text-xs" data-testid="tab-inspector-documents">
                 Documents
+              </TabsTrigger>
+              <TabsTrigger value="logistics" className="text-xs" data-testid="tab-inspector-logistics">
+                Logistics
               </TabsTrigger>
               <TabsTrigger value="actions" className="text-xs" data-testid="tab-inspector-actions">
                 Actions
@@ -331,17 +339,123 @@ export default function TradeWorkspace() {
               </div>
             </TabsContent>
 
+            <TabsContent value="parties" className="flex-1 p-4 mt-0" data-testid="panel-inspector-parties">
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs font-medium text-muted-foreground">Linked Parties</div>
+                    <Button size="sm" variant="outline" className="h-7 text-xs">
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Link
+                    </Button>
+                  </div>
+                  {trade.linkedParties.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No linked partners. Use My Network to link trade parties.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {trade.linkedParties.map((lp, idx) => (
+                        <div key={idx} className="p-2 rounded-lg border bg-background/60">
+                          <div className="text-sm font-medium">Partner {lp.partnerId}</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {lp.roles.map((role, ridx) => (
+                              <div key={ridx} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                {role}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Trade Parties</div>
+                  {trade.parties.map((party, idx) => (
+                    <div key={idx} className="flex items-center gap-2 mb-2 p-2 rounded-lg border bg-background/60">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">{party.name}</div>
+                        <div className="text-xs text-muted-foreground">{party.role} • {party.region}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="documents" className="flex-1 p-4 mt-0" data-testid="panel-inspector-documents">
               <div className="space-y-2">
-                {trade.documents.length === 0 ? (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-medium text-muted-foreground">Uploaded Documents</div>
+                  <Button size="sm" variant="outline" className="h-7 text-xs">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Upload
+                  </Button>
+                </div>
+                {trade.uploadedDocuments.length === 0 && trade.documents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No documents attached yet.</p>
                 ) : (
-                  trade.documents.map((doc, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border bg-background/60">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{doc}</span>
+                  <>
+                    {trade.uploadedDocuments.map((doc) => (
+                      <div key={doc.id} className="flex items-center gap-2 p-2 rounded-lg border bg-background/60">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm truncate">{doc.name}</div>
+                          <div className="text-xs text-muted-foreground">{new Date(doc.uploadedAt).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {trade.documents.map((doc, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border bg-background/60">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm">{doc}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="logistics" className="flex-1 p-4 mt-0" data-testid="panel-inspector-logistics">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-3">Milestones</div>
+                  <div className="space-y-2">
+                    {trade.logisticsMilestones.map((milestone) => (
+                      <div key={milestone.key} className="flex items-start gap-2 p-2 rounded-lg border bg-background/60">
+                        <div className={`mt-0.5 w-2 h-2 rounded-full ${
+                          milestone.status === 'confirmed' ? 'bg-green-500' : 
+                          milestone.status === 'issue' ? 'bg-red-500' : 'bg-muted-foreground/30'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{milestone.label}</div>
+                          {milestone.timestamp && (
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(milestone.timestamp).toLocaleDateString()}
+                            </div>
+                          )}
+                          {milestone.notes && (
+                            <div className="text-xs text-muted-foreground mt-1">{milestone.notes}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {trade.logisticsEvents.length > 0 && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Recent Events</div>
+                    <div className="space-y-1">
+                      {trade.logisticsEvents.slice(0, 5).map((event) => (
+                        <div key={event.id} className="text-xs p-2 rounded border bg-background/60">
+                          <div className="font-medium">{event.description}</div>
+                          <div className="text-muted-foreground text-[10px] mt-0.5">
+                            {new Date(event.timestamp).toLocaleString()} • {event.source}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))
+                  </div>
                 )}
               </div>
             </TabsContent>

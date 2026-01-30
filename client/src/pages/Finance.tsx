@@ -4,6 +4,7 @@ import { DollarSign, TrendingUp, Send, Shield, Plus, AlertCircle, CheckCircle2, 
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TBChip } from "@/components/tb/TBChip";
 
 type Tab = "payments" | "funding";
@@ -205,88 +206,128 @@ export default function Finance() {
       <div className="flex-1 overflow-auto p-8">
         {activeTab === "payments" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total Outbound</div>
-                <div className="text-3xl font-light text-foreground">$1.2M</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Pending Payments</div>
-                <div className="text-3xl font-light text-foreground">$340K</div>
-              </div>
-            </div>
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="accounts">Accounts</TabsTrigger>
+                <TabsTrigger value="cards">Cards</TabsTrigger>
+                <TabsTrigger value="pay-collect">Pay & Collect</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              </TabsList>
 
-            <div>
-              <h2 className="text-lg font-light text-foreground mb-4">Payment Routes</h2>
-              <div className="space-y-3">
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <div className="text-foreground font-light">Traditional Banking</div>
-                        <div className="text-xs text-muted-foreground">SWIFT, ACH, Wire transfers</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">Primary</div>
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-card border border-border rounded-lg p-6">
+                    <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total Outbound</div>
+                    <div className="text-3xl font-light text-foreground">$1.2M</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-6">
+                    <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Pending Payments</div>
+                    <div className="text-3xl font-light text-foreground">$340K</div>
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-5 h-5 text-blue-400" />
-                      <div>
-                        <div className="text-foreground font-light">Stablecoin Rail (XDC Network)</div>
-                        <div className="text-xs text-muted-foreground">Alternative for faster settlement</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-blue-400">Optional</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-light text-foreground">Recent Payments</h2>
-                <Button size="sm" onClick={handleCreatePayment} data-testid="button-create-payment">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Payment
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {payments.length === 0 ? (
-                  <div className="bg-card border border-border rounded-xl p-8 text-center">
-                    <Send className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                    <h3 className="font-semibold mb-2">No payments yet</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Create payment instructions for trade settlements</p>
-                    <Button onClick={handleCreatePayment} size="sm">Create Payment</Button>
-                  </div>
-                ) : (
-                  payments.map((payment) => (
-                    <div key={payment.id} className="bg-card border border-border rounded-lg p-4" data-testid={`payment-${payment.id}`}>
+                <div>
+                  <h2 className="text-lg font-light text-foreground mb-4">Payment Routes</h2>
+                  <div className="space-y-3">
+                    <div className="bg-card border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-foreground font-light">{payment.beneficiary}</div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {formatAmount(payment.amount)} • {payment.rail.toUpperCase()} • {new Date(payment.createdAt).toLocaleDateString()}
+                        <div className="flex items-center gap-3">
+                          <DollarSign className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <div className="text-foreground font-light">Traditional Banking</div>
+                            <div className="text-xs text-muted-foreground">SWIFT, ACH, Wire transfers</div>
                           </div>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-xs ${
-                          payment.status === "completed" ? "bg-green-500/20 text-green-400" :
-                          payment.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
-                          payment.status === "failed" ? "bg-red-500/20 text-red-400" :
-                          "bg-blue-500/20 text-blue-400"
-                        }`}>
-                          {payment.status}
-                        </div>
+                        <div className="text-xs text-muted-foreground">Primary</div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
+
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-5 h-5 text-blue-400" />
+                          <div>
+                            <div className="text-foreground font-light">Stablecoin Rail (XDC Network)</div>
+                            <div className="text-xs text-muted-foreground">Alternative for faster settlement</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-blue-400">Optional</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-light text-foreground">Recent Payments</h2>
+                    <Button size="sm" onClick={handleCreatePayment} data-testid="button-create-payment">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Payment
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {payments.length === 0 ? (
+                      <div className="bg-card border border-border rounded-xl p-8 text-center">
+                        <Send className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                        <h3 className="font-semibold mb-2">No payments yet</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Create payment instructions for trade settlements</p>
+                        <Button onClick={handleCreatePayment} size="sm">Create Payment</Button>
+                      </div>
+                    ) : (
+                      payments.map((payment) => (
+                        <div key={payment.id} className="bg-card border border-border rounded-lg p-4" data-testid={`payment-${payment.id}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-foreground font-light">{payment.beneficiary}</div>
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {formatAmount(payment.amount)} • {payment.rail.toUpperCase()} • {new Date(payment.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-xs ${
+                              payment.status === "completed" ? "bg-green-500/20 text-green-400" :
+                              payment.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                              payment.status === "failed" ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400"
+                            }`}>
+                              {payment.status}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="accounts" className="space-y-4">
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="font-semibold mb-2">Connected Accounts</h3>
+                  <p className="text-sm text-muted-foreground">View and manage linked bank accounts</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="cards" className="space-y-4">
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="font-semibold mb-2">Virtual Cards</h3>
+                  <p className="text-sm text-muted-foreground">Issue and track virtual payment cards</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pay-collect" className="space-y-4">
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="font-semibold mb-2">Payment Collection</h3>
+                  <p className="text-sm text-muted-foreground">Manage receivables and payment links</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-4">
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="font-semibold mb-2">Payment Analytics</h3>
+                  <p className="text-sm text-muted-foreground">Track payment flows and settlement metrics</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
