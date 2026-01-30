@@ -1,12 +1,27 @@
 import { create } from 'zustand';
 
+export type TradeParty = {
+  name: string;
+  role: 'buyer' | 'seller' | 'shipper' | 'financier' | 'insurer';
+  region: string;
+};
+
+export type TradeTimelineStep = 'plan' | 'compliance' | 'funding' | 'payments' | 'proof-pack';
+
 export type Trade = {
   id: string;
   title: string;
   corridor: string;
   status: 'planning' | 'active' | 'completed';
   value: number;
+  currency: string;
   createdAt: Date;
+  parties: TradeParty[];
+  goods: string;
+  incoterms: string;
+  timelineStep: TradeTimelineStep;
+  documents: string[];
+  notes?: string;
 };
 
 export type FundingRequest = {
