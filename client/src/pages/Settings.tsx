@@ -4,9 +4,9 @@ import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 
 export default function Settings() {
-  const { loadDemoData, resetDemoData, trades } = useAppStore();
-  const [aiStatus] = useState<'connected' | 'demo'>('demo'); // Will be 'connected' if OpenAI is working
+  const { loadDemoData, resetDemoData, trades, aiStatus, aiLastChecked, setAIStatus } = useAppStore();
   const [loading, setLoading] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   return (
     <div className="h-full flex flex-col">
       <div className="px-8 py-6 border-b border-border">
@@ -141,31 +141,48 @@ export default function Settings() {
                   </span>
                 </div>
               </div>
+              {aiLastChecked && (
+                <p className="text-xs text-muted-foreground">
+                  Last checked: {aiLastChecked.toLocaleTimeString()}
+                </p>
+              )}
               {aiStatus === 'demo' && (
                 <p className="text-xs text-muted-foreground">
                   AI responses are simulated. Connect OpenAI API key for live intelligence.
                 </p>
               )}
-              <Button
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const response = await fetch('/api/chat/health');
-                    const data = await response.json();
-                    alert(data.status === 'ok' ? 'AI Connection: OK' : 'AI Connection: Demo Mode');
-                  } catch (error) {
-                    alert('AI Connection: Failed to connect');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                variant="outline"
-                className="w-full"
-                disabled={loading}
-                data-testid="button-test-ai-connection"
-              >
-                {loading ? "Testing..." : "Test AI Connection"}
-              </Button>
+              <div>
+                <Button
+                  onClick={async () => {
+                    setLoading(true);
+                    setTestStatus('testing');
+                    try {
+                      const response = await fetch('/api/chat/health');
+                      const data = await response.json();
+                      const newStatus = data.status === 'ok' ? 'connected' : 'demo';
+                      setAIStatus(newStatus);
+                      setTestStatus('success');
+                      setTimeout(() => setTestStatus('idle'), 2000);
+                    } catch (error) {
+                      setAIStatus('demo');
+                      setTestStatus('failed');
+                      setTimeout(() => setTestStatus('idle'), 2000);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  variant="outline"
+                  className="w-full"
+                  disabled={loading}
+                  data-testid="button-test-ai-connection"
+                >
+                  {testStatus === 'testing' && <Sparkles className="w-4 h-4 mr-2 animate-spin" />}
+                  {testStatus === 'testing' && "Testing..."}
+                  {testStatus === 'success' && "✓ Connection OK"}
+                  {testStatus === 'failed' && "✗ Connection Failed"}
+                  {testStatus === 'idle' && "Test AI Connection"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

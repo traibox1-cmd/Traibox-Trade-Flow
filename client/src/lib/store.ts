@@ -146,6 +146,8 @@ type AppStore = {
   infoRequests: InfoRequest[];
   notifications: Notification[];
   timelineEvents: TimelineEvent[];
+  aiStatus: 'connected' | 'demo';
+  aiLastChecked: Date | null;
   
   addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => string;
   updateTrade: (id: string, updates: Partial<Trade>) => void;
@@ -168,6 +170,7 @@ type AppStore = {
   markNotificationRead: (id: string) => void;
   addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'createdAt'>) => string;
   getUnreadNotifications: (role: 'operator' | 'financier') => Notification[];
+  setAIStatus: (status: 'connected' | 'demo') => void;
   loadDemoData: () => void;
   resetDemoData: () => void;
 };
@@ -214,6 +217,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   infoRequests: [],
   notifications: [],
   timelineEvents: [],
+  aiStatus: 'demo',
+  aiLastChecked: null,
+
+  setAIStatus: (status) =>
+    set({ aiStatus: status, aiLastChecked: new Date() }),
 
   addTrade: (trade) => {
     const id = `trade-${Date.now()}`;

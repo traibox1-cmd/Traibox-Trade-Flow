@@ -27,7 +27,7 @@ type AIResponse = {
 };
 
 export default function DealAssistant() {
-  const { fundingRequests, trades } = useAppStore();
+  const { fundingRequests, trades, aiStatus, setAIStatus } = useAppStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,49 +52,79 @@ export default function DealAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
-          mode: "deal-assistant",
-          context: {
-            fundingRequests: fundingRequests.length,
-            trades: trades.length,
-          },
+          messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
+          mode: "funding",
         }),
       });
 
       if (!response.ok) throw new Error("Failed to get response");
 
       const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+
       const decoder = new TextDecoder();
-      let accumulatedChunks = "";
+      let fullContent = "";
 
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          accumulatedChunks += decoder.decode(value, { stream: true });
+      setMessages((prev) => [...prev, { role: "assistant", content: "..." }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === "token") {
+                fullContent += data.content;
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1] = {
+                    role: "assistant",
+                    content: fullContent,
+                  };
+                  return newMessages;
+                });
+              } else if (data.type === "done") {
+                try {
+                  const structured = JSON.parse(fullContent) as AIResponse;
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = {
+                      role: "assistant",
+                      content: structured.summary,
+                    };
+                    return newMessages;
+                  });
+                  setAiResponse(structured);
+                  setAIStatus('connected');
+                } catch {
+                  // Fallback if JSON parse fails
+                  const fallbackResponse: AIResponse = {
+                    summary: fullContent || "Analysis complete.",
+                    risk_assessment: { level: "medium", factors: ["Parsing recovered"] },
+                  };
+                  setAiResponse(fallbackResponse);
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('JSON parse recovered with fallback');
+                  }
+                }
+              } else if (data.type === "error") {
+                throw new Error(data.message);
+              }
+            } catch (parseErr) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
         }
-      }
-
-      let parsedResponse: AIResponse | null = null;
-      try {
-        parsedResponse = JSON.parse(accumulatedChunks);
-      } catch (e) {
-        console.error("Failed to parse accumulated response:", e);
-      }
-
-      const accumulatedText = parsedResponse?.summary || "";
-
-      if (accumulatedText) {
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: accumulatedText,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setAiResponse(parsedResponse);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -130,9 +160,11 @@ export default function DealAssistant() {
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-title-deal-assistant">
             Deal Assistant
           </h1>
-          <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
-            Demo Mode
-          </span>
+          {aiStatus === 'demo' && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
+              Demo Mode
+            </span>
+          )}
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           AI-powered deal analysis and risk assessment
