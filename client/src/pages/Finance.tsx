@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { DollarSign, TrendingUp, Send, Shield } from "lucide-react";
 
 type Tab = "payments" | "funding";
 
 export default function Finance() {
-  const [activeTab, setActiveTab] = useState<Tab>("payments");
+  const [location] = useLocation();
+  const queryParams = new URLSearchParams(location.split("?")[1] || "");
+  const tabParam = queryParams.get("tab") as Tab | null;
+  const [activeTab, setActiveTab] = useState<Tab>(tabParam || "payments");
+
+  useEffect(() => {
+    if (tabParam && (tabParam === "payments" || tabParam === "funding")) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   return (
     <div className="h-full flex flex-col">

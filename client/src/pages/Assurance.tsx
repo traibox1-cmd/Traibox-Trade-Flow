@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Shield, FileText, Download, CheckCircle, Lock } from "lucide-react";
 
 type Tab = "checks" | "reports" | "proofs" | "anchoring";
 
 export default function Assurance() {
-  const [activeTab, setActiveTab] = useState<Tab>("checks");
+  const [location] = useLocation();
+  const queryParams = new URLSearchParams(location.split("?")[1] || "");
+  const tabParam = queryParams.get("tab") as Tab | null;
+  const [activeTab, setActiveTab] = useState<Tab>(tabParam || "checks");
+
+  useEffect(() => {
+    if (tabParam && ["checks", "reports", "proofs", "anchoring"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   return (
     <div className="h-full flex flex-col">

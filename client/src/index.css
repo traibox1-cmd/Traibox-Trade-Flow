@@ -49,9 +49,9 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --font-serif: "Fraunces", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --shadow-2xs: 0 1px 0 hsl(0 0% 0% / 0.02);
   --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.06);
@@ -178,7 +178,8 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    letter-spacing: var(--tracking-normal);
+    letter-spacing: -0.01em;
+    font-feature-settings: "ss01", "ss02", "cv05", "cv11";
   }
 }
 
