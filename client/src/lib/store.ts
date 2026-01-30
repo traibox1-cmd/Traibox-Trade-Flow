@@ -6,6 +6,37 @@ export type TradeParty = {
   region: string;
 };
 
+export type LinkedTradeParty = {
+  partnerId: string;
+  roles: string[]; // Multi-select: supplier, buyer, financier, logistics, insurer, customs, etc.
+};
+
+export type LogisticsMilestone = {
+  key: 'booking' | 'picked-up' | 'export-cleared' | 'departed' | 'arrived' | 'import-cleared' | 'delivered';
+  label: string;
+  status: 'pending' | 'confirmed' | 'issue';
+  timestamp?: Date;
+  notes?: string;
+};
+
+export type LogisticsEvent = {
+  id: string;
+  timestamp: Date;
+  source: string;
+  description: string;
+  confidence: 'high' | 'medium' | 'low';
+  linkedDocId?: string;
+};
+
+export type TradeDocument = {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image' | 'other';
+  uploadedAt: Date;
+  linkedMilestone?: string;
+  extractedFields?: Record<string, any>;
+};
+
 export type TradeTimelineStep = 'plan' | 'compliance' | 'funding' | 'payments' | 'proof-pack';
 
 export type Trade = {
@@ -17,11 +48,18 @@ export type Trade = {
   currency: string;
   createdAt: Date;
   parties: TradeParty[];
+  linkedParties: LinkedTradeParty[];
   goods: string;
   incoterms: string;
   timelineStep: TradeTimelineStep;
   documents: string[];
+  uploadedDocuments: TradeDocument[];
   notes?: string;
+  fundingType?: 'self-funding' | 'credit-line' | 'factoring' | 'payables-finance' | 'open-account' | 'guarantees';
+  paymentTerms?: string;
+  logisticsMilestones: LogisticsMilestone[];
+  logisticsEvents: LogisticsEvent[];
+  logisticsVisibility: 'internal' | 'parties' | 'financier';
 };
 
 export type FundingRequest = {
@@ -225,10 +263,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   addTrade: (trade) => {
     const id = `trade-${Date.now()}`;
+    const defaultMilestones: LogisticsMilestone[] = [
+      { key: 'booking', label: 'Booking', status: 'pending' },
+      { key: 'picked-up', label: 'Picked up', status: 'pending' },
+      { key: 'export-cleared', label: 'Export cleared', status: 'pending' },
+      { key: 'departed', label: 'Departed', status: 'pending' },
+      { key: 'arrived', label: 'Arrived', status: 'pending' },
+      { key: 'import-cleared', label: 'Import cleared', status: 'pending' },
+      { key: 'delivered', label: 'Delivered/POD', status: 'pending' },
+    ];
     set((state) => ({
       trades: [
         ...state.trades,
-        { ...trade, id, createdAt: new Date() },
+        { 
+          ...trade, 
+          id, 
+          createdAt: new Date(),
+          linkedParties: trade.linkedParties || [],
+          uploadedDocuments: trade.uploadedDocuments || [],
+          logisticsMilestones: trade.logisticsMilestones || defaultMilestones,
+          logisticsEvents: trade.logisticsEvents || [],
+          logisticsVisibility: trade.logisticsVisibility || 'internal',
+        },
       ],
     }));
     return id;
@@ -410,11 +466,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
             { name: "Kijani Cooperative", role: "seller", region: "Kenya" },
             { name: "NordWerk Logistics", role: "shipper", region: "EU" }
           ],
+          linkedParties: [{ partnerId: "p1", roles: ["logistics", "customs"] }],
           goods: "Coffee Beans (Arabica)",
           incoterms: "FOB Mombasa",
           timelineStep: "funding",
           documents: ["Commercial Invoice", "Packing List", "Certificate of Origin"],
-          notes: "Premium grade coffee beans, organic certified"
+          uploadedDocuments: [],
+          notes: "Premium grade coffee beans, organic certified",
+          fundingType: "factoring",
+          paymentTerms: "Net 60",
+          logisticsMilestones: [
+            { key: 'booking', label: 'Booking', status: 'confirmed', timestamp: new Date() },
+            { key: 'picked-up', label: 'Picked up', status: 'confirmed', timestamp: new Date() },
+            { key: 'export-cleared', label: 'Export cleared', status: 'pending' },
+            { key: 'departed', label: 'Departed', status: 'pending' },
+            { key: 'arrived', label: 'Arrived', status: 'pending' },
+            { key: 'import-cleared', label: 'Import cleared', status: 'pending' },
+            { key: 'delivered', label: 'Delivered/POD', status: 'pending' },
+          ],
+          logisticsEvents: [],
+          logisticsVisibility: 'parties'
         },
         {
           id: trade2Id,
@@ -428,11 +499,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
             { name: "MedTech Solutions", role: "seller", region: "US" },
             { name: "Aster Mills", role: "buyer", region: "Singapore" }
           ],
+          linkedParties: [],
           goods: "Diagnostic Equipment",
           incoterms: "CIF Singapore",
           timelineStep: "compliance",
           documents: ["Invoice", "FDA Certificate", "Insurance Certificate"],
-          notes: "Temperature-controlled shipping required"
+          uploadedDocuments: [],
+          notes: "Temperature-controlled shipping required",
+          fundingType: "credit-line",
+          paymentTerms: "Net 30",
+          logisticsMilestones: [
+            { key: 'booking', label: 'Booking', status: 'pending' },
+            { key: 'picked-up', label: 'Picked up', status: 'pending' },
+            { key: 'export-cleared', label: 'Export cleared', status: 'pending' },
+            { key: 'departed', label: 'Departed', status: 'pending' },
+            { key: 'arrived', label: 'Arrived', status: 'pending' },
+            { key: 'import-cleared', label: 'Import cleared', status: 'pending' },
+            { key: 'delivered', label: 'Delivered/POD', status: 'pending' },
+          ],
+          logisticsEvents: [],
+          logisticsVisibility: 'internal'
         }
       ],
       fundingRequests: [
