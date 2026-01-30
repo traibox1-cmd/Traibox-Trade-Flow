@@ -7,35 +7,29 @@ import NotFound from "@/pages/not-found";
 import { AppShell } from "@/components/app/AppShell";
 import { RoleProvider } from "@/components/app/role";
 
-import SpacePage from "@/pages/space";
-import AssistantPage from "@/pages/assistant";
-import TradeWorkspacePage from "@/pages/trade";
-import NetworkPage from "@/pages/network";
-import CompliancePage from "@/pages/compliance";
-import FinancePage from "@/pages/finance";
-import PaymentsPage from "@/pages/payments";
-import ProofsPage from "@/pages/proofs";
-import SettingsPage from "@/pages/settings";
+import Console from "@/pages/Console";
+import TradeIntelligence from "@/pages/TradeIntelligence";
+import MyNetwork from "@/pages/MyNetwork";
+import Finance from "@/pages/Finance";
+import Assurance from "@/pages/Assurance";
+import Settings from "@/pages/Settings";
 
 function Router() {
   return (
     <Switch>
       <Route path="/">
-        <Redirect to="/space" />
+        <Redirect to="/console" />
       </Route>
 
       <Route>
         <AppShell>
           <Switch>
-            <Route path="/space" component={SpacePage} />
-            <Route path="/assistant" component={AssistantPage} />
-            <Route path="/trade/:id" component={TradeWorkspacePage} />
-            <Route path="/network" component={NetworkPage} />
-            <Route path="/compliance" component={CompliancePage} />
-            <Route path="/finance" component={FinancePage} />
-            <Route path="/payments" component={PaymentsPage} />
-            <Route path="/proofs" component={ProofsPage} />
-            <Route path="/settings" component={SettingsPage} />
+            <Route path="/console" component={Console} />
+            <Route path="/intelligence" component={TradeIntelligence} />
+            <Route path="/network" component={MyNetwork} />
+            <Route path="/finance" component={Finance} />
+            <Route path="/assurance" component={Assurance} />
+            <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>
         </AppShell>
