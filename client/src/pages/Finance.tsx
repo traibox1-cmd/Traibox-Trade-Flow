@@ -23,6 +23,8 @@ export default function Finance() {
     updateFundingRequest,
     updateInfoRequest,
     updateOffer,
+    addNotification,
+    addTimelineEvent,
   } = useAppStore();
   
   const [infoResponse, setInfoResponse] = useState<Record<string, string>>({});
@@ -58,31 +60,82 @@ export default function Finance() {
     const response = infoResponse[infoRequestId]?.trim();
     if (!response) return;
 
+    const infoReq = infoRequests.find(i => i.id === infoRequestId);
+    if (!infoReq) return;
+
     updateInfoRequest(infoRequestId, {
       status: 'provided',
       response,
       respondedAt: new Date(),
     });
 
-    const infoReq = infoRequests.find(i => i.id === infoRequestId);
-    if (infoReq) {
-      updateFundingRequest(infoReq.fundingRequestId, { status: 'reviewing' });
-    }
+    updateFundingRequest(infoReq.fundingRequestId, { status: 'reviewing' });
+
+    addTimelineEvent({
+      fundingRequestId: infoReq.fundingRequestId,
+      tradeId: infoReq.tradeId,
+      type: 'info-provided',
+      actor: 'Operator',
+      message: `Provided info: ${response.substring(0, 50)}...`,
+    });
+
+    addNotification({
+      type: 'info-request',
+      targetRole: 'financier',
+      tradeId: infoReq.tradeId,
+      fundingRequestId: infoReq.fundingRequestId,
+      message: `Operator responded to info request`,
+    });
 
     setInfoResponse({ ...infoResponse, [infoRequestId]: '' });
   };
 
   const handleAcceptOffer = (offerId: string) => {
-    updateOffer(offerId, { status: 'accepted' });
-    
     const offer = offers.find(o => o.id === offerId);
-    if (offer) {
-      updateFundingRequest(offer.fundingRequestId, { status: 'approved' });
-    }
+    if (!offer) return;
+
+    updateOffer(offerId, { status: 'accepted' });
+    updateFundingRequest(offer.fundingRequestId, { status: 'approved' });
+
+    addTimelineEvent({
+      fundingRequestId: offer.fundingRequestId,
+      tradeId: offer.tradeId,
+      type: 'approved',
+      actor: 'Operator',
+      message: `Accepted funding offer: ${offer.tenor}d @ ${offer.rate}%`,
+    });
+
+    addNotification({
+      type: 'approval',
+      targetRole: 'financier',
+      tradeId: offer.tradeId,
+      fundingRequestId: offer.fundingRequestId,
+      message: `Operator accepted funding offer`,
+    });
   };
 
   const handleRejectOffer = (offerId: string) => {
+    const offer = offers.find(o => o.id === offerId);
+    if (!offer) return;
+
     updateOffer(offerId, { status: 'rejected' });
+    updateFundingRequest(offer.fundingRequestId, { status: 'rejected' });
+
+    addTimelineEvent({
+      fundingRequestId: offer.fundingRequestId,
+      tradeId: offer.tradeId,
+      type: 'rejected',
+      actor: 'Operator',
+      message: `Rejected funding offer: ${offer.tenor}d @ ${offer.rate}%`,
+    });
+
+    addNotification({
+      type: 'rejection',
+      targetRole: 'financier',
+      tradeId: offer.tradeId,
+      fundingRequestId: offer.fundingRequestId,
+      message: `Operator rejected funding offer`,
+    });
   };
 
   const formatAmount = (amount: number) => {

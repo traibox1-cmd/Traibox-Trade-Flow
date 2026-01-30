@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRole } from "@/components/app/role";
+import { useAppStore } from "@/lib/store";
 import {
   Briefcase,
   Sparkles,
@@ -21,6 +22,7 @@ import {
   Building2,
   AlertTriangle,
   FileCheck,
+  Coins,
 } from "lucide-react";
 
 type NavItem = {
@@ -124,6 +126,13 @@ const FINANCIER_NAV: NavItem[] = [
     subtitle: "Limits + checks",
   },
   {
+    href: "/settlement",
+    label: "Settlement",
+    icon: Coins,
+    testId: "nav-settlement",
+    subtitle: "Payment tracking",
+  },
+  {
     href: "/evidence",
     label: "Evidence",
     icon: FileCheck,
@@ -214,8 +223,34 @@ function NavRail() {
   const [isPinned, setIsPinned] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const { role } = useRole();
+  const { getUnreadNotifications } = useAppStore();
 
   const NAV_ITEMS = role === "operator" ? OPERATOR_NAV : FINANCIER_NAV;
+  
+  const unreadNotifications = getUnreadNotifications(role);
+  
+  const getNotificationCountForRoute = (href: string): number => {
+    // Operator notifications for Finance (offers, info requests, approvals)
+    if (role === "operator" && href === "/finance") {
+      return unreadNotifications.filter(n => 
+        n.type === 'offer' || n.type === 'info-request' || n.type === 'approval' || n.type === 'rejection'
+      ).length;
+    }
+    
+    // Financier notifications for Funding Desk (info provided, offer accepted/rejected)
+    if (role === "financier" && href === "/funding-desk") {
+      return unreadNotifications.filter(n => 
+        n.type === 'info-request' || n.type === 'approval' || n.type === 'rejection'
+      ).length;
+    }
+    
+    // Financier notifications for Evidence (proof verifications)
+    if (role === "financier" && href === "/evidence") {
+      return unreadNotifications.filter(n => n.type === 'proof-verified').length;
+    }
+    
+    return 0;
+  };
 
   // Navigate to appropriate default page when role changes
   useEffect(() => {
@@ -331,6 +366,7 @@ function NavRail() {
             const active = isActive(item.href);
             const hasSubmenu = !!item.submenu;
             const submenuExpanded = expandedMenu === item.href;
+            const notificationCount = getNotificationCountForRoute(item.href);
 
             return (
               <div key={item.href}>
@@ -348,7 +384,7 @@ function NavRail() {
                 >
                   <span
                     className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background/50 transition-all flex-shrink-0",
+                      "inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background/50 transition-all flex-shrink-0 relative",
                       active
                         ? "border-primary/30 bg-primary/15 text-primary shadow-sm"
                         : "border-border text-muted-foreground group-hover:text-foreground group-hover:border-primary/20",
@@ -356,6 +392,11 @@ function NavRail() {
                     aria-hidden="true"
                   >
                     <Icon className="h-4 w-4 stroke-[2.5]" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </span>
+                    )}
                   </span>
                   <AnimatePresence>
                     {shouldExpand && (

@@ -19,11 +19,97 @@ export type AIResponse = {
     incoterms?: string;
     parties?: { name: string; role: string; region: string }[];
   };
+  risk_assessment?: {
+    level: "low" | "medium" | "high";
+    factors: string[];
+  };
+  missing_evidence?: string[];
+  recommended_terms?: {
+    tenor: number;
+    rate: number;
+    fees: number;
+    conditions: string[];
+  };
 };
 
 function generateDemoResponse(messages: Array<{ role: string; content: string }>, mode: string): AIResponse {
   const lastUserMessage = messages[messages.length - 1]?.content || "";
   const lower = lastUserMessage.toLowerCase();
+
+  if (mode === "deal-assistant") {
+    if (lower.includes("risk") || lower.includes("assess") || lower.includes("analyze")) {
+      return {
+        summary: "Based on the funding request parameters, this deal presents medium risk due to corridor volatility but has strong fundamentals.",
+        missing_inputs: [],
+        next_actions: [
+          { type: "review", label: "Review in Funding Desk", description: "Take action on this request" }
+        ],
+        risk_assessment: {
+          level: "medium",
+          factors: [
+            "Emerging market corridor adds currency volatility",
+            "Requester has limited trade history",
+            "Commodity price fluctuations may impact margins"
+          ]
+        },
+        missing_evidence: [
+          "Audited financial statements (last 2 years)",
+          "Trade contract or purchase order",
+          "Counterparty credit report"
+        ],
+        recommended_terms: {
+          tenor: 60,
+          rate: 2.8,
+          fees: 5500,
+          conditions: [
+            "Require 20% cash collateral",
+            "Weekly position monitoring",
+            "ESG compliance certification"
+          ]
+        }
+      };
+    }
+
+    if (lower.includes("term") || lower.includes("recommend") || lower.includes("pricing")) {
+      return {
+        summary: "For this request size and corridor, I recommend 60-day tenor at 2.5% with standard trade finance covenants.",
+        missing_inputs: [],
+        next_actions: [],
+        recommended_terms: {
+          tenor: 60,
+          rate: 2.5,
+          fees: 5000,
+          conditions: [
+            "Proof of shipment within 30 days",
+            "Insurance coverage minimum 110%",
+            "Right to audit trade documents"
+          ]
+        }
+      };
+    }
+
+    if (lower.includes("evidence") || lower.includes("document") || lower.includes("missing")) {
+      return {
+        summary: "Several key documents are missing for proper due diligence. Request these from the operator before proceeding.",
+        missing_inputs: [],
+        next_actions: [
+          { type: "request-info", label: "Request Missing Docs", description: "Send info request to operator" }
+        ],
+        missing_evidence: [
+          "Trade contract or sales agreement",
+          "KYB documentation for counterparty",
+          "Certificate of origin",
+          "Insurance certificate"
+        ]
+      };
+    }
+
+    return {
+      summary: "I can help you analyze deals, assess risks, and recommend financing terms. Ask me about specific funding requests or risk factors.",
+      missing_inputs: [],
+      next_actions: []
+    };
+  }
 
   if (lower.includes("compliance") || lower.includes("check") || lower.includes("kyc") || lower.includes("sanction")) {
     return {
@@ -160,7 +246,23 @@ export async function createStructuredChatCompletion(
     return generateDemoResponse(messages, mode);
   }
 
-  const systemPrompt = `You are TRAIBOX, an AI trade assistant. ALWAYS respond with valid JSON in this exact format:
+  let systemPrompt = "";
+  
+  if (mode === "deal-assistant") {
+    systemPrompt = `You are a Deal Assistant for trade financiers. Analyze funding requests and provide:
+{
+  "summary": "Brief analysis summary",
+  "risk_assessment": {"level": "low|medium|high", "factors": ["risk factor 1", "risk factor 2"]},
+  "missing_evidence": ["Document 1", "Document 2"],
+  "recommended_terms": {"tenor": 60, "rate": 2.5, "fees": 5000, "conditions": ["Condition 1"]},
+  "next_actions": [{"type": "action-type", "label": "Button Label", "description": "What this does"}],
+  "missing_inputs": []
+}
+
+Focus on: credit risk, corridor risk, documentation gaps, pricing recommendations.
+Be concise and professional.`;
+  } else {
+    systemPrompt = `You are TRAIBOX, an AI trade assistant. ALWAYS respond with valid JSON in this exact format:
 {
   "summary": "Brief 1-2 sentence response",
   "missing_inputs": ["List of missing info needed"],
@@ -171,6 +273,7 @@ export async function createStructuredChatCompletion(
 Action types: create-trade, compliance, funding, payment, proof-pack, invite-partner
 Only include trade_updates if creating/updating a trade.
 Keep responses concise and actionable.`;
+  }
 
   const allMessages = [
     { role: "system", content: systemPrompt },
