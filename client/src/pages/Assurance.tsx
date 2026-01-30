@@ -18,9 +18,9 @@ export default function Assurance() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-8 py-6 border-b border-white/10">
-        <h1 className="text-2xl font-light tracking-tight text-white">Assurance</h1>
-        <p className="text-sm text-white/50 mt-1">Compliance, verification, and proof management</p>
+      <div className="px-8 py-6 border-b border-border">
+        <h1 className="text-2xl font-light tracking-tight">Compliance & Proofs</h1>
+        <p className="text-sm text-muted-foreground mt-1">Compliance, verification, and proof management</p>
       </div>
 
       <div className="border-b border-white/10">

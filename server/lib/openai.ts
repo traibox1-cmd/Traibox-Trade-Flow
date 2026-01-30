@@ -1,17 +1,30 @@
 import OpenAI from "openai";
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY environment variable is required");
-}
+const hasValidApiKey = !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "demo-key";
 
 export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || "sk-demo-key-placeholder",
 });
+
+const DEMO_RESPONSES: Record<string, string> = {
+  auto: "I'm TRAIBOX, your AI trade assistant. I can help you with compliance checks, funding requests, payment processing, and partner management. (Demo mode: OpenAI quota limit reached)",
+  "trade-plan": "I can help plan your international trade. Consider logistics, timelines, documentation requirements, and risk factors for your corridor. (Demo mode active)",
+  compliance: "I'll assist with compliance checks including sanctions screening, KYC verification, and regulatory documentation review. (Demo mode active)",
+  funding: "I can help explore trade finance options: letters of credit, invoice financing, and supply chain finance solutions. (Demo mode active)",
+  payments: "For cross-border payments, consider traditional banking rails (SWIFT/ACH) or stablecoin settlements for faster processing. (Demo mode active)",
+  docs: "I'll help organize trade documents: commercial invoices, bills of lading, certificates of origin, and inspection certificates. (Demo mode active)",
+  "contracts-escrow": "Let me help structure your trade agreement with appropriate escrow terms and automated settlement milestones. (Demo mode active)",
+  "track-trace": "I can track your shipment and identify any delays or customs issues in your trade corridor. (Demo mode active)",
+};
 
 export async function createChatCompletion(
   messages: Array<{ role: string; content: string }>,
   mode: string = "auto"
 ) {
+  if (!hasValidApiKey) {
+    return DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
+  }
+
   const systemPrompt = getSystemPromptForMode(mode);
   
   const allMessages = [
@@ -19,20 +32,36 @@ export async function createChatCompletion(
     ...messages,
   ];
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: allMessages as any,
-    temperature: 0.7,
-    max_tokens: 2000,
-  });
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: allMessages as any,
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
 
-  return completion.choices[0]?.message?.content || "";
+    return completion.choices[0]?.message?.content || "";
+  } catch (error: any) {
+    if (error?.status === 429 || error?.code === "insufficient_quota") {
+      return DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
+    }
+    throw error;
+  }
 }
 
 export async function* streamChatCompletion(
   messages: Array<{ role: string; content: string }>,
   mode: string = "auto"
 ) {
+  if (!hasValidApiKey) {
+    const demoResponse = DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
+    for (const char of demoResponse) {
+      yield char;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    return;
+  }
+
   const systemPrompt = getSystemPromptForMode(mode);
   
   const allMessages = [
@@ -40,18 +69,30 @@ export async function* streamChatCompletion(
     ...messages,
   ];
 
-  const stream = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: allMessages as any,
-    temperature: 0.7,
-    max_tokens: 2000,
-    stream: true,
-  });
+  try {
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: allMessages as any,
+      temperature: 0.7,
+      max_tokens: 2000,
+      stream: true,
+    });
 
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) {
-      yield content;
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        yield content;
+      }
+    }
+  } catch (error: any) {
+    if (error?.status === 429 || error?.code === "insufficient_quota") {
+      const demoResponse = DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
+      for (const char of demoResponse) {
+        yield char;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    } else {
+      throw error;
     }
   }
 }
