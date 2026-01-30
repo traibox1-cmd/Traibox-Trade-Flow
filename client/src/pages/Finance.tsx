@@ -257,8 +257,11 @@ export default function Finance() {
               </div>
               <div className="space-y-3">
                 {payments.length === 0 ? (
-                  <div className="bg-card border border-border rounded-lg p-8 text-center">
-                    <p className="text-muted-foreground">No payments yet. Create a payment to get started.</p>
+                  <div className="bg-card border border-border rounded-xl p-8 text-center">
+                    <Send className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-2">No payments yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Create payment instructions for trade settlements</p>
+                    <Button onClick={handleCreatePayment} size="sm">Create Payment</Button>
                   </div>
                 ) : (
                   payments.map((payment) => (
@@ -304,8 +307,11 @@ export default function Finance() {
               <h2 className="text-lg font-light text-foreground mb-4">My Funding Requests</h2>
               <div className="space-y-4">
                 {fundingRequests.length === 0 ? (
-                  <div className="bg-card border border-border rounded-lg p-8 text-center">
-                    <p className="text-muted-foreground">No funding requests yet. Submit a request to get started.</p>
+                  <div className="bg-card border border-border rounded-xl p-8 text-center">
+                    <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-2">No funding requests</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Request trade financing for letters of credit or factoring</p>
+                    <Button onClick={handleRequestFunding} size="sm">Request Funding</Button>
                   </div>
                 ) : (
                   fundingRequests.map((request) => {

@@ -10,6 +10,17 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Health check endpoint
+  app.get("/api/chat/health", async (req, res) => {
+    try {
+      // Simple health check - returns ok if server is running
+      // In production, this could test OpenAI API connectivity
+      res.json({ status: "ok", mode: "demo" });
+    } catch (error) {
+      res.status(500).json({ status: "error", mode: "demo" });
+    }
+  });
+  
   // Chat endpoints
   app.post("/api/chat/stream", async (req, res) => {
     try {

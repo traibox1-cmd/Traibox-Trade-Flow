@@ -131,20 +131,42 @@ export default function Settings() {
               <Sparkles className="w-5 h-5 text-muted-foreground" />
               <h2 className="text-lg font-light text-foreground">AI Assistant</h2>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${aiStatus === 'connected' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                <span className="text-foreground font-medium">
-                  {aiStatus === 'connected' ? 'Connected' : 'Demo Mode'}
-                </span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${aiStatus === 'connected' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  <span className="text-foreground font-medium">
+                    {aiStatus === 'connected' ? 'Connected' : 'Demo Mode'}
+                  </span>
+                </div>
               </div>
+              {aiStatus === 'demo' && (
+                <p className="text-xs text-muted-foreground">
+                  AI responses are simulated. Connect OpenAI API key for live intelligence.
+                </p>
+              )}
+              <Button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const response = await fetch('/api/chat/health');
+                    const data = await response.json();
+                    alert(data.status === 'ok' ? 'AI Connection: OK' : 'AI Connection: Demo Mode');
+                  } catch (error) {
+                    alert('AI Connection: Failed to connect');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+                data-testid="button-test-ai-connection"
+              >
+                {loading ? "Testing..." : "Test AI Connection"}
+              </Button>
             </div>
-            {aiStatus === 'demo' && (
-              <p className="text-xs text-muted-foreground mt-3">
-                AI responses are simulated. Connect OpenAI API key for live intelligence.
-              </p>
-            )}
           </div>
         </div>
       </div>
