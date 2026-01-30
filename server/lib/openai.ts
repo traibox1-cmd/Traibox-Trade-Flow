@@ -32,9 +32,10 @@ export type AIResponse = {
   };
 };
 
-function generateDemoResponse(messages: Array<{ role: string; content: string }>, mode: string, tradeContext?: any): AIResponse {
+function generateDemoResponse(messages: Array<{ role: string; content: string; attachments?: any[] }>, mode: string, tradeContext?: any, chatMode?: string): AIResponse {
   const lastUserMessage = messages[messages.length - 1]?.content || "";
   const lower = lastUserMessage.toLowerCase();
+  const hasAttachments = messages[messages.length - 1]?.attachments && messages[messages.length - 1].attachments!.length > 0;
 
   if (mode === "deal-assistant") {
     if (lower.includes("risk") || lower.includes("assess") || lower.includes("analyze")) {
@@ -239,20 +240,21 @@ function extractTradeFromMessage(message: string): { updates: AIResponse["trade_
 }
 
 export async function createStructuredChatCompletion(
-  messages: Array<{ role: string; content: string }>,
+  messages: Array<{ role: string; content: string; attachments?: any[] }>,
   mode: string = "auto",
-  tradeContext?: any
+  tradeContext?: any,
+  chatMode: string = "explore"
 ): Promise<AIResponse> {
   if (!hasValidApiKey) {
-    return generateDemoResponse(messages, mode, tradeContext);
+    return generateDemoResponse(messages, mode, tradeContext, chatMode);
   }
 
   let systemPrompt = "";
   
   // Add trade context to system prompt if available
   let contextSection = "";
-  if (tradeContext) {
-    contextSection = `\n\nCURRENT TRADE CONTEXT (T-${tradeContext.id}):\n`;
+  if (tradeContext && chatMode === "trade") {
+    contextSection = `\n\nCURRENT TRADE CONTEXT (T-${tradeContext.id}) - Trade mode:\n`;
     if (tradeContext.title) contextSection += `Title: ${tradeContext.title}\n`;
     if (tradeContext.corridor) contextSection += `Corridor: ${tradeContext.corridor}\n`;
     if (tradeContext.goods) contextSection += `Goods: ${tradeContext.goods}\n`;
@@ -262,7 +264,9 @@ export async function createStructuredChatCompletion(
       contextSection += `Parties: ${tradeContext.parties.map((p: any) => `${p.name} (${p.role})`).join(', ')}\n`;
     }
     if (tradeContext.timelineStep) contextSection += `Current step: ${tradeContext.timelineStep}\n`;
-    contextSection += `\nAll responses must be scoped to this trade. Reference it by T-${tradeContext.id}.`;
+    contextSection += `\nAll responses must be scoped to this trade. Reference it by T-${tradeContext.id}. Focus on execution.`;
+  } else if (chatMode === "explore") {
+    contextSection = `\n\nEXPLORE MODE: Provide insights, best practices, route analysis. Keep structured but conversational.`;
   }
   
   if (mode === "deal-assistant") {
@@ -290,6 +294,13 @@ Be concise and professional.${contextSection}`;
 Action types: create-trade, compliance, funding, payment, proof-pack, invite-partner
 Only include trade_updates if creating/updating a trade.
 Keep responses concise and actionable.${contextSection}`;
+  }
+
+  // Add attachment context if present
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg?.attachments && lastMsg.attachments.length > 0) {
+    const attachmentSummary = lastMsg.attachments.map((att: any) => `${att.name} (${att.type})`).join(', ');
+    systemPrompt += `\n\nATTACHMENTS: User has attached: ${attachmentSummary}. Content extraction not available yet - acknowledge files and ask for specifics if needed.`;
   }
 
   const allMessages = [
@@ -323,11 +334,12 @@ Keep responses concise and actionable.${contextSection}`;
 }
 
 export async function* streamChatCompletion(
-  messages: Array<{ role: string; content: string }>,
+  messages: Array<{ role: string; content: string; attachments?: any[] }>,
   mode: string = "auto",
-  tradeContext?: any
+  tradeContext?: any,
+  chatMode: string = "explore"
 ) {
-  const response = await createStructuredChatCompletion(messages, mode, tradeContext);
+  const response = await createStructuredChatCompletion(messages, mode, tradeContext, chatMode);
   const jsonStr = JSON.stringify(response);
   
   for (const char of jsonStr) {

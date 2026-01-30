@@ -163,9 +163,31 @@ export default function TradeWorkspace() {
             {trade.status}
           </TBChip>
         </div>
-        <p className="text-sm text-muted-foreground ml-10">
+        <p className="text-sm text-muted-foreground ml-10 mb-3">
           {trade.corridor} • {trade.incoterms} • {formatAmount(trade.value, trade.currency)}
         </p>
+        <div className="flex items-center gap-2 ml-10">
+          <button
+            onClick={() => setInspectorTab("parties")}
+            className="px-3 py-1 rounded-full bg-background border border-border text-xs hover:bg-accent transition-colors"
+            data-testid="chip-quick-parties"
+          >
+            Parties · {trade.linkedParties.length}
+          </button>
+          <button
+            onClick={() => setInspectorTab("logistics")}
+            className={`px-3 py-1 rounded-full border text-xs hover:bg-accent transition-colors ${
+              trade.logisticsMilestones.some(m => m.status === 'issue') 
+                ? 'bg-red-500/10 border-red-500/30 text-red-500'
+                : 'bg-green-500/10 border-green-500/30 text-green-500'
+            }`}
+            data-testid="chip-quick-logistics"
+          >
+            Logistics · {trade.logisticsMilestones.some(m => m.status === 'issue') 
+              ? `${trade.logisticsMilestones.filter(m => m.status === 'issue').length} issues` 
+              : 'On track'}
+          </button>
+        </div>
       </div>
 
       <div className="px-8 py-4 border-b border-border bg-muted/30">
@@ -335,6 +357,42 @@ export default function TradeWorkspace() {
                 <div>
                   <div className="text-xs font-medium text-muted-foreground mb-2">Terms</div>
                   <div className="p-2 rounded-lg border bg-background/60 text-sm">{trade.incoterms}</div>
+                </div>
+                <div className="pt-4 border-t border-border">
+                  <div className="text-xs text-muted-foreground mb-2">
+                    <span className="font-medium">Jump to:</span>{" "}
+                    <button 
+                      onClick={() => setInspectorTab("parties")} 
+                      className="text-primary hover:underline"
+                      data-testid="link-jump-parties"
+                    >
+                      Parties
+                    </button>
+                    {" · "}
+                    <button 
+                      onClick={() => setInspectorTab("documents")} 
+                      className="text-primary hover:underline"
+                      data-testid="link-jump-documents"
+                    >
+                      Documents
+                    </button>
+                    {" · "}
+                    <button 
+                      onClick={() => setInspectorTab("logistics")} 
+                      className="text-primary hover:underline"
+                      data-testid="link-jump-logistics"
+                    >
+                      Logistics
+                    </button>
+                    {" · "}
+                    <button 
+                      onClick={() => setInspectorTab("evidence")} 
+                      className="text-primary hover:underline"
+                      data-testid="link-jump-evidence"
+                    >
+                      Evidence
+                    </button>
+                  </div>
                 </div>
               </div>
             </TabsContent>

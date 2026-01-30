@@ -1,13 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, type TradeDocument } from "@/lib/store";
+
+type FileAttachment = {
+  name: string;
+  type: string;
+  size: number;
+};
 
 type Message = {
   role: "user" | "assistant";
   content: string;
   structured?: AIResponse;
+  attachments?: FileAttachment[];
 };
 
 type AIResponse = {
@@ -49,12 +56,24 @@ export default function TradeIntelligence() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState("auto");
+  const [chatMode, setChatMode] = useState<"trade" | "explore">("explore");
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [pendingTradeUpdates, setPendingTradeUpdates] = useState<AIResponse["trade_updates"] | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { trades, addTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
+  const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
+
+  // Auto-switch to Trade mode when trade is selected
+  useEffect(() => {
+    if (selectedTradeId && chatMode === "explore") {
+      setChatMode("trade");
+    } else if (!selectedTradeId && chatMode === "trade") {
+      setChatMode("explore");
+    }
+  }, [selectedTradeId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,13 +83,54 @@ export default function TradeIntelligence() {
     scrollToBottom();
   }, [messages]);
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newAttachments: FileAttachment[] = Array.from(files).map(file => ({
+      name: file.name,
+      type: file.type || 'other',
+      size: file.size,
+    }));
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSend = async (message?: string) => {
     const textToSend = message || input.trim();
     if (!textToSend || loading) return;
 
-    const userMessage: Message = { role: "user", content: textToSend };
+    const userMessage: Message = { 
+      role: "user", 
+      content: textToSend,
+      attachments: attachments.length > 0 ? [...attachments] : undefined
+    };
+
+    // In Trade mode, save attachments to trade documents
+    if (chatMode === "trade" && selectedTradeId && attachments.length > 0) {
+      const tradeDocuments: TradeDocument[] = attachments.map((att, idx) => ({
+        id: `doc-${Date.now()}-${idx}`,
+        name: att.name,
+        type: att.type.includes('pdf') ? 'pdf' : att.type.includes('image') ? 'image' : 'other',
+        uploadedAt: new Date(),
+        extractedFields: { preview: "Content preview unavailable until backend extraction" }
+      }));
+
+      const currentTrade = trades.find(t => t.id === selectedTradeId);
+      if (currentTrade) {
+        updateTrade(selectedTradeId, {
+          uploadedDocuments: [...(currentTrade.uploadedDocuments || []), ...tradeDocuments]
+        });
+      }
+    }
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setAttachments([]);
     setLoading(true);
     setError(null);
 
@@ -79,9 +139,14 @@ export default function TradeIntelligence() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
+          messages: [...messages, userMessage].map((m) => ({ 
+            role: m.role, 
+            content: m.content,
+            attachments: m.attachments 
+          })),
           mode,
-          tradeContext: selectedTrade ? {
+          chatMode,
+          tradeContext: chatMode === "trade" && selectedTrade ? {
             id: selectedTrade.id,
             title: selectedTrade.title,
             corridor: selectedTrade.corridor,
@@ -200,6 +265,11 @@ export default function TradeIntelligence() {
         { name: "Seller Co", role: "seller", region: "EU" },
       ],
       documents: [],
+      linkedParties: [],
+      uploadedDocuments: [],
+      logisticsMilestones: [],
+      logisticsEvents: [],
+      logisticsVisibility: "internal",
     });
     setPendingTradeUpdates(null);
     return tradeId;
@@ -281,21 +351,54 @@ export default function TradeIntelligence() {
         )}
 
         {next_actions && next_actions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {next_actions.map((action, idx) => (
-              <Button
-                key={idx}
-                variant="secondary"
-                size="sm"
-                onClick={() => handleActionClick(action)}
-                className="rounded-xl shadow-sm"
-                data-testid={`action-${action.type}`}
-              >
-                <Sparkles className="w-3 h-3 mr-2" />
-                {action.label}
-                <ArrowRight className="w-3 h-3 ml-2" />
-              </Button>
-            ))}
+          <div className="space-y-2 mt-3">
+            {next_actions.map((action, idx) => {
+              const getDeepLink = () => {
+                if (selectedTradeId) {
+                  if (action.type === "compliance") return `/trade/${selectedTradeId}#compliance`;
+                  if (action.type === "funding") return `/finance?tab=funding`;
+                  if (action.type === "payment") return `/finance?tab=payments`;
+                  if (action.type === "proof-pack") return `/compliance?tab=proofs`;
+                  if (action.type === "invite-partner") return `/network?tab=invites`;
+                }
+                return null;
+              };
+
+              const deepLink = getDeepLink();
+
+              return (
+                <div key={idx} className="rounded-xl border bg-card p-3 flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold mb-1">{action.label}</div>
+                    <div className="text-xs text-muted-foreground">{action.description}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleActionClick(action)}
+                      className="rounded-xl shadow-sm"
+                      data-testid={`action-${action.type}`}
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      {action.label}
+                    </Button>
+                    {deepLink && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setLocation(deepLink)}
+                        className="text-xs px-2"
+                        data-testid={`action-open-${action.type}`}
+                      >
+                        Open
+                        <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -410,7 +513,18 @@ export default function TradeIntelligence() {
                     ) : msg.role === "assistant" ? (
                       renderStructuredResponse(msg)
                     ) : (
-                      <p className="text-sm">{msg.content}</p>
+                      <div>
+                        <p className="text-sm">{msg.content}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {msg.attachments.map((att, attIdx) => (
+                              <div key={attIdx} className="text-xs px-2 py-1 rounded bg-primary-foreground/10 border border-primary-foreground/20">
+                                📎 {att.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   {msg.role === "user" && (
@@ -435,28 +549,97 @@ export default function TradeIntelligence() {
         )}
 
         <div className="px-8 py-4 border-t border-border">
-          <div className="max-w-3xl mx-auto flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Describe your trade or ask about compliance, funding, payments..."
-              className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              data-testid="input-chat"
-            />
-            <Button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || loading}
-              className="px-6 rounded-xl"
-              data-testid="button-send"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
+          <div className="max-w-3xl mx-auto space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="inline-flex items-center rounded-lg border border-border bg-background p-1" data-testid="toggle-chat-mode">
+                <button
+                  onClick={() => setChatMode("trade")}
+                  disabled={!selectedTradeId}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chatMode === "trade" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-accent"
+                  } ${!selectedTradeId ? "opacity-50 cursor-not-allowed" : ""}`}
+                  data-testid="button-mode-trade"
+                >
+                  Trade
+                </button>
+                <button
+                  onClick={() => setChatMode("explore")}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chatMode === "explore" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-accent"
+                  }`}
+                  data-testid="button-mode-explore"
+                >
+                  Explore
+                </button>
+              </div>
+              {chatMode === "explore" && (
+                <p className="text-xs text-muted-foreground">
+                  Explore: insights, best practices, partners, routes
+                </p>
               )}
-            </Button>
+            </div>
+
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-muted/50 border border-border">
+                {attachments.map((att, idx) => (
+                  <div key={idx} className="flex items-center gap-2 px-2 py-1 rounded bg-background border border-border text-xs">
+                    <span>📎 {att.name}</span>
+                    <button
+                      onClick={() => removeAttachment(idx)}
+                      className="text-muted-foreground hover:text-foreground"
+                      data-testid={`button-remove-attachment-${idx}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept=".pdf,image/*"
+                multiple
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3"
+                data-testid="button-attach"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Describe your trade or ask about compliance, funding, payments..."
+                className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                data-testid="input-chat"
+              />
+              <Button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || loading}
+                className="px-6 rounded-xl"
+                data-testid="button-send"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

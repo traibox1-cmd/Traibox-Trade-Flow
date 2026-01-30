@@ -126,6 +126,31 @@ Preferred communication style: Simple, everyday language.
   - Document cards show name, type, and timestamp
 - **Store**: `addTrade` function initializes uploadedDocuments as empty array by default
 
+### UI Lock Patch: Discoverability & Multimodal Chat (January 30, 2026)
+
+#### Part 1: Discoverability Micro-Pass
+- **Trade Workspace Quick Chips**: Header displays two contextual chips:
+  - Parties chip: Shows count of linked parties (e.g., "Parties · 3"), click navigates to Parties tab
+  - Logistics chip: Shows status with color coding - green "On track" or red "X issues", click navigates to Logistics tab
+- **Inspector Jump-to Links**: Context tab includes quick navigation line: "Jump to: Parties · Documents · Logistics · Evidence"
+- **AI Action Deep-links**: Action cards in Trade Intelligence include secondary "Open" link that deep-links to destination module/tab with trade context
+
+#### Part 2: Trade Intelligence as Multimodal AI Interface
+- **Trade/Explore Mode Toggle**: Segmented control near chat composer:
+  - Trade mode: AI scoped to selected tradeId, produces execution-focused structured outputs
+  - Explore mode: AI provides insights, best practices, route analysis without trade scope
+  - Auto-switches to Trade mode when trade is selected, Explore when no trade
+  - Hint text: "Explore: insights, best practices, partners, routes"
+- **Multimodal Chat Attachments**: 
+  - Attachment button (paperclip icon) in chat composer
+  - File selector accepts PDF and images
+  - Attached files display as removable chips before sending
+  - In Trade mode: attachments saved to trade's uploadedDocuments array and appear in Documents inspector
+  - In Explore mode: attachments remain as message metadata only
+  - Messages display attachment chips in chat history
+- **AI Context for Attachments**: Server includes attachment metadata (name, type) in system prompt, instructs AI that content extraction unavailable yet
+- **Conversational Explainability**: Explore mode maintains structured JSON responses but allows for conversational insights while preserving action-oriented format
+
 ### Earlier Milestones (Preserved)
 
 #### Bulletproof AI Chat Demo Fallback
