@@ -90,25 +90,37 @@ function TopBar() {
       <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-3">
           <div className="relative" data-testid="brand-mark">
-            <div className="noise relative flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <Boxes className="h-5 w-5" />
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+              <svg 
+                viewBox="0 0 24 24" 
+                className="h-5 w-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
             </div>
-            <div className="pointer-events-none absolute -inset-1 rounded-3xl bg-primary/10 blur-xl" />
           </div>
           <div className="leading-tight">
             <div className="flex items-center gap-2">
-              <div className="font-serif text-[15px] tracking-tight" data-testid="text-brand">
+              <div className="font-semibold text-[15px] tracking-tight" data-testid="text-brand">
                 TRAIBOX
               </div>
               <div
-                className="rounded-full border bg-card/60 px-2 py-0.5 text-[11px] text-muted-foreground"
+                className="rounded-full border bg-card/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground font-medium"
                 data-testid="badge-tagline"
               >
-                AI-first trade workspace
+                AI-First
               </div>
             </div>
-            <div className="text-[12px] text-muted-foreground" data-testid="text-tagline">
-              Trust-first chat + cards for real execution.
+            <div className="text-[11px] text-muted-foreground" data-testid="text-tagline">
+              Trade workspace
             </div>
           </div>
         </div>
@@ -198,9 +210,22 @@ function NavRail() {
       data-testid="nav-rail"
     >
       <div className="p-4 flex items-center justify-between">
-        <div className="min-w-0 flex items-center gap-2">
-          <div className="flex-shrink-0 w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center">
-            <Boxes className="h-5 w-5 text-primary" />
+        <div className="min-w-0 flex items-center gap-3">
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <svg 
+              viewBox="0 0 24 24" 
+              className="h-5 w-5 text-primary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
           </div>
           <AnimatePresence>
             {shouldExpand && (
@@ -209,7 +234,7 @@ function NavRail() {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="font-serif text-sm whitespace-nowrap"
+                className="font-semibold text-sm tracking-tight whitespace-nowrap"
               >
                 TRAIBOX
               </motion.div>
@@ -251,23 +276,23 @@ function NavRail() {
                   type="button"
                   onClick={() => handleItemClick(item)}
                   className={cn(
-                    "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition-colors focus-ring w-full",
+                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all focus-ring w-full",
                     active
-                      ? "bg-primary/10 text-foreground"
-                      : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                      ? "bg-primary/10 text-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                   data-testid={item.testId}
                 >
                   <span
                     className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-2xl border bg-background/50 transition-colors flex-shrink-0",
+                      "inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-background/50 transition-all flex-shrink-0",
                       active
-                        ? "border-primary/20 bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground group-hover:text-foreground",
+                        ? "border-primary/30 bg-primary/15 text-primary shadow-sm"
+                        : "border-border text-muted-foreground group-hover:text-foreground group-hover:border-primary/20",
                     )}
                     aria-hidden="true"
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 stroke-[2.5]" />
                   </span>
                   <AnimatePresence>
                     {shouldExpand && (
@@ -278,9 +303,9 @@ function NavRail() {
                         transition={{ duration: 0.2 }}
                         className="min-w-0 flex-1"
                       >
-                        <div className="font-medium truncate">{item.label}</div>
+                        <div className="font-semibold text-[13px] truncate">{item.label}</div>
                         {item.subtitle && (
-                          <div className="text-[11px] text-muted-foreground truncate">
+                          <div className="text-[11px] text-muted-foreground/80 truncate mt-0.5">
                             {item.subtitle}
                           </div>
                         )}
@@ -319,10 +344,10 @@ function NavRail() {
                           }}
                           data-testid={subitem.testId}
                           className={cn(
-                            "w-full text-left px-3 py-2 rounded-2xl text-sm transition-colors",
+                            "w-full text-left px-3 py-2 rounded-lg text-[13px] transition-all font-medium",
                             isActive(subitem.href)
-                              ? "text-foreground bg-primary/5"
-                              : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                              ? "text-foreground bg-primary/5 shadow-sm"
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent"
                           )}
                         >
                           {subitem.label}
@@ -338,9 +363,9 @@ function NavRail() {
       </div>
 
       <div className="mt-auto p-4">
-        <div className="rounded-3xl border bg-card/60 p-3" data-testid="nav-safety">
+        <div className="rounded-2xl border bg-card/60 p-3" data-testid="nav-safety">
           <div className="flex items-start gap-3">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 border border-primary/15 flex-shrink-0">
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 flex-shrink-0">
               <ShieldCheck className="h-4 w-4 text-primary" />
             </div>
             <AnimatePresence>
@@ -352,10 +377,10 @@ function NavRail() {
                   transition={{ duration: 0.2 }}
                   className="min-w-0"
                 >
-                  <div className="text-sm font-medium whitespace-nowrap" data-testid="text-safety-title">
+                  <div className="text-[13px] font-semibold whitespace-nowrap" data-testid="text-safety-title">
                     Trust posture
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground whitespace-nowrap" data-testid="text-safety-subtitle">
+                  <div className="mt-0.5 text-[11px] text-muted-foreground/80 whitespace-nowrap" data-testid="text-safety-subtitle">
                     Private-by-default · Evidence-linked
                   </div>
                 </motion.div>
