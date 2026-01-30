@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +13,10 @@ import {
   FileText,
   ShieldCheck,
   Sparkles,
+  Package,
+  Download,
 } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 type Check = {
   id: string;
@@ -49,7 +53,18 @@ const checks: Check[] = [
 ];
 
 export default function CompliancePage() {
+  const [location] = useLocation();
+  const queryParams = new URLSearchParams(location.split("?")[1] || "");
+  const tabParam = queryParams.get("tab");
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
+  const [activeTab, setActiveTab] = useState<string>(tabParam || "checks");
+  const { complianceRuns, proofPacks, addComplianceRun, addProofPack } = useAppStore();
+
+  useEffect(() => {
+    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports") {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const summary = useMemo(() => {
     const passed = checks.filter((c) => c.status === "passed").length;
@@ -57,6 +72,30 @@ export default function CompliancePage() {
     const blocked = checks.filter((c) => c.status === "blocked").length;
     return { passed, needs, blocked };
   }, []);
+
+  const handleRunChecks = () => {
+    setRun("running");
+    setTimeout(() => {
+      addComplianceRun({
+        targetEntity: "Trade Counterparty",
+        checks: ["sanctions", "kyc", "restricted-goods", "pep"],
+        status: "passed",
+        findings: [
+          { type: "pass", message: "No sanctions matches found" },
+          { type: "pass", message: "KYC documentation verified" },
+        ],
+      });
+      setRun("done");
+    }, 900);
+  };
+
+  const handleGenerateProofPack = () => {
+    addProofPack({
+      title: `Compliance Pack ${new Date().toLocaleDateString()}`,
+      documents: ["Commercial Invoice", "Bill of Lading", "Certificate of Origin", "Inspection Certificate"],
+      status: "ready",
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-8 md:py-10">
@@ -85,10 +124,7 @@ export default function CompliancePage() {
         </div>
         <Button
           className="h-9"
-          onClick={() => {
-            setRun("running");
-            window.setTimeout(() => setRun("done"), 900);
-          }}
+          onClick={handleRunChecks}
           data-testid="button-run-checks"
         >
           <Sparkles className="mr-2 h-4 w-4" />
@@ -155,13 +191,13 @@ export default function CompliancePage() {
       </div>
 
       <div className="mt-4">
-        <Tabs defaultValue="checks" data-testid="tabs-compliance">
+        <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="tabs-compliance">
           <TabsList className="w-full justify-start" data-testid="tabslist-compliance">
             <TabsTrigger value="checks" data-testid="tab-checks">
               Checks
             </TabsTrigger>
-            <TabsTrigger value="actions" data-testid="tab-actions">
-              Actions
+            <TabsTrigger value="proofs" data-testid="tab-proofs">
+              Proof Packs
             </TabsTrigger>
             <TabsTrigger value="reports" data-testid="tab-reports">
               Reports
@@ -238,7 +274,73 @@ export default function CompliancePage() {
             </TBCard>
           </TabsContent>
 
-          <TabsContent value="actions" className="mt-4" data-testid="panel-actions">
+          <TabsContent value="proofs" className="mt-4" data-testid="panel-proofs">
+            <TBCard
+              title="Proof Packs"
+              subtitle="Documentation packages ready for verification"
+              state="idle"
+              icon={<Package className="h-4 w-4" />}
+              dataTestId="card-proofs"
+            >
+              <div className="mb-4">
+                <Button onClick={handleGenerateProofPack} data-testid="button-generate-proof">
+                  <Package className="mr-2 h-4 w-4" />
+                  Generate New Proof Pack
+                </Button>
+              </div>
+
+              {proofPacks.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No proof packs generated yet. Click "Generate New Proof Pack" to create one.
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {proofPacks.map((pack) => (
+                    <div
+                      key={pack.id}
+                      className="rounded-2xl border bg-background/60 p-4"
+                      data-testid={`proof-pack-${pack.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="font-medium">{pack.title}</div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {pack.documents.length} documents • {new Date(pack.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <TBChip 
+                          tone={pack.status === 'verified' ? 'success' : pack.status === 'ready' ? 'neutral' : 'warn'} 
+                          dataTestId={`chip-proof-status-${pack.id}`}
+                        >
+                          {pack.status}
+                        </TBChip>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        <div className="font-medium mb-1">Documents:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {pack.documents.map((doc, idx) => (
+                            <span key={idx} className="text-xs bg-background border rounded px-2 py-1">{doc}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <Button variant="secondary" size="sm">
+                          <Download className="w-3 h-3 mr-2" />
+                          Download
+                        </Button>
+                        <Button variant="secondary" size="sm">
+                          <FileText className="w-3 h-3 mr-2" />
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="reports" className="mt-4" data-testid="panel-reports">
             <TBCard
               title="Actions"
               subtitle="Intents that produce evidence"

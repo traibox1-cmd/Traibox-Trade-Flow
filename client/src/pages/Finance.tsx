@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { DollarSign, TrendingUp, Send, Shield } from "lucide-react";
+import { DollarSign, TrendingUp, Send, Shield, Plus } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 
 type Tab = "payments" | "funding";
 
@@ -9,12 +11,38 @@ export default function Finance() {
   const queryParams = new URLSearchParams(location.split("?")[1] || "");
   const tabParam = queryParams.get("tab") as Tab | null;
   const [activeTab, setActiveTab] = useState<Tab>(tabParam || "payments");
+  const { payments, fundingRequests, addPayment, addFundingRequest } = useAppStore();
 
   useEffect(() => {
     if (tabParam && (tabParam === "payments" || tabParam === "funding")) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
+
+  const handleCreatePayment = () => {
+    addPayment({
+      amount: 50000,
+      currency: "USD",
+      beneficiary: "Trade Partner Inc",
+      rail: "swift",
+      status: "draft",
+      notes: "Created from Finance module",
+    });
+  };
+
+  const handleRequestFunding = () => {
+    addFundingRequest({
+      amount: 200000,
+      type: "lc",
+      status: "pending",
+      requesterName: "Current User",
+      notes: "Funding request from Finance module",
+    });
+  };
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -96,29 +124,40 @@ export default function Finance() {
             </div>
 
             <div>
-              <h2 className="text-lg font-light text-foreground mb-4">Recent Payments</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-light text-foreground">Recent Payments</h2>
+                <Button size="sm" onClick={handleCreatePayment} data-testid="button-create-payment">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Payment
+                </Button>
+              </div>
               <div className="space-y-3">
-                {[
-                  { to: "Acme Corp", amount: "$50,000", status: "Completed", date: "2 days ago" },
-                  { to: "Global Traders Inc", amount: "$125,000", status: "Pending", date: "1 day ago" },
-                  { to: "EU Export Partners", amount: "$75,000", status: "Processing", date: "3 hours ago" },
-                ].map((payment, i) => (
-                  <div key={i} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-foreground font-light">{payment.to}</div>
-                        <div className="text-sm text-muted-foreground mt-1">{payment.amount} • {payment.date}</div>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs ${
-                        payment.status === "Completed" ? "bg-green-500/20 text-green-400" :
-                        payment.status === "Pending" ? "bg-yellow-500/20 text-yellow-400" :
-                        "bg-blue-500/20 text-blue-400"
-                      }`}>
-                        {payment.status}
+                {payments.length === 0 ? (
+                  <div className="bg-card border border-border rounded-lg p-8 text-center">
+                    <p className="text-muted-foreground">No payments yet. Create a payment to get started.</p>
+                  </div>
+                ) : (
+                  payments.map((payment) => (
+                    <div key={payment.id} className="bg-card border border-border rounded-lg p-4" data-testid={`payment-${payment.id}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-foreground font-light">{payment.beneficiary}</div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {formatAmount(payment.amount)} • {payment.rail.toUpperCase()} • {new Date(payment.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-xs ${
+                          payment.status === "completed" ? "bg-green-500/20 text-green-400" :
+                          payment.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                          payment.status === "failed" ? "bg-red-500/20 text-red-400" :
+                          "bg-blue-500/20 text-blue-400"
+                        }`}>
+                          {payment.status}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -138,39 +177,45 @@ export default function Finance() {
             </div>
 
             <div>
-              <h2 className="text-lg font-light text-foreground mb-4">Funding Requests</h2>
+              <h2 className="text-lg font-light text-foreground mb-4">My Funding Requests</h2>
               <div className="space-y-3">
-                {[
-                  { trade: "Cotton Shipment #1045", amount: "$200,000", status: "Approved", lender: "Trade Finance Co" },
-                  { trade: "Textile Order #1046", amount: "$150,000", status: "Under Review", lender: "Global Capital" },
-                ].map((request, i) => (
-                  <div key={i} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-foreground font-light">{request.trade}</div>
-                      <div className={`px-3 py-1 rounded-full text-xs ${
-                        request.status === "Approved" ? "bg-green-500/20 text-green-400" :
-                        "bg-yellow-500/20 text-yellow-400"
-                      }`}>
-                        {request.status}
+                {fundingRequests.length === 0 ? (
+                  <div className="bg-card border border-border rounded-lg p-8 text-center">
+                    <p className="text-muted-foreground">No funding requests yet. Submit a request to get started.</p>
+                  </div>
+                ) : (
+                  fundingRequests.map((request) => (
+                    <div key={request.id} className="bg-card border border-border rounded-lg p-4" data-testid={`funding-${request.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-foreground font-light">{request.type.toUpperCase()} Request</div>
+                        <div className={`px-3 py-1 rounded-full text-xs ${
+                          request.status === "approved" ? "bg-green-500/20 text-green-400" :
+                          request.status === "rejected" ? "bg-red-500/20 text-red-400" :
+                          request.status === "reviewing" ? "bg-blue-500/20 text-blue-400" :
+                          "bg-yellow-500/20 text-yellow-400"
+                        }`}>
+                          {request.status}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{formatAmount(request.amount)}</span>
+                        <span>•</span>
+                        <span>{new Date(request.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{request.amount}</span>
-                      <span>•</span>
-                      <span>{request.lender}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
-            <button
+            <Button
+              onClick={handleRequestFunding}
               data-testid="button-request-funding"
-              className="w-full py-3 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full"
             >
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-4 h-4 mr-2" />
               Request New Funding
-            </button>
+            </Button>
           </div>
         )}
       </div>

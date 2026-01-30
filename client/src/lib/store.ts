@@ -47,12 +47,36 @@ export type PartnerInvite = {
   createdAt: Date;
 };
 
+export type Payment = {
+  id: string;
+  tradeId?: string;
+  amount: number;
+  currency: string;
+  beneficiary: string;
+  rail: 'swift' | 'ach' | 'stablecoin';
+  status: 'draft' | 'pending' | 'completed' | 'failed';
+  createdAt: Date;
+  notes?: string;
+};
+
+export type Partner = {
+  id: string;
+  name: string;
+  region: string;
+  capabilities: string[];
+  trust: 'verified' | 'partner' | 'new';
+  visibility: 'private' | 'shared';
+  connectionStatus: 'none' | 'pending' | 'connected';
+};
+
 type AppStore = {
   trades: Trade[];
   fundingRequests: FundingRequest[];
   complianceRuns: ComplianceRun[];
   proofPacks: ProofPack[];
   partnerInvites: PartnerInvite[];
+  payments: Payment[];
+  partners: Partner[];
   
   addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => void;
   addFundingRequest: (request: Omit<FundingRequest, 'id' | 'createdAt'>) => void;
@@ -61,7 +85,40 @@ type AppStore = {
   updateComplianceRun: (id: string, updates: Partial<ComplianceRun>) => void;
   addProofPack: (pack: Omit<ProofPack, 'id' | 'createdAt'>) => void;
   addPartnerInvite: (invite: Omit<PartnerInvite, 'id' | 'createdAt'>) => void;
+  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => void;
+  updatePayment: (id: string, updates: Partial<Payment>) => void;
+  updatePartner: (id: string, updates: Partial<Partner>) => void;
 };
+
+const initialPartners: Partner[] = [
+  {
+    id: "p1",
+    name: "NordWerk Logistics",
+    region: "EU",
+    capabilities: ["Forwarding", "Customs", "Trade docs"],
+    trust: "verified",
+    visibility: "private",
+    connectionStatus: "connected",
+  },
+  {
+    id: "p2",
+    name: "Aster Mills",
+    region: "SEA",
+    capabilities: ["Manufacturing", "QA", "Insurance"],
+    trust: "partner",
+    visibility: "shared",
+    connectionStatus: "connected",
+  },
+  {
+    id: "p3",
+    name: "Kijani Cooperative",
+    region: "Africa",
+    capabilities: ["Aggregation", "Fulfillment", "Local compliance"],
+    trust: "new",
+    visibility: "private",
+    connectionStatus: "none",
+  },
+];
 
 export const useAppStore = create<AppStore>((set) => ({
   trades: [],
@@ -69,6 +126,8 @@ export const useAppStore = create<AppStore>((set) => ({
   complianceRuns: [],
   proofPacks: [],
   partnerInvites: [],
+  payments: [],
+  partners: initialPartners,
 
   addTrade: (trade) =>
     set((state) => ({
@@ -122,5 +181,27 @@ export const useAppStore = create<AppStore>((set) => ({
         ...state.partnerInvites,
         { ...invite, id: `invite-${Date.now()}`, createdAt: new Date() },
       ],
+    })),
+
+  addPayment: (payment) =>
+    set((state) => ({
+      payments: [
+        ...state.payments,
+        { ...payment, id: `payment-${Date.now()}`, createdAt: new Date() },
+      ],
+    })),
+
+  updatePayment: (id, updates) =>
+    set((state) => ({
+      payments: state.payments.map((payment) =>
+        payment.id === id ? { ...payment, ...updates } : payment
+      ),
+    })),
+
+  updatePartner: (id, updates) =>
+    set((state) => ({
+      partners: state.partners.map((partner) =>
+        partner.id === id ? { ...partner, ...updates } : partner
+      ),
     })),
 }));

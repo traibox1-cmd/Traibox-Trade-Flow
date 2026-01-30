@@ -16,45 +16,11 @@ import {
   UserPlus,
   Plus,
   Mail,
+  CheckCircle2,
 } from "lucide-react";
+import { useAppStore, type Partner } from "@/lib/store";
 
-type Partner = {
-  id: string;
-  name: string;
-  region: string;
-  capabilities: string[];
-  trust: "verified" | "partner" | "new";
-  visibility: "private" | "shared";
-};
-
-const partners: Partner[] = [
-  {
-    id: "p1",
-    name: "NordWerk Logistics",
-    region: "EU",
-    capabilities: ["Forwarding", "Customs", "Trade docs"],
-    trust: "verified",
-    visibility: "private",
-  },
-  {
-    id: "p2",
-    name: "Aster Mills",
-    region: "SEA",
-    capabilities: ["Manufacturing", "QA", "Insurance"],
-    trust: "partner",
-    visibility: "shared",
-  },
-  {
-    id: "p3",
-    name: "Kijani Cooperative",
-    region: "Africa",
-    capabilities: ["Aggregation", "Fulfillment", "Local compliance"],
-    trust: "new",
-    visibility: "private",
-  },
-];
-
-function PartnerCard({ p }: { p: Partner }) {
+function PartnerCard({ p, onConnect }: { p: Partner; onConnect: (id: string) => void }) {
   const tone =
     p.trust === "verified"
       ? "success"
@@ -116,8 +82,19 @@ function PartnerCard({ p }: { p: Partner }) {
             <Lock className="h-3.5 w-3.5" />
             {p.visibility === "private" ? "Private" : "Shared"}
           </div>
-          <Button size="sm" className="h-8" data-testid={`button-connect-${p.id}`}>
-            Connect
+          <Button 
+            size="sm" 
+            className="h-8" 
+            onClick={() => onConnect(p.id)}
+            disabled={p.connectionStatus === "connected"}
+            data-testid={`button-connect-${p.id}`}
+          >
+            {p.connectionStatus === "connected" ? (
+              <>
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Connected
+              </>
+            ) : p.connectionStatus === "pending" ? "Pending" : "Connect"}
           </Button>
         </div>
       </div>
@@ -129,12 +106,34 @@ export default function MyNetwork() {
   const [query, setQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const { partners, partnerInvites, updatePartner, addPartnerInvite } = useAppStore();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return partners;
     return partners.filter((p) => p.name.toLowerCase().includes(q));
-  }, [query]);
+  }, [query, partners]);
+
+  const handleConnect = (id: string) => {
+    updatePartner(id, { connectionStatus: "pending" });
+    setTimeout(() => {
+      updatePartner(id, { connectionStatus: "connected" });
+    }, 1500);
+  };
+
+  const handleSendInvite = () => {
+    if (inviteEmail && inviteName) {
+      addPartnerInvite({
+        partnerName: inviteName,
+        email: inviteEmail,
+        status: "sent",
+      });
+      setInviteEmail("");
+      setInviteName("");
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-8 md:py-10">
@@ -225,7 +224,7 @@ export default function MyNetwork() {
 
               <div className="mt-4 grid gap-3">
                 {filtered.map((p) => (
-                  <PartnerCard key={p.id} p={p} />
+                  <PartnerCard key={p.id} p={p} onConnect={handleConnect} />
                 ))}
               </div>
 
@@ -298,18 +297,66 @@ export default function MyNetwork() {
               icon={<UserPlus className="h-4 w-4" />}
               dataTestId="card-invites"
             >
-              <div
-                className="rounded-2xl border bg-background/60 p-4"
-                data-testid="empty-invites"
-              >
-                <div className="flex items-center gap-2">
-                  <BadgeCheck className="h-4 w-4 text-primary" />
-                  <div className="text-sm font-medium">No pending invites</div>
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Invitations are scoped to a trade, and can be revoked at any time.
-                </div>
+              <div className="mb-4 space-y-3 rounded-2xl border bg-background/60 p-4">
+                <div className="text-sm font-medium">Send New Invite</div>
+                <Input
+                  placeholder="Partner name"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  data-testid="input-invite-name"
+                />
+                <Input
+                  placeholder="Email address"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  data-testid="input-invite-email"
+                />
+                <Button onClick={handleSendInvite} disabled={!inviteEmail || !inviteName} data-testid="button-send-invite">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Invite
+                </Button>
               </div>
+
+              {partnerInvites.length === 0 ? (
+                <div
+                  className="rounded-2xl border bg-background/60 p-4"
+                  data-testid="empty-invites"
+                >
+                  <div className="flex items-center gap-2">
+                    <BadgeCheck className="h-4 w-4 text-primary" />
+                    <div className="text-sm font-medium">No pending invites</div>
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Invitations are scoped to a trade, and can be revoked at any time.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {partnerInvites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="rounded-2xl border bg-background/60 p-4"
+                      data-testid={`invite-${invite.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium">{invite.partnerName}</div>
+                          <div className="text-sm text-muted-foreground mt-1">{invite.email}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(invite.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <TBChip 
+                          tone={invite.status === 'accepted' ? 'success' : invite.status === 'declined' ? 'error' : 'warn'} 
+                          dataTestId={`chip-invite-status-${invite.id}`}
+                        >
+                          {invite.status}
+                        </TBChip>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TBCard>
           </TabsContent>
 
