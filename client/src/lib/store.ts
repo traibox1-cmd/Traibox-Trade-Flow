@@ -29,10 +29,60 @@ export type FundingRequest = {
   tradeId?: string;
   amount: number;
   type: 'lc' | 'factoring' | 'supply-chain';
-  status: 'pending' | 'reviewing' | 'approved' | 'rejected';
+  status: 'pending' | 'reviewing' | 'info-requested' | 'offered' | 'approved' | 'rejected';
   requesterName: string;
   createdAt: Date;
   notes?: string;
+  corridor?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+};
+
+export type Offer = {
+  id: string;
+  fundingRequestId: string;
+  tradeId?: string;
+  tenor: number;
+  rate: number;
+  fees: number;
+  conditions: string;
+  esgTag?: string;
+  status: 'proposed' | 'accepted' | 'rejected' | 'expired';
+  proposedBy: string;
+  createdAt: Date;
+};
+
+export type InfoRequest = {
+  id: string;
+  fundingRequestId: string;
+  tradeId?: string;
+  requestedBy: string;
+  message: string;
+  status: 'pending' | 'provided' | 'closed';
+  response?: string;
+  respondedAt?: Date;
+  createdAt: Date;
+};
+
+export type Notification = {
+  id: string;
+  type: 'offer' | 'info-request' | 'approval' | 'rejection' | 'proof-verified';
+  targetRole: 'operator' | 'financier';
+  tradeId?: string;
+  fundingRequestId?: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+};
+
+export type TimelineEvent = {
+  id: string;
+  tradeId?: string;
+  fundingRequestId?: string;
+  type: 'created' | 'info-requested' | 'info-provided' | 'offer-proposed' | 'approved' | 'rejected' | 'verified';
+  actor: string;
+  message: string;
+  createdAt: Date;
 };
 
 export type ComplianceRun = {
@@ -92,6 +142,10 @@ type AppStore = {
   partnerInvites: PartnerInvite[];
   payments: Payment[];
   partners: Partner[];
+  offers: Offer[];
+  infoRequests: InfoRequest[];
+  notifications: Notification[];
+  timelineEvents: TimelineEvent[];
   
   addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => string;
   updateTrade: (id: string, updates: Partial<Trade>) => void;
@@ -106,6 +160,14 @@ type AppStore = {
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => string;
   updatePayment: (id: string, updates: Partial<Payment>) => void;
   updatePartner: (id: string, updates: Partial<Partner>) => void;
+  addOffer: (offer: Omit<Offer, 'id' | 'createdAt'>) => string;
+  updateOffer: (id: string, updates: Partial<Offer>) => void;
+  addInfoRequest: (request: Omit<InfoRequest, 'id' | 'createdAt'>) => string;
+  updateInfoRequest: (id: string, updates: Partial<InfoRequest>) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => string;
+  markNotificationRead: (id: string) => void;
+  addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'createdAt'>) => string;
+  getUnreadNotifications: (role: 'operator' | 'financier') => Notification[];
 };
 
 const initialPartners: Partner[] = [
@@ -146,6 +208,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   partnerInvites: [],
   payments: [],
   partners: initialPartners,
+  offers: [],
+  infoRequests: [],
+  notifications: [],
+  timelineEvents: [],
 
   addTrade: (trade) => {
     const id = `trade-${Date.now()}`;
@@ -253,4 +319,60 @@ export const useAppStore = create<AppStore>((set, get) => ({
         partner.id === id ? { ...partner, ...updates } : partner
       ),
     })),
+
+  addOffer: (offer) => {
+    const id = `offer-${Date.now()}`;
+    set((state) => ({
+      offers: [...state.offers, { ...offer, id, createdAt: new Date() }],
+    }));
+    return id;
+  },
+
+  updateOffer: (id, updates) =>
+    set((state) => ({
+      offers: state.offers.map((offer) =>
+        offer.id === id ? { ...offer, ...updates } : offer
+      ),
+    })),
+
+  addInfoRequest: (request) => {
+    const id = `info-${Date.now()}`;
+    set((state) => ({
+      infoRequests: [...state.infoRequests, { ...request, id, createdAt: new Date() }],
+    }));
+    return id;
+  },
+
+  updateInfoRequest: (id, updates) =>
+    set((state) => ({
+      infoRequests: state.infoRequests.map((req) =>
+        req.id === id ? { ...req, ...updates } : req
+      ),
+    })),
+
+  addNotification: (notification) => {
+    const id = `notif-${Date.now()}`;
+    set((state) => ({
+      notifications: [...state.notifications, { ...notification, id, read: false, createdAt: new Date() }],
+    }));
+    return id;
+  },
+
+  markNotificationRead: (id) =>
+    set((state) => ({
+      notifications: state.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ),
+    })),
+
+  addTimelineEvent: (event) => {
+    const id = `event-${Date.now()}`;
+    set((state) => ({
+      timelineEvents: [...state.timelineEvents, { ...event, id, createdAt: new Date() }],
+    }));
+    return id;
+  },
+
+  getUnreadNotifications: (role) =>
+    get().notifications.filter((n) => n.targetRole === role && !n.read),
 }));
