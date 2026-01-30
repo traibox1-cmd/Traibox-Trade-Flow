@@ -19,6 +19,7 @@ import FundingDesk from "@/pages/FundingDesk";
 import DealAssistant from "@/pages/DealAssistant";
 import Counterparties from "@/pages/Counterparties";
 import RiskPolicy from "@/pages/RiskPolicy";
+import Settlement from "@/pages/Settlement";
 import Evidence from "@/pages/Evidence";
 import TradeWorkspace from "@/pages/TradeWorkspace";
 
@@ -46,6 +47,7 @@ function Router() {
             <Route path="/deal-assistant" component={DealAssistant} />
             <Route path="/counterparties" component={Counterparties} />
             <Route path="/risk-policy" component={RiskPolicy} />
+            <Route path="/settlement" component={Settlement} />
             <Route path="/evidence" component={Evidence} />
             
             {/* Shared Routes */}
