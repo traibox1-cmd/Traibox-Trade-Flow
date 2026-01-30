@@ -50,9 +50,11 @@ export default function TradeIntelligence() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState("auto");
   const [pendingTradeUpdates, setPendingTradeUpdates] = useState<AIResponse["trade_updates"] | null>(null);
+  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { addTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
+  const { trades, addTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
+  const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,6 +81,17 @@ export default function TradeIntelligence() {
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
           mode,
+          tradeContext: selectedTrade ? {
+            id: selectedTrade.id,
+            title: selectedTrade.title,
+            corridor: selectedTrade.corridor,
+            goods: selectedTrade.goods,
+            value: selectedTrade.value,
+            currency: selectedTrade.currency,
+            incoterms: selectedTrade.incoterms,
+            parties: selectedTrade.parties,
+            timelineStep: selectedTrade.timelineStep,
+          } : undefined,
         }),
       });
 
@@ -292,7 +305,7 @@ export default function TradeIntelligence() {
   return (
     <div className="h-full flex flex-col bg-background">
       <div className="px-8 py-4 border-b border-border flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Trade Intelligence</h1>
             {aiStatus === 'demo' && (
@@ -301,10 +314,30 @@ export default function TradeIntelligence() {
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">AI-powered trade planning + execution</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-muted-foreground">AI-powered trade planning + execution</p>
+            {selectedTrade && (
+              <span className="text-xs text-muted-foreground">
+                • Context: <span className="font-medium text-primary">Trade {selectedTrade.id}</span>
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
+          <select
+            value={selectedTradeId || ''}
+            onChange={(e) => setSelectedTradeId(e.target.value || null)}
+            className="text-sm bg-card border border-border rounded-lg px-3 py-1.5 text-foreground"
+            data-testid="select-trade-context"
+          >
+            <option value="">No trade selected</option>
+            {trades.map((trade) => (
+              <option key={trade.id} value={trade.id}>
+                {trade.title} ({trade.id})
+              </option>
+            ))}
+          </select>
           {MODES.map((m) => (
             <button
               key={m.id}

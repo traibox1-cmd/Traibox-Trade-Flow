@@ -32,7 +32,7 @@ export type AIResponse = {
   };
 };
 
-function generateDemoResponse(messages: Array<{ role: string; content: string }>, mode: string): AIResponse {
+function generateDemoResponse(messages: Array<{ role: string; content: string }>, mode: string, tradeContext?: any): AIResponse {
   const lastUserMessage = messages[messages.length - 1]?.content || "";
   const lower = lastUserMessage.toLowerCase();
 
@@ -240,13 +240,30 @@ function extractTradeFromMessage(message: string): { updates: AIResponse["trade_
 
 export async function createStructuredChatCompletion(
   messages: Array<{ role: string; content: string }>,
-  mode: string = "auto"
+  mode: string = "auto",
+  tradeContext?: any
 ): Promise<AIResponse> {
   if (!hasValidApiKey) {
-    return generateDemoResponse(messages, mode);
+    return generateDemoResponse(messages, mode, tradeContext);
   }
 
   let systemPrompt = "";
+  
+  // Add trade context to system prompt if available
+  let contextSection = "";
+  if (tradeContext) {
+    contextSection = `\n\nCURRENT TRADE CONTEXT (T-${tradeContext.id}):\n`;
+    if (tradeContext.title) contextSection += `Title: ${tradeContext.title}\n`;
+    if (tradeContext.corridor) contextSection += `Corridor: ${tradeContext.corridor}\n`;
+    if (tradeContext.goods) contextSection += `Goods: ${tradeContext.goods}\n`;
+    if (tradeContext.value) contextSection += `Value: ${tradeContext.currency || 'USD'} ${tradeContext.value.toLocaleString()}\n`;
+    if (tradeContext.incoterms) contextSection += `Incoterms: ${tradeContext.incoterms}\n`;
+    if (tradeContext.parties && tradeContext.parties.length > 0) {
+      contextSection += `Parties: ${tradeContext.parties.map((p: any) => `${p.name} (${p.role})`).join(', ')}\n`;
+    }
+    if (tradeContext.timelineStep) contextSection += `Current step: ${tradeContext.timelineStep}\n`;
+    contextSection += `\nAll responses must be scoped to this trade. Reference it by T-${tradeContext.id}.`;
+  }
   
   if (mode === "deal-assistant") {
     systemPrompt = `You are a Deal Assistant for trade financiers. Analyze funding requests and provide:
@@ -260,7 +277,7 @@ export async function createStructuredChatCompletion(
 }
 
 Focus on: credit risk, corridor risk, documentation gaps, pricing recommendations.
-Be concise and professional.`;
+Be concise and professional.${contextSection}`;
   } else {
     systemPrompt = `You are TRAIBOX, an AI trade assistant. ALWAYS respond with valid JSON in this exact format:
 {
@@ -272,7 +289,7 @@ Be concise and professional.`;
 
 Action types: create-trade, compliance, funding, payment, proof-pack, invite-partner
 Only include trade_updates if creating/updating a trade.
-Keep responses concise and actionable.`;
+Keep responses concise and actionable.${contextSection}`;
   }
 
   const allMessages = [
@@ -307,9 +324,10 @@ Keep responses concise and actionable.`;
 
 export async function* streamChatCompletion(
   messages: Array<{ role: string; content: string }>,
-  mode: string = "auto"
+  mode: string = "auto",
+  tradeContext?: any
 ) {
-  const response = await createStructuredChatCompletion(messages, mode);
+  const response = await createStructuredChatCompletion(messages, mode, tradeContext);
   const jsonStr = JSON.stringify(response);
   
   for (const char of jsonStr) {

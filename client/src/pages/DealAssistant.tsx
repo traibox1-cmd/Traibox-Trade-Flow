@@ -32,7 +32,9 @@ export default function DealAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
+  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,6 +60,17 @@ export default function DealAssistant() {
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
           mode: "funding",
+          tradeContext: selectedTrade ? {
+            id: selectedTrade.id,
+            title: selectedTrade.title,
+            corridor: selectedTrade.corridor,
+            goods: selectedTrade.goods,
+            value: selectedTrade.value,
+            currency: selectedTrade.currency,
+            incoterms: selectedTrade.incoterms,
+            parties: selectedTrade.parties,
+            timelineStep: selectedTrade.timelineStep,
+          } : undefined,
         }),
       });
 
@@ -155,20 +168,44 @@ export default function DealAssistant() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-8 py-6 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-title-deal-assistant">
-            Deal Assistant
-          </h1>
-          {aiStatus === 'demo' && (
-            <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
-              Demo Mode
-            </span>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-title-deal-assistant">
+                Deal Assistant
+              </h1>
+              {aiStatus === 'demo' && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
+                  Demo Mode
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-sm text-muted-foreground">
+                AI-powered deal analysis and risk assessment
+              </p>
+              {selectedTrade && (
+                <span className="text-xs text-muted-foreground">
+                  • Context: <span className="font-medium text-primary">Trade {selectedTrade.id}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          <select
+            value={selectedTradeId || ''}
+            onChange={(e) => setSelectedTradeId(e.target.value || null)}
+            className="text-sm bg-card border border-border rounded-lg px-3 py-1.5 text-foreground"
+            data-testid="select-trade-context"
+          >
+            <option value="">No trade selected</option>
+            {trades.map((trade) => (
+              <option key={trade.id} value={trade.id}>
+                {trade.title} ({trade.id})
+              </option>
+            ))}
+          </select>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          AI-powered deal analysis and risk assessment
-        </p>
       </div>
 
       <div className="flex-1 overflow-auto p-8">
