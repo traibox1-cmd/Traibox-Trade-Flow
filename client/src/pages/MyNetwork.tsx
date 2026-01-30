@@ -1,80 +1,435 @@
-import { useState } from "react";
-import { Plus, Users, Mail } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { TBCard } from "../components/tb/TBCard";
+import { TBChip } from "../components/tb/TBChip";
+import {
+  BadgeCheck,
+  Globe,
+  Handshake,
+  Lock,
+  Puzzle,
+  Sparkles,
+  Swords,
+  UserPlus,
+  Plus,
+  Mail,
+} from "lucide-react";
+
+type Partner = {
+  id: string;
+  name: string;
+  region: string;
+  capabilities: string[];
+  trust: "verified" | "partner" | "new";
+  visibility: "private" | "shared";
+};
+
+const partners: Partner[] = [
+  {
+    id: "p1",
+    name: "NordWerk Logistics",
+    region: "EU",
+    capabilities: ["Forwarding", "Customs", "Trade docs"],
+    trust: "verified",
+    visibility: "private",
+  },
+  {
+    id: "p2",
+    name: "Aster Mills",
+    region: "SEA",
+    capabilities: ["Manufacturing", "QA", "Insurance"],
+    trust: "partner",
+    visibility: "shared",
+  },
+  {
+    id: "p3",
+    name: "Kijani Cooperative",
+    region: "Africa",
+    capabilities: ["Aggregation", "Fulfillment", "Local compliance"],
+    trust: "new",
+    visibility: "private",
+  },
+];
+
+function PartnerCard({ p }: { p: Partner }) {
+  const tone =
+    p.trust === "verified"
+      ? "success"
+      : p.trust === "partner"
+        ? "neutral"
+        : "warn";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className="rounded-2xl border bg-card/60 p-4 hover:bg-card transition-colors"
+      data-testid={`card-partner-${p.id}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div
+              className="font-medium truncate"
+              data-testid={`text-partner-name-${p.id}`}
+            >
+              {p.name}
+            </div>
+            <TBChip tone={tone as any} dataTestId={`chip-partner-trust-${p.id}`}>
+              {p.trust === "verified"
+                ? "Verified"
+                : p.trust === "partner"
+                  ? "Partner"
+                  : "New"}
+            </TBChip>
+          </div>
+          <div
+            className="mt-1 text-xs text-muted-foreground"
+            data-testid={`text-partner-region-${p.id}`}
+          >
+            {p.region}
+          </div>
+          <div
+            className="mt-3 flex flex-wrap gap-2"
+            data-testid={`list-partner-caps-${p.id}`}
+          >
+            {p.capabilities.map((c) => (
+              <div
+                key={c}
+                className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px]"
+              >
+                {c}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-2">
+          <div
+            className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            data-testid={`text-partner-visibility-${p.id}`}
+          >
+            <Lock className="h-3.5 w-3.5" />
+            {p.visibility === "private" ? "Private" : "Shared"}
+          </div>
+          <Button size="sm" className="h-8" data-testid={`button-connect-${p.id}`}>
+            Connect
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function MyNetwork() {
+  const [query, setQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return partners;
+    return partners.filter((p) => p.name.toLowerCase().includes(q));
+  }, [query]);
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-8 py-6 border-b border-border flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-light tracking-tight text-foreground">My Network</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage trade networks and partner connections</p>
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-8 md:py-10">
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2">
+            <div
+              className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10 border border-primary/15"
+              aria-hidden="true"
+            >
+              <Handshake className="h-4 w-4 text-primary" />
+            </div>
+            <h1
+              className="font-semibold text-2xl tracking-tight md:text-3xl"
+              data-testid="text-title-network"
+            >
+              My Network
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground" data-testid="text-subtitle-network">
+            Private-by-default partners, integrations, and matchmaking.
+          </p>
         </div>
-        
-        <div className="flex gap-3">
-          <button
-            data-testid="button-join-network"
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" className="h-9" data-testid="button-import">
+            <Puzzle className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button 
+            variant="secondary" 
+            className="h-9" 
             onClick={() => setShowJoinModal(true)}
-            className="px-4 py-2 bg-card text-foreground border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+            data-testid="button-join-network"
           >
-            <Mail className="w-4 h-4" />
-            Join Network
-          </button>
-          <button
-            data-testid="button-create-network"
+            <Mail className="mr-2 h-4 w-4" />
+            Join
+          </Button>
+          <Button 
+            className="h-9" 
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center gap-2"
+            data-testid="button-create-network"
           >
-            <Plus className="w-4 h-4" />
-            Create Network
-          </button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create
+          </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-8">
-        <div className="space-y-4">
-          {[
-            { name: "Global Cotton Network", members: 24, status: "Active" },
-            { name: "EU Trade Alliance", members: 18, status: "Active" },
-            { name: "Asia-Pacific Partners", members: 12, status: "Pending" },
-          ].map((network, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-6 hover:bg-accent transition-colors">
-              <div className="flex items-start justify-between">
-                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-foreground font-light">{network.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{network.members} members</p>
-                  </div>
+      <div className="mt-4">
+        <Tabs defaultValue="directory" data-testid="tabs-network">
+          <TabsList className="w-full justify-start" data-testid="tabslist-network">
+            <TabsTrigger value="directory" data-testid="tab-directory">
+              Directory
+            </TabsTrigger>
+            <TabsTrigger value="integrations" data-testid="tab-integrations">
+              Integrations
+            </TabsTrigger>
+            <TabsTrigger value="invites" data-testid="tab-invites">
+              Invites
+            </TabsTrigger>
+            <TabsTrigger value="matchmaking" data-testid="tab-matchmaking">
+              Matchmaking
+            </TabsTrigger>
+            <TabsTrigger value="challenges" data-testid="tab-challenges">
+              Challenges
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="directory" className="mt-4" data-testid="panel-directory">
+            <TBCard
+              title="Directory"
+              subtitle="A calm view into your trusted graph"
+              state="idle"
+              icon={<Globe className="h-4 w-4" />}
+              dataTestId="card-directory"
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search partners…"
+                  data-testid="input-partner-search"
+                />
+                <Button variant="secondary" data-testid="button-add-partner">
+                  Add
+                </Button>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                {filtered.map((p) => (
+                  <PartnerCard key={p.id} p={p} />
+                ))}
+              </div>
+
+              <div
+                className="mt-5 rounded-2xl border bg-background/60 p-4"
+                data-testid="callout-privacy"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <div className="text-sm font-medium">Visibility cues</div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs ${
-                  network.status === "Active" 
-                    ? "bg-green-500/20 text-green-400" 
-                    : "bg-yellow-500/20 text-yellow-400"
-                }`}>
-                  {network.status}
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Everything is private by default. Share a partner only when you explicitly invite them into a trade.
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="integrations" className="mt-4" data-testid="panel-integrations">
+            <TBCard
+              title="Integrations"
+              subtitle="Connect tools you already trust"
+              state="idle"
+              icon={<Puzzle className="h-4 w-4" />}
+              dataTestId="card-integrations"
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                {[
+                  { name: "Document vault", desc: "Bring your own DMS" },
+                  { name: "Sanctions screening", desc: "Policy-aligned providers" },
+                  { name: "Bank rails", desc: "SWIFT / local" },
+                  { name: "E-sign", desc: "Audit-ready signatures" },
+                ].map((i) => (
+                  <div
+                    key={i.name}
+                    className="rounded-2xl border bg-background/60 p-4"
+                    data-testid={`card-integration-${i.name
+                      .replace(/\s+/g, "-")
+                      .toLowerCase()}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">{i.name}</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {i.desc}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8"
+                        data-testid={`button-connect-${i.name
+                          .replace(/\s+/g, "-")
+                          .toLowerCase()}`}
+                      >
+                        Connect
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="invites" className="mt-4" data-testid="panel-invites">
+            <TBCard
+              title="Invites"
+              subtitle="Grant access with intent"
+              state="idle"
+              icon={<UserPlus className="h-4 w-4" />}
+              dataTestId="card-invites"
+            >
+              <div
+                className="rounded-2xl border bg-background/60 p-4"
+                data-testid="empty-invites"
+              >
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-primary" />
+                  <div className="text-sm font-medium">No pending invites</div>
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Invitations are scoped to a trade, and can be revoked at any time.
+                </div>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="matchmaking" className="mt-4" data-testid="panel-matchmaking">
+            <TBCard
+              title="Matchmaking"
+              subtitle="Get paired with partners who can execute"
+              state="ready"
+              icon={<Sparkles className="h-4 w-4" />}
+              dataTestId="card-matchmaking"
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                {[
+                  { name: "Forwarder in VN", note: "SEA corridor, verified" },
+                  { name: "LC advising bank", note: "SG-based, fast settlement" },
+                  { name: "Cargo insurer", note: "Evidence-first policy" },
+                  { name: "Trade finance desk", note: "Invoice factoring" },
+                ].map((m) => (
+                  <div
+                    key={m.name}
+                    className="rounded-2xl border bg-background/60 p-4"
+                    data-testid={`card-match-${m.name
+                      .replace(/\s+/g, "-")
+                      .toLowerCase()}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">{m.name}</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {m.note}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-8"
+                        data-testid={`button-request-${m.name
+                          .replace(/\s+/g, "-")
+                          .toLowerCase()}`}
+                      >
+                        Request
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div
+                className="mt-4 rounded-2xl border bg-background/60 p-4"
+                data-testid="callout-private-default"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <div className="text-sm font-medium">Private-by-default</div>
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Matchmaking uses your intent signals—not your data exhaust. You control what's shared.
+                </div>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="challenges" className="mt-4" data-testid="panel-challenges">
+            <TBCard
+              title="Challenges"
+              subtitle="Turn readiness into a competitive edge"
+              state="idle"
+              icon={<Swords className="h-4 w-4" />}
+              dataTestId="card-challenges"
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                {[
+                  { title: "KYC completeness", reward: "Faster onboarding" },
+                  { title: "Evidence hygiene", reward: "Lower counterparty friction" },
+                  { title: "Compliance clean runs", reward: "Higher trust tier" },
+                  { title: "Settlement speed", reward: "Lower fees" },
+                ].map((c) => (
+                  <div
+                    key={c.title}
+                    className="rounded-2xl border bg-background/60 p-4"
+                    data-testid={`card-challenge-${c.title
+                      .replace(/\s+/g, "-")
+                      .toLowerCase()}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">{c.title}</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          Reward: {c.reward}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8"
+                        data-testid={`button-view-${c.title
+                          .replace(/\s+/g, "-")
+                          .toLowerCase()}`}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TBCard>
+          </TabsContent>
+        </Tabs>
       </div>
 
+      {/* Create Network Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowCreateModal(false)}>
           <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-light text-foreground mb-4">Create Network</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Create Network</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-muted-foreground mb-2">Network Name</label>
                 <input
                   data-testid="input-network-name"
                   type="text"
-                  className="w-full bg-card border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-blue-500/50"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
                   placeholder="Enter network name"
                 />
               </div>
@@ -82,7 +437,7 @@ export default function MyNetwork() {
                 <label className="block text-sm text-muted-foreground mb-2">Description</label>
                 <textarea
                   data-testid="input-network-description"
-                  className="w-full bg-card border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-blue-500/50"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
                   rows={3}
                   placeholder="Optional description"
                 />
@@ -97,7 +452,7 @@ export default function MyNetwork() {
                 </button>
                 <button
                   data-testid="button-confirm-create"
-                  className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Create
                 </button>
@@ -107,17 +462,18 @@ export default function MyNetwork() {
         </div>
       )}
 
+      {/* Join Network Modal */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowJoinModal(false)}>
           <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-light text-foreground mb-4">Join Network</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Join Network</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-muted-foreground mb-2">Invitation Code</label>
                 <input
                   data-testid="input-invitation-code"
                   type="text"
-                  className="w-full bg-card border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-blue-500/50"
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
                   placeholder="Enter invitation code"
                 />
               </div>
@@ -131,7 +487,7 @@ export default function MyNetwork() {
                 </button>
                 <button
                   data-testid="button-confirm-join"
-                  className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Join
                 </button>
