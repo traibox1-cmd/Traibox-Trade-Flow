@@ -39,12 +39,13 @@ Preferred communication style: Simple, everyday language.
 - **Path Aliases**: `@/` for client source, `@shared/` for shared modules
 
 ### Key Features
-- Multi-mode AI chat (auto, trade-plan, compliance, funding, payments, docs, contracts, track)
-- Role-based UI (operator vs financier personas)
-- Trade network management with partner connections
-- Finance module for payments and funding operations
-- Assurance module for compliance checks, reports, proofs, and blockchain anchoring
-- Collapsible sidebar navigation with pin functionality
+- **AI Chat with Bulletproof Demo Fallback**: Multi-mode streaming chat (auto, trade-plan, compliance, funding, payments, docs, contracts, track) with contextual responses. If OpenAI fails for ANY reason (429 quota, 401 auth, network errors), automatically falls back to high-quality simulated responses with action card generation
+- **Role-based UI**: Dual personas (Operator vs Financier) with distinct navigation, routes, and default landing pages. Persists across refresh via localStorage
+- **Trade Intelligence**: Streaming chat with "Thinking..." state, real-time action card generation with rich descriptions, and intent detection
+- **My Network**: Complete 5-tab interface (Directory, Integrations, Invites, Matchmaking, Challenges) with Create/Join network actions, partner cards, privacy cues, and search
+- **Finance Module**: Payments and Funding tabs with detailed views
+- **Compliance & Proofs**: Multi-tab interface (Checks, Reports, Proof Packs, Anchoring)
+- **Perplexity-like Sidebar**: Compact icon rail with expand/pin functionality, inline SVG logo (4-square grid), theme-aware styling
 
 ## External Dependencies
 
@@ -69,3 +70,39 @@ Preferred communication style: Simple, everyday language.
 - react-day-picker for date selection
 - recharts for data visualization
 - vaul for drawer components
+
+## Recent Changes (January 30, 2026)
+
+### Bulletproof AI Chat Demo Fallback
+- Enhanced `server/lib/openai.ts` with comprehensive error handling that catches ALL OpenAI failures (429 quota, 401 auth, network errors, server errors)
+- Implemented `generateDemoResponse()` function that analyzes user queries and generates contextual responses for compliance, funding, payments, proof packs, partners, etc.
+- Demo mode still generates action cards with proper intent detection, ensuring the demo never breaks
+- Added enhanced intent detection with additional keywords for better action card triggering
+
+### Trade Intelligence UI Improvements
+- Added "Thinking..." indicator with spinning loader when AI is processing
+- Upgraded action cards with meaningful titles and descriptions:
+  - Compliance → "Run Compliance Check" with sanctions/KYC description
+  - Funding → "Request Trade Funding" with LC/factoring options
+  - Payment → "Create Payment Instruction" with routing details
+  - Proof Pack → "Generate Proof Pack" with document package description
+  - Invite Partner → "Invite Trade Partner" with network invitation flow
+- Theme-aware styling using CSS variables (primary, foreground, muted-foreground)
+- Premium styling: rounded-2xl cards, font-semibold headings, shadow-sm on buttons
+
+### Role Switching Confirmation
+- Operator mode: My Space, Trade Intelligence, My Network, Finance, Compliance & Proofs, Settings
+- Financier mode: Capital Console, Funding Desk, Deal Assistant, Counterparties, Risk & Policy, Settlement, Evidence, Settings
+- Role changes trigger navigation updates and default landing page redirects
+- Persists across page refresh via localStorage
+
+### My Network Restoration
+- All 5 tabs fully functional: Directory, Integrations, Invites, Matchmaking, Challenges
+- Create Network and Join Network actions in header (alongside Import)
+- Directory tab includes search, partner cards with privacy cues, and Add partner functionality
+- Partner cards display trust level (Verified/Partner/New), region, capabilities, and visibility (Private/Shared)
+
+### Design System
+- Logo: Inline SVG grid pattern (4 squares) in sidebar/header, theme-aware with primary color
+- Premium in-between styling maintained: rounded-xl, font-semibold, precise spacing
+- Consistent icon set across both roles (no regressions)
