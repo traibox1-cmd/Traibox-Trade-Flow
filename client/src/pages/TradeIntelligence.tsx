@@ -104,12 +104,52 @@ export default function TradeIntelligence() {
               });
             } else if (data.type === "done") {
               if (data.intents && data.intents.length > 0) {
-                const newCards: ActionCard[] = data.intents.map((intent: string, idx: number) => ({
-                  id: `card-${Date.now()}-${idx}`,
-                  title: intent,
-                  type: intent.toLowerCase().replace(/\s+/g, "-"),
-                  description: `Action detected: ${intent}`,
-                }));
+                const actionDescriptions: Record<string, { title: string; desc: string; route: string }> = {
+                  "compliance": { 
+                    title: "Run Compliance Check", 
+                    desc: "Verify sanctions, KYC, and regulatory compliance for this trade",
+                    route: "/compliance-proofs?tab=checks"
+                  },
+                  "funding": { 
+                    title: "Request Trade Funding", 
+                    desc: "Explore LC, invoice factoring, or supply chain finance options",
+                    route: "/finance?tab=funding"
+                  },
+                  "payment": { 
+                    title: "Create Payment Instruction", 
+                    desc: "Set up cross-border payment routing and settlement",
+                    route: "/finance?tab=payments"
+                  },
+                  "proof-pack": { 
+                    title: "Generate Proof Pack", 
+                    desc: "Create verified document package with invoices, certificates, and compliance records",
+                    route: "/compliance-proofs?tab=proofs"
+                  },
+                  "invite-partner": { 
+                    title: "Invite Trade Partner", 
+                    desc: "Send private invitation to join this trade network",
+                    route: "/network"
+                  },
+                  "trade-plan": { 
+                    title: "Create Trade Plan", 
+                    desc: "Structure your trade with milestones, documentation, and risk assessment",
+                    route: "/space"
+                  },
+                };
+
+                const newCards: ActionCard[] = data.intents.map((intent: string, idx: number) => {
+                  const info = actionDescriptions[intent] || { 
+                    title: intent, 
+                    desc: `Action available: ${intent}`,
+                    route: "/space"
+                  };
+                  return {
+                    id: `card-${Date.now()}-${idx}`,
+                    title: info.title,
+                    type: intent,
+                    description: info.desc,
+                  };
+                });
                 setActionCards((prev) => [...prev, ...newCards]);
               }
             } else if (data.type === "error") {
@@ -138,8 +178,8 @@ export default function TradeIntelligence() {
     <div className="h-full flex flex-col bg-background">
       <div className="px-8 py-4 border-b border-border flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-light tracking-tight text-foreground">Trade Intelligence</h1>
-          <p className="text-sm text-muted-foreground mt-1">AI-powered trade workspace</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Trade Intelligence</h1>
+          <p className="text-sm text-muted-foreground mt-1">AI-powered chat + controllers</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -148,9 +188,9 @@ export default function TradeIntelligence() {
               key={m.id}
               data-testid={`mode-${m.id}`}
               onClick={() => setMode(m.id)}
-              className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium ${
                 mode === m.id
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                  ? "bg-primary/20 text-primary border border-primary/30"
                   : "bg-card text-muted-foreground border border-border hover:bg-accent"
               }`}
             >
@@ -181,9 +221,9 @@ export default function TradeIntelligence() {
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <Bot className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                  <h3 className="text-lg font-light text-muted-foreground">Start a conversation</h3>
-                  <p className="text-sm text-white/30 mt-2">Ask about trade operations, compliance, or payments</p>
+                  <Bot className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground">Start a conversation with TRAIBOX</h3>
+                  <p className="text-sm text-muted-foreground mt-2">Ask about trade operations, compliance, funding, or payments</p>
                 </div>
               </div>
             )}
@@ -192,17 +232,22 @@ export default function TradeIntelligence() {
               {messages.map((msg, idx) => (
                 <div key={idx} className="flex gap-4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === "user" ? "bg-accent" : "bg-blue-500/20"
+                    msg.role === "user" ? "bg-accent" : "bg-primary/20"
                   }`}>
                     {msg.role === "user" ? (
                       <User className="w-4 h-4 text-muted-foreground" />
                     ) : (
-                      <Bot className="w-4 h-4 text-blue-400" />
+                      <Bot className="w-4 h-4 text-primary" />
                     )}
                   </div>
                   <div className="flex-1 pt-1">
-                    <div className={`text-sm ${msg.role === "user" ? "text-white/90" : "text-white/80"}`}>
-                      {msg.content}
+                    <div className={`text-sm whitespace-pre-wrap ${msg.role === "user" ? "text-foreground" : "text-foreground/90"}`}>
+                      {msg.content || (loading && idx === messages.length - 1 ? (
+                        <span className="text-muted-foreground flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Thinking...
+                        </span>
+                      ) : "")}
                     </div>
                   </div>
                 </div>
@@ -216,14 +261,14 @@ export default function TradeIntelligence() {
               )}
 
               {actionCards.map((card) => (
-                <div key={card.id} className="bg-card border border-border rounded-lg p-4">
-                  <h4 className="text-foreground font-light mb-1">{card.title}</h4>
-                  <p className="text-sm text-muted-foreground">{card.description}</p>
+                <div key={card.id} className="bg-card border border-border rounded-2xl p-5 hover:bg-accent/50 transition-colors">
+                  <h4 className="text-foreground font-semibold mb-1.5">{card.title}</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
                   <button
                     data-testid={`action-${card.type}`}
-                    className="mt-3 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-md text-sm hover:bg-blue-500/30 transition-colors"
+                    className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                   >
-                    Execute
+                    Execute Action
                   </button>
                 </div>
               ))}
@@ -248,7 +293,7 @@ export default function TradeIntelligence() {
                 data-testid="button-send"
                 onClick={() => handleSend()}
                 disabled={loading || !input.trim()}
-                className="px-6 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-6 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>

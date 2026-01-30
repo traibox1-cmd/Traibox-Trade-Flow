@@ -53,8 +53,9 @@ export async function* streamChatCompletion(
   messages: Array<{ role: string; content: string }>,
   mode: string = "auto"
 ) {
+  // Demo fallback if no API key
   if (!hasValidApiKey) {
-    const demoResponse = DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
+    const demoResponse = generateDemoResponse(messages, mode);
     for (const char of demoResponse) {
       yield char;
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -85,16 +86,43 @@ export async function* streamChatCompletion(
       }
     }
   } catch (error: any) {
-    if (error?.status === 429 || error?.code === "insufficient_quota") {
-      const demoResponse = DEMO_RESPONSES[mode] || DEMO_RESPONSES.auto;
-      for (const char of demoResponse) {
-        yield char;
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-    } else {
-      throw error;
+    // Bulletproof demo fallback: catch ANY error (429, 401, network, server error, etc.)
+    console.error("OpenAI error, falling back to demo mode:", error);
+    const demoResponse = generateDemoResponse(messages, mode);
+    for (const char of demoResponse) {
+      yield char;
+      await new Promise((resolve) => setTimeout(resolve, 20));
     }
   }
+}
+
+function generateDemoResponse(messages: Array<{ role: string; content: string }>, mode: string): string {
+  const lastUserMessage = messages[messages.length - 1]?.content || "";
+  const lower = lastUserMessage.toLowerCase();
+  
+  // Generate contextual demo responses based on user query
+  if (lower.includes("compliance") || lower.includes("check") || lower.includes("kyc") || lower.includes("sanction")) {
+    return `I can help with compliance checks for your trade. Based on your query, here's what I recommend:\n\n1. **Sanctions Screening**: Run automated checks against OFAC, EU, and UN sanctions lists\n2. **KYC Verification**: Verify counterparty identity and business registration\n3. **Document Review**: Ensure all required compliance documentation is complete\n\nWould you like me to initiate a compliance check for a specific counterparty? (Demo mode active - using simulated AI responses)`;
+  }
+  
+  if (lower.includes("fund") || lower.includes("financ") || lower.includes("capital") || lower.includes("offer")) {
+    return `I can assist with trade finance options for your transaction. Here are potential funding structures:\n\n**Option 1: Letter of Credit (LC)**\n- Cost: 1.5-2.5% of transaction value\n- Timeline: 5-7 business days\n- Best for: High-value trades with established banks\n\n**Option 2: Invoice Factoring**\n- Cost: 2-4% of invoice value\n- Timeline: 1-2 business days\n- Best for: Immediate liquidity needs\n\n**Option 3: Supply Chain Finance**\n- Cost: 1-3% APR\n- Timeline: 3-5 business days\n- Best for: Long-term relationships\n\nShall I help you request funding? (Demo mode - OpenAI quota limit reached)`;
+  }
+  
+  if (lower.includes("pay") || lower.includes("payment") || lower.includes("settlement") || lower.includes("transfer")) {
+    return `I'll help you set up cross-border payment routing. Here are your options:\n\n**Traditional Rails:**\n- SWIFT: 2-3 days, $25-45 fees, widely accepted\n- ACH/SEPA: 1-2 days, lower fees, regional\n\n**Alternative Settlement:**\n- Stablecoin rails: Same-day, lower fees, requires crypto infrastructure\n- Payment providers: Instant, competitive FX rates\n\nFor your corridor, I recommend comparing settlement speed vs. cost. Would you like me to create a payment instruction? (Demo mode active)`;
+  }
+  
+  if (lower.includes("proof") || lower.includes("doc") || lower.includes("evidence") || lower.includes("certificate")) {
+    return `I can generate a comprehensive proof pack for your trade. This will include:\n\n- Commercial Invoice\n- Bill of Lading / Airway Bill\n- Certificate of Origin\n- Inspection Certificate\n- Insurance Certificate\n- Compliance verification records\n\nAll documents will be timestamped and ready for blockchain anchoring if needed. Shall I prepare the proof pack? (Demo mode - simulated response)`;
+  }
+  
+  if (lower.includes("partner") || lower.includes("invite") || lower.includes("network") || lower.includes("connect")) {
+    return `I can help you manage your trade network. Here's what I can do:\n\n- **Invite Partners**: Send private invitations to new counterparties\n- **Verify Credentials**: Check KYC status and trust level\n- **Match Opportunities**: Find verified partners for your corridor\n\nYour network operates on a private-by-default model — you control what's shared. Would you like to invite a partner or explore matchmaking? (Demo mode active)`;
+  }
+  
+  // Default response with context awareness
+  return `I'm TRAIBOX, your AI trade intelligence assistant. I can help you with:\n\n- **Trade Planning**: Corridor analysis, documentation, milestones\n- **Compliance**: Sanctions screening, KYC, policy checks\n- **Funding**: Compare financing options and request capital\n- **Payments**: Route cross-border payments efficiently\n- **Documentation**: Generate proof packs and certificates\n- **Network**: Invite partners and manage relationships\n\nWhat would you like to work on? (Demo mode active - OpenAI API unavailable)`;
 }
 
 function getSystemPromptForMode(mode: string): string {
@@ -132,26 +160,32 @@ export function detectIntent(message: string, mode: string): string[] {
   }
 
   if (mode === "auto" || mode === "compliance") {
-    if (lower.includes("compliance") || lower.includes("kyc") || lower.includes("sanction") || lower.includes("check")) {
+    if (lower.includes("compliance") || lower.includes("kyc") || lower.includes("sanction") || lower.includes("check") || lower.includes("verify")) {
       intents.push("compliance");
     }
   }
 
   if (mode === "auto" || mode === "funding") {
-    if (lower.includes("fund") || lower.includes("financ") || lower.includes("capital") || lower.includes("offer")) {
+    if (lower.includes("fund") || lower.includes("financ") || lower.includes("capital") || lower.includes("offer") || lower.includes("lc") || lower.includes("credit")) {
       intents.push("funding");
     }
   }
 
   if (mode === "auto" || mode === "payments") {
-    if (lower.includes("pay") || lower.includes("settlement") || lower.includes("transfer") || lower.includes("route")) {
+    if (lower.includes("pay") || lower.includes("settlement") || lower.includes("transfer") || lower.includes("route") || lower.includes("swift") || lower.includes("remit")) {
       intents.push("payment");
     }
   }
 
   if (mode === "auto" || mode === "docs") {
-    if (lower.includes("doc") || lower.includes("invoice") || lower.includes("certificate") || lower.includes("proof")) {
+    if (lower.includes("doc") || lower.includes("invoice") || lower.includes("certificate") || lower.includes("proof") || lower.includes("evidence")) {
       intents.push("proof-pack");
+    }
+  }
+
+  if (mode === "auto") {
+    if (lower.includes("partner") || lower.includes("invite") || lower.includes("network") || lower.includes("connect")) {
+      intents.push("invite-partner");
     }
   }
 
