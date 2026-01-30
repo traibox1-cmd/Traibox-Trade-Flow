@@ -14,6 +14,13 @@ import Finance from "@/pages/Finance";
 import ComplianceAndProofs from "@/pages/Assurance";
 import Settings from "@/pages/Settings";
 
+import CapitalConsole from "@/pages/CapitalConsole";
+import FundingDesk from "@/pages/FundingDesk";
+import DealAssistant from "@/pages/DealAssistant";
+import Counterparties from "@/pages/Counterparties";
+import RiskPolicy from "@/pages/RiskPolicy";
+import Evidence from "@/pages/Evidence";
+
 function Router() {
   return (
     <Switch>
@@ -24,11 +31,22 @@ function Router() {
       <Route>
         <AppShell>
           <Switch>
+            {/* Operator Routes */}
             <Route path="/space" component={MySpace} />
             <Route path="/intelligence" component={TradeIntelligence} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
             <Route path="/compliance-proofs" component={ComplianceAndProofs} />
+            
+            {/* Financier Routes */}
+            <Route path="/capital-console" component={CapitalConsole} />
+            <Route path="/funding-desk" component={FundingDesk} />
+            <Route path="/deal-assistant" component={DealAssistant} />
+            <Route path="/counterparties" component={Counterparties} />
+            <Route path="/risk-policy" component={RiskPolicy} />
+            <Route path="/evidence" component={Evidence} />
+            
+            {/* Shared Routes */}
             <Route path="/settings" component={Settings} />
             <Route component={NotFound} />
           </Switch>

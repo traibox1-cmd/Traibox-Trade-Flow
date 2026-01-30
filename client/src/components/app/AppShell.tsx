@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,11 @@ import {
   Boxes,
   Pin,
   PinOff,
+  LayoutDashboard,
+  Target,
+  Building2,
+  AlertTriangle,
+  FileCheck,
 } from "lucide-react";
 
 type NavItem = {
@@ -27,7 +32,7 @@ type NavItem = {
   submenu?: { label: string; href: string; testId: string }[];
 };
 
-const NAV_ITEMS: NavItem[] = [
+const OPERATOR_NAV: NavItem[] = [
   {
     href: "/space",
     label: "My Space",
@@ -72,6 +77,58 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Proof Packs", href: "/compliance-proofs?tab=proofs", testId: "nav-cp-proofs" },
       { label: "Anchoring", href: "/compliance-proofs?tab=anchoring", testId: "nav-cp-anchoring" },
     ],
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings2,
+    testId: "nav-settings",
+    subtitle: "Preferences",
+  },
+];
+
+const FINANCIER_NAV: NavItem[] = [
+  {
+    href: "/capital-console",
+    label: "Capital Console",
+    icon: LayoutDashboard,
+    testId: "nav-capital-console",
+    subtitle: "Portfolio view",
+  },
+  {
+    href: "/funding-desk",
+    label: "Funding Desk",
+    icon: Banknote,
+    testId: "nav-funding-desk",
+    subtitle: "Deal pipeline",
+  },
+  {
+    href: "/deal-assistant",
+    label: "Deal Assistant",
+    icon: Sparkles,
+    testId: "nav-deal-assistant",
+    subtitle: "AI-powered analysis",
+  },
+  {
+    href: "/counterparties",
+    label: "Counterparties",
+    icon: Building2,
+    testId: "nav-counterparties",
+    subtitle: "Credit profiles",
+  },
+  {
+    href: "/risk-policy",
+    label: "Risk & Policy",
+    icon: AlertTriangle,
+    testId: "nav-risk-policy",
+    subtitle: "Limits + checks",
+  },
+  {
+    href: "/evidence",
+    label: "Evidence",
+    icon: FileCheck,
+    testId: "nav-evidence",
+    subtitle: "Due diligence",
   },
   {
     href: "/settings",
@@ -156,6 +213,17 @@ function NavRail() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const { role } = useRole();
+
+  const NAV_ITEMS = role === "operator" ? OPERATOR_NAV : FINANCIER_NAV;
+
+  // Navigate to appropriate default page when role changes
+  useEffect(() => {
+    const defaultPath = role === "operator" ? "/space" : "/capital-console";
+    if (location === "/" || location === "") {
+      setLocation(defaultPath);
+    }
+  }, [role, location, setLocation]);
 
   const handleMouseEnter = () => {
     if (!isPinned) {
@@ -395,6 +463,9 @@ function NavRail() {
 
 function MobileNav() {
   const [location, setLocation] = useLocation();
+  const { role } = useRole();
+
+  const NAV_ITEMS = role === "operator" ? OPERATOR_NAV : FINANCIER_NAV;
 
   return (
     <div className="md:hidden" data-testid="mobile-nav">
