@@ -13,6 +13,7 @@ import MyNetwork from "@/pages/MyNetwork";
 import Finance from "@/pages/Finance";
 import ComplianceAndProofs from "@/pages/Assurance";
 import Settings from "@/pages/Settings";
+import TradePassport from "@/pages/TradePassport";
 
 import CapitalConsole from "@/pages/CapitalConsole";
 import FundingDesk from "@/pages/FundingDesk";
@@ -40,6 +41,7 @@ function Router() {
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
             <Route path="/compliance-proofs" component={ComplianceAndProofs} />
+            <Route path="/trade-passport" component={TradePassport} />
             
             {/* Financier Routes */}
             <Route path="/capital-console" component={CapitalConsole} />

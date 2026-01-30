@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X } from "lucide-react";
+import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppStore, type TradeDocument } from "@/lib/store";
 
 type FileAttachment = {
@@ -60,6 +61,7 @@ export default function TradeIntelligence() {
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [pendingTradeUpdates, setPendingTradeUpdates] = useState<AIResponse["trade_updates"] | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -246,6 +248,60 @@ export default function TradeIntelligence() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files).map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      }));
+      
+      setAttachments(prev => [...prev, ...newFiles]);
+      
+      // If no messages yet, create a "Create Trade from Documents" action
+      if (messages.length === 0) {
+        const fileNames = newFiles.map(f => f.name).join(", ");
+        setMessages([
+          {
+            role: "user",
+            content: `I've uploaded ${newFiles.length} document(s): ${fileNames}`,
+            attachments: newFiles,
+          },
+          {
+            role: "assistant",
+            content: "I can help you create a trade from these documents.",
+            structured: {
+              summary: "I can analyze these documents and create a trade plan with extracted details.",
+              missing_inputs: [],
+              next_actions: [
+                {
+                  type: "create-trade",
+                  label: "Create Trade from Documents",
+                  description: "Extract trade details from uploaded documents and create a new trade",
+                }
+              ],
+            },
+          },
+        ]);
+        setAttachments([]);
+      }
     }
   };
 
@@ -474,16 +530,38 @@ export default function TradeIntelligence() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div 
+          className="flex-1 overflow-y-auto px-8 py-6"
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Bot className="w-8 h-8 text-primary" />
+            <div className={`flex flex-col items-center justify-center h-full text-center transition-all ${dragActive ? 'scale-105' : ''}`}>
+              <div className={`w-32 h-32 rounded-3xl border-2 border-dashed flex items-center justify-center mb-6 transition-all ${dragActive ? 'border-primary bg-primary/10' : 'border-border bg-muted/30'}`}>
+                <Upload className={`w-12 h-12 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
               </div>
-              <h2 className="text-lg font-semibold mb-2">TRAIBOX AI</h2>
-              <p className="text-muted-foreground text-sm max-w-md">
-                Describe your trade and I'll help you plan it, run compliance, arrange funding, set up payments, and generate proof packs.
+              <h2 className="text-lg font-semibold mb-2">
+                {dragActive ? "Drop files to start a trade" : "TRAIBOX AI"}
+              </h2>
+              <p className="text-muted-foreground text-sm max-w-md mb-4">
+                {dragActive 
+                  ? "I'll analyze your documents and help you create a trade plan with extracted details" 
+                  : "Describe your trade, or drop documents to start. I'll help you plan, run compliance, arrange funding, and generate proof packs."
+                }
               </p>
+              {!dragActive && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-upload-docs"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Documents
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-6 max-w-3xl mx-auto">
@@ -551,30 +629,35 @@ export default function TradeIntelligence() {
         <div className="px-8 py-4 border-t border-border">
           <div className="max-w-3xl mx-auto space-y-3">
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center rounded-lg border border-border bg-background p-1" data-testid="toggle-chat-mode">
-                <button
-                  onClick={() => setChatMode("trade")}
-                  disabled={!selectedTradeId}
-                  className={`px-3 py-1 text-xs rounded transition-colors ${
-                    chatMode === "trade" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-accent"
-                  } ${!selectedTradeId ? "opacity-50 cursor-not-allowed" : ""}`}
-                  data-testid="button-mode-trade"
-                >
-                  Trade
-                </button>
-                <button
-                  onClick={() => setChatMode("explore")}
-                  className={`px-3 py-1 text-xs rounded transition-colors ${
-                    chatMode === "explore" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-accent"
-                  }`}
-                  data-testid="button-mode-explore"
-                >
-                  Explore
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center rounded-lg border border-border bg-background p-1" data-testid="toggle-chat-mode">
+                  <button
+                    onClick={() => setChatMode("trade")}
+                    disabled={!selectedTradeId}
+                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                      chatMode === "trade" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-accent"
+                    } ${!selectedTradeId ? "opacity-50 cursor-not-allowed" : ""}`}
+                    data-testid="button-mode-trade"
+                  >
+                    Trade
+                  </button>
+                  <button
+                    onClick={() => setChatMode("explore")}
+                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                      chatMode === "explore" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-accent"
+                    }`}
+                    data-testid="button-mode-explore"
+                  >
+                    Explore
+                  </button>
+                </div>
+                <div className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20" data-testid="pill-current-mode">
+                  Mode: {chatMode === "trade" ? "Trade" : "Explore"}
+                </div>
               </div>
               {chatMode === "explore" && (
                 <p className="text-xs text-muted-foreground">
@@ -618,6 +701,34 @@ export default function TradeIntelligence() {
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-3"
+                    disabled
+                    data-testid="button-voice"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Coming soon</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-3"
+                    disabled
+                    data-testid="button-camera"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Coming soon</TooltipContent>
+              </Tooltip>
               <input
                 type="text"
                 value={input}

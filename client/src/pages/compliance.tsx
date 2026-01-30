@@ -61,7 +61,7 @@ export default function CompliancePage() {
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
 
   useEffect(() => {
-    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "track-trace") {
+    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "track-trace" || tabParam === "passport") {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -218,6 +218,9 @@ export default function CompliancePage() {
             </TabsTrigger>
             <TabsTrigger value="track-trace" data-testid="tab-track-trace">
               Track & Trace
+            </TabsTrigger>
+            <TabsTrigger value="passport" data-testid="tab-passport">
+              Trade Passport
             </TabsTrigger>
           </TabsList>
 
@@ -432,6 +435,35 @@ export default function CompliancePage() {
                 <div className="mt-1 text-sm text-muted-foreground">
                   View logistics milestones and shipping events from the Trade Workspace Logistics tab.
                 </div>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="passport" className="mt-4" data-testid="panel-passport">
+            <TBCard
+              title="Trade Passport"
+              subtitle="Identity, compliance status, and shareable credentials"
+              state="idle"
+              icon={<BadgeCheck className="h-4 w-4" />}
+              dataTestId="card-passport-panel"
+            >
+              <div
+                className="rounded-2xl border bg-background/60 p-4"
+                data-testid="passport-redirect-card"
+              >
+                <div className="text-sm font-medium mb-2">View your Trade Passport</div>
+                <div className="text-sm text-muted-foreground mb-3">
+                  Access your complete identity verification, beneficial ownership, compliance status, and share controls.
+                </div>
+                <Button 
+                  variant="secondary" 
+                  className="h-8"
+                  onClick={() => window.location.href = '/trade-passport'}
+                  data-testid="button-view-passport"
+                >
+                  <BadgeCheck className="mr-2 h-3 w-3" />
+                  View Trade Passport
+                </Button>
               </div>
             </TBCard>
           </TabsContent>

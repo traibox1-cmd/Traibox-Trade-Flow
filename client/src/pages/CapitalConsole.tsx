@@ -109,7 +109,7 @@ export default function CapitalConsole() {
       </div>
 
       <div className="px-8 py-4 border-b border-border bg-muted/30">
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Clock className="h-3 w-3" />
@@ -137,6 +137,13 @@ export default function CapitalConsole() {
               <span className="text-xs font-medium">Total Deployed</span>
             </div>
             <div className="text-lg font-bold">{formatAmount(kpis.approvedAmount)}</div>
+          </div>
+          <div className="rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => window.location.href = '/trade-passport'} data-testid="card-trade-passport-financier">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <FileText className="h-3 w-3" />
+              <span className="text-xs font-medium">Trade Passport</span>
+            </div>
+            <div className="text-sm font-medium text-yellow-600">Missing items</div>
           </div>
         </div>
       </div>

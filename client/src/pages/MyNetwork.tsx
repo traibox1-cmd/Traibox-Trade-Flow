@@ -82,20 +82,30 @@ function PartnerCard({ p, onConnect }: { p: Partner; onConnect: (id: string) => 
             <Lock className="h-3.5 w-3.5" />
             {p.visibility === "private" ? "Private" : "Shared"}
           </div>
-          <Button 
-            size="sm" 
-            className="h-8" 
-            onClick={() => onConnect(p.id)}
-            disabled={p.connectionStatus === "connected"}
-            data-testid={`button-connect-${p.id}`}
-          >
-            {p.connectionStatus === "connected" ? (
-              <>
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Connected
-              </>
-            ) : p.connectionStatus === "pending" ? "Pending" : "Connect"}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost"
+              size="sm" 
+              className="h-8 text-xs px-2" 
+              data-testid={`button-edit-capabilities-${p.id}`}
+            >
+              Edit
+            </Button>
+            <Button 
+              size="sm" 
+              className="h-8" 
+              onClick={() => onConnect(p.id)}
+              disabled={p.connectionStatus === "connected"}
+              data-testid={`button-connect-${p.id}`}
+            >
+              {p.connectionStatus === "connected" ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Connected
+                </>
+              ) : p.connectionStatus === "pending" ? "Pending" : "Connect"}
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

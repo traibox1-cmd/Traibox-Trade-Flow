@@ -63,7 +63,7 @@ export default function MySpace() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-4 gap-6 mb-8">
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Active Trades</div>
             <div className="text-3xl font-semibold">{activeTrades}</div>
@@ -75,6 +75,17 @@ export default function MySpace() {
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Network Partners</div>
             <div className="text-3xl font-semibold">{partners.length}</div>
+          </div>
+          <div 
+            className="bg-card border border-border rounded-xl p-6 cursor-pointer hover:border-primary/30 transition-colors"
+            onClick={() => setLocation('/trade-passport')}
+            data-testid="card-trade-passport"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <div className="text-muted-foreground text-xs uppercase tracking-wider">Trade Passport</div>
+            </div>
+            <div className="text-sm font-medium text-yellow-600">Missing items</div>
           </div>
         </div>
 
