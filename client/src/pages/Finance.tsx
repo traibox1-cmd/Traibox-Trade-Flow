@@ -18,20 +18,20 @@ export default function Finance() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-8 py-6 border-b border-white/10">
-        <h1 className="text-2xl font-light tracking-tight text-white">Finance</h1>
-        <p className="text-sm text-white/50 mt-1">Manage payments and funding operations</p>
+      <div className="px-8 py-6 border-b border-border">
+        <h1 className="text-2xl font-light tracking-tight text-foreground">Finance</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage payments and funding operations</p>
       </div>
 
-      <div className="border-b border-white/10">
+      <div className="border-b border-border">
         <div className="px-8 flex gap-6">
           <button
             data-testid="tab-payments"
             onClick={() => setActiveTab("payments")}
             className={`py-3 border-b-2 transition-colors ${
               activeTab === "payments"
-                ? "border-blue-500 text-white"
-                : "border-transparent text-white/50 hover:text-white/70"
+                ? "border-blue-500 text-foreground"
+                : "border-transparent text-muted-foreground hover:text-muted-foreground"
             }`}
           >
             Payments
@@ -41,8 +41,8 @@ export default function Finance() {
             onClick={() => setActiveTab("funding")}
             className={`py-3 border-b-2 transition-colors ${
               activeTab === "funding"
-                ? "border-blue-500 text-white"
-                : "border-transparent text-white/50 hover:text-white/70"
+                ? "border-blue-500 text-foreground"
+                : "border-transparent text-muted-foreground hover:text-muted-foreground"
             }`}
           >
             Funding
@@ -54,39 +54,39 @@ export default function Finance() {
         {activeTab === "payments" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                <div className="text-white/50 text-xs uppercase tracking-wider mb-2">Total Outbound</div>
-                <div className="text-3xl font-light text-white">$1.2M</div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Total Outbound</div>
+                <div className="text-3xl font-light text-foreground">$1.2M</div>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                <div className="text-white/50 text-xs uppercase tracking-wider mb-2">Pending Payments</div>
-                <div className="text-3xl font-light text-white">$340K</div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Pending Payments</div>
+                <div className="text-3xl font-light text-foreground">$340K</div>
               </div>
             </div>
 
             <div>
-              <h2 className="text-lg font-light text-white mb-4">Payment Routes</h2>
+              <h2 className="text-lg font-light text-foreground mb-4">Payment Routes</h2>
               <div className="space-y-3">
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <DollarSign className="w-5 h-5 text-white/70" />
+                      <DollarSign className="w-5 h-5 text-muted-foreground" />
                       <div>
-                        <div className="text-white font-light">Traditional Banking</div>
-                        <div className="text-xs text-white/50">SWIFT, ACH, Wire transfers</div>
+                        <div className="text-foreground font-light">Traditional Banking</div>
+                        <div className="text-xs text-muted-foreground">SWIFT, ACH, Wire transfers</div>
                       </div>
                     </div>
-                    <div className="text-xs text-white/50">Primary</div>
+                    <div className="text-xs text-muted-foreground">Primary</div>
                   </div>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Shield className="w-5 h-5 text-blue-400" />
                       <div>
-                        <div className="text-white font-light">Stablecoin Rail (XDC Network)</div>
-                        <div className="text-xs text-white/50">Alternative for faster settlement</div>
+                        <div className="text-foreground font-light">Stablecoin Rail (XDC Network)</div>
+                        <div className="text-xs text-muted-foreground">Alternative for faster settlement</div>
                       </div>
                     </div>
                     <div className="text-xs text-blue-400">Optional</div>
@@ -96,18 +96,18 @@ export default function Finance() {
             </div>
 
             <div>
-              <h2 className="text-lg font-light text-white mb-4">Recent Payments</h2>
+              <h2 className="text-lg font-light text-foreground mb-4">Recent Payments</h2>
               <div className="space-y-3">
                 {[
                   { to: "Acme Corp", amount: "$50,000", status: "Completed", date: "2 days ago" },
                   { to: "Global Traders Inc", amount: "$125,000", status: "Pending", date: "1 day ago" },
                   { to: "EU Export Partners", amount: "$75,000", status: "Processing", date: "3 hours ago" },
                 ].map((payment, i) => (
-                  <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div key={i} className="bg-card border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-white font-light">{payment.to}</div>
-                        <div className="text-sm text-white/50 mt-1">{payment.amount} • {payment.date}</div>
+                        <div className="text-foreground font-light">{payment.to}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{payment.amount} • {payment.date}</div>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs ${
                         payment.status === "Completed" ? "bg-green-500/20 text-green-400" :
@@ -127,26 +127,26 @@ export default function Finance() {
         {activeTab === "funding" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                <div className="text-white/50 text-xs uppercase tracking-wider mb-2">Available Credit</div>
-                <div className="text-3xl font-light text-white">$500K</div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Available Credit</div>
+                <div className="text-3xl font-light text-foreground">$500K</div>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                <div className="text-white/50 text-xs uppercase tracking-wider mb-2">Active Requests</div>
-                <div className="text-3xl font-light text-white">2</div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Active Requests</div>
+                <div className="text-3xl font-light text-foreground">2</div>
               </div>
             </div>
 
             <div>
-              <h2 className="text-lg font-light text-white mb-4">Funding Requests</h2>
+              <h2 className="text-lg font-light text-foreground mb-4">Funding Requests</h2>
               <div className="space-y-3">
                 {[
                   { trade: "Cotton Shipment #1045", amount: "$200,000", status: "Approved", lender: "Trade Finance Co" },
                   { trade: "Textile Order #1046", amount: "$150,000", status: "Under Review", lender: "Global Capital" },
                 ].map((request, i) => (
-                  <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div key={i} className="bg-card border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-white font-light">{request.trade}</div>
+                      <div className="text-foreground font-light">{request.trade}</div>
                       <div className={`px-3 py-1 rounded-full text-xs ${
                         request.status === "Approved" ? "bg-green-500/20 text-green-400" :
                         "bg-yellow-500/20 text-yellow-400"
@@ -154,7 +154,7 @@ export default function Finance() {
                         {request.status}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-white/50">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{request.amount}</span>
                       <span>•</span>
                       <span>{request.lender}</span>

@@ -135,11 +135,11 @@ export default function TradeIntelligence() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0a0a]">
-      <div className="px-8 py-4 border-b border-white/10 flex items-center justify-between">
+    <div className="h-full flex flex-col bg-background">
+      <div className="px-8 py-4 border-b border-border flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-light tracking-tight text-white">Trade Intelligence</h1>
-          <p className="text-sm text-white/50 mt-1">AI-powered trade workspace</p>
+          <h1 className="text-2xl font-light tracking-tight text-foreground">Trade Intelligence</h1>
+          <p className="text-sm text-muted-foreground mt-1">AI-powered trade workspace</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function TradeIntelligence() {
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                 mode === m.id
                   ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                  : "bg-white/5 text-white/50 border border-white/10 hover:bg-white/10"
+                  : "bg-card text-muted-foreground border border-border hover:bg-accent"
               }`}
             >
               {m.label}
@@ -162,14 +162,14 @@ export default function TradeIntelligence() {
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col">
-          <div className="px-4 py-3 border-b border-white/10">
+          <div className="px-4 py-3 border-b border-border">
             <div className="flex gap-2 flex-wrap">
               {ACTION_CHIPS.map((chip) => (
                 <button
                   key={chip}
                   data-testid={`chip-${chip.toLowerCase().replace(/\s+/g, "-")}`}
                   onClick={() => handleSend(chip)}
-                  className="px-3 py-1.5 text-xs bg-white/5 text-white/70 border border-white/10 rounded-md hover:bg-white/10 transition-colors"
+                  className="px-3 py-1.5 text-xs bg-card text-muted-foreground border border-border rounded-md hover:bg-accent transition-colors"
                 >
                   {chip}
                 </button>
@@ -182,7 +182,7 @@ export default function TradeIntelligence() {
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
                   <Bot className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                  <h3 className="text-lg font-light text-white/40">Start a conversation</h3>
+                  <h3 className="text-lg font-light text-muted-foreground">Start a conversation</h3>
                   <p className="text-sm text-white/30 mt-2">Ask about trade operations, compliance, or payments</p>
                 </div>
               </div>
@@ -192,10 +192,10 @@ export default function TradeIntelligence() {
               {messages.map((msg, idx) => (
                 <div key={idx} className="flex gap-4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === "user" ? "bg-white/10" : "bg-blue-500/20"
+                    msg.role === "user" ? "bg-accent" : "bg-blue-500/20"
                   }`}>
                     {msg.role === "user" ? (
-                      <User className="w-4 h-4 text-white/70" />
+                      <User className="w-4 h-4 text-muted-foreground" />
                     ) : (
                       <Bot className="w-4 h-4 text-blue-400" />
                     )}
@@ -216,9 +216,9 @@ export default function TradeIntelligence() {
               )}
 
               {actionCards.map((card) => (
-                <div key={card.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-white font-light mb-1">{card.title}</h4>
-                  <p className="text-sm text-white/50">{card.description}</p>
+                <div key={card.id} className="bg-card border border-border rounded-lg p-4">
+                  <h4 className="text-foreground font-light mb-1">{card.title}</h4>
+                  <p className="text-sm text-muted-foreground">{card.description}</p>
                   <button
                     data-testid={`action-${card.type}`}
                     className="mt-3 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-md text-sm hover:bg-blue-500/30 transition-colors"
@@ -232,7 +232,7 @@ export default function TradeIntelligence() {
             </div>
           </div>
 
-          <div className="px-8 py-4 border-t border-white/10">
+          <div className="px-8 py-4 border-t border-border">
             <div className="flex gap-3">
               <input
                 data-testid="input-message"
@@ -242,7 +242,7 @@ export default function TradeIntelligence() {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask TRAIBOX anything..."
                 disabled={loading}
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
+                className="flex-1 bg-card border border-border rounded-lg px-4 py-3 text-foreground placeholder-white/30 focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
               />
               <button
                 data-testid="button-send"
