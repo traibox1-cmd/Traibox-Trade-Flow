@@ -344,6 +344,32 @@ export default function Finance() {
               </div>
             </div>
 
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="font-semibold mb-4">Funding Configuration</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Funding Type</label>
+                  <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                    <option value="">Select funding type</option>
+                    <option value="self-funding">Self-funding</option>
+                    <option value="credit-line">Credit Line</option>
+                    <option value="factoring">Factoring</option>
+                    <option value="payables-finance">Payables Finance</option>
+                    <option value="open-account">Open Account</option>
+                    <option value="guarantees">Guarantees</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Payment Terms</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g., Net 30, Net 60, LC 90 days" 
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <h2 className="text-lg font-light text-foreground mb-4">My Funding Requests</h2>
               <div className="space-y-4">

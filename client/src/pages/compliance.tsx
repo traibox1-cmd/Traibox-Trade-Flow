@@ -61,7 +61,7 @@ export default function CompliancePage() {
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
 
   useEffect(() => {
-    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports") {
+    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "track-trace") {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -215,6 +215,9 @@ export default function CompliancePage() {
             </TabsTrigger>
             <TabsTrigger value="reports" data-testid="tab-reports">
               Reports
+            </TabsTrigger>
+            <TabsTrigger value="track-trace" data-testid="tab-track-trace">
+              Track & Trace
             </TabsTrigger>
           </TabsList>
 
@@ -408,6 +411,26 @@ export default function CompliancePage() {
                 <div className="text-sm font-medium">No saved reports yet</div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   Generate a report after checks complete, or from within a trade workspace.
+                </div>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="track-trace" className="mt-4" data-testid="panel-track-trace">
+            <TBCard
+              title="Track & Trace"
+              subtitle="Logistics tracking and shipment visibility"
+              state="idle"
+              icon={<Package className="h-4 w-4" />}
+              dataTestId="card-track-trace"
+            >
+              <div
+                className="rounded-2xl border bg-background/60 p-4"
+                data-testid="track-trace-content"
+              >
+                <div className="text-sm font-medium">Shipment Tracking Integration</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  View logistics milestones and shipping events from the Trade Workspace Logistics tab.
                 </div>
               </div>
             </TBCard>

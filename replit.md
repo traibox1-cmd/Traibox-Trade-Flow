@@ -73,13 +73,68 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 30, 2026)
 
-### Bulletproof AI Chat Demo Fallback
+### PHASES 0-5: Locked UX Refinements (Complete)
+
+#### PHASE 0: AI Trade Context
+- Trade Intelligence and Deal Assistant now accept trade context in prompts
+- UI shows trade selector dropdown with "Context: Trade T-xxx" display when trade is selected
+- AI responses scoped to selected trade with structured output (Summary/Missing Inputs/Next Actions)
+- Trade selector persists and updates AI behavior in real-time
+
+#### PHASE 1: Party Capabilities & Trade Parties
+- **Data Model**: Added `LinkedTradeParty` type with partnerId and multi-select roles array (supplier, buyer, financier, logistics, insurer, customs, etc.)
+- **Trade Workspace**: New "Parties" inspector tab showing:
+  - Linked Parties section with partner ID and role chips (roles display as colored tags)
+  - Link button to connect partners from My Network
+  - Traditional Trade Parties list with name, role, and region
+- **My Network**: Partner cards already display capabilities array as pill badges (logistics, customs, financing, etc.)
+
+#### PHASE 2: Funding Types & Payment Terms
+- **Data Model**: Added `fundingType` field to Trade (self-funding, credit-line, factoring, payables-finance, open-account, guarantees)
+- **Data Model**: Added `paymentTerms` string field to Trade (e.g., "Net 30", "Net 60", "LC 90 days")
+- **Finance → Funding**: New "Funding Configuration" card with:
+  - Funding Type dropdown selector (6 options)
+  - Payment Terms text input field
+- **Demo Data**: Both demo trades initialize with fundingType and paymentTerms
+
+#### PHASE 3: Payments Cockpit
+- **Finance → Payments**: New subtabs structure replacing flat layout:
+  - Overview: Payment routes, recent payments (existing functionality)
+  - Accounts: Connected bank accounts placeholder
+  - Cards: Virtual cards management placeholder
+  - Pay & Collect: Receivables and payment links placeholder
+  - Analytics: Payment flows and settlement metrics placeholder
+- Premium tab styling consistent with existing design system
+
+#### PHASE 4: Logistics Tracking
+- **Data Model**: Added `LogisticsMilestone` type with key/label/status/timestamp/notes (7 milestones: booking, picked-up, export-cleared, departed, arrived, import-cleared, delivered/POD)
+- **Data Model**: Added `LogisticsEvent` type for timestamped events with source/description/confidence/linkedDocId
+- **Data Model**: Added `TradeDocument` type for uploaded files with name/type/uploadedAt/linkedMilestone/extractedFields
+- **Data Model**: Added `logisticsVisibility` field (internal/parties/financier)
+- **Trade Workspace**: New "Logistics" inspector tab showing:
+  - Milestone stepper with status indicators (confirmed=green, issue=red, pending=gray)
+  - Timestamp display for confirmed milestones
+  - Recent Events section with source/timestamp/description
+- **Compliance & Proofs**: New "Track & Trace" tab for shipment visibility integration
+- **Demo Data**: All trades initialize with default 7-milestone structure in pending state
+
+#### PHASE 5: Multimodal & Document Upload
+- **Data Model**: `uploadedDocuments` array in Trade type supports document attachments
+- **Trade Workspace → Documents Tab**: 
+  - Upload button in header for document attachment
+  - Displays both uploadedDocuments (with upload date) and legacy documents array
+  - Document cards show name, type, and timestamp
+- **Store**: `addTrade` function initializes uploadedDocuments as empty array by default
+
+### Earlier Milestones (Preserved)
+
+#### Bulletproof AI Chat Demo Fallback
 - Enhanced `server/lib/openai.ts` with comprehensive error handling that catches ALL OpenAI failures (429 quota, 401 auth, network errors, server errors)
 - Implemented `generateDemoResponse()` function that analyzes user queries and generates contextual responses for compliance, funding, payments, proof packs, partners, etc.
 - Demo mode still generates action cards with proper intent detection, ensuring the demo never breaks
 - Added enhanced intent detection with additional keywords for better action card triggering
 
-### Trade Intelligence UI Improvements
+#### Trade Intelligence UI Improvements
 - Added "Thinking..." indicator with spinning loader when AI is processing
 - Upgraded action cards with meaningful titles and descriptions:
   - Compliance → "Run Compliance Check" with sanctions/KYC description
@@ -90,13 +145,13 @@ Preferred communication style: Simple, everyday language.
 - Theme-aware styling using CSS variables (primary, foreground, muted-foreground)
 - Premium styling: rounded-2xl cards, font-semibold headings, shadow-sm on buttons
 
-### Role Switching Confirmation
+#### Role Switching Confirmation
 - Operator mode: My Space, Trade Intelligence, My Network, Finance, Compliance & Proofs, Settings
 - Financier mode: Capital Console, Funding Desk, Deal Assistant, Counterparties, Risk & Policy, Settlement, Evidence, Settings
 - Role changes trigger navigation updates and default landing page redirects
 - Persists across page refresh via localStorage
 
-### My Network Restoration
+#### My Network Restoration
 - All 5 tabs fully functional: Directory, Integrations, Invites, Matchmaking, Challenges
 - Create Network and Join Network actions in header (alongside Import)
 - Directory tab includes search, partner cards with privacy cues, and Add partner functionality
