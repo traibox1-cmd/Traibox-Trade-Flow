@@ -93,14 +93,17 @@ type AppStore = {
   payments: Payment[];
   partners: Partner[];
   
-  addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => void;
-  addFundingRequest: (request: Omit<FundingRequest, 'id' | 'createdAt'>) => void;
+  addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => string;
+  updateTrade: (id: string, updates: Partial<Trade>) => void;
+  getTrade: (id: string) => Trade | undefined;
+  addFundingRequest: (request: Omit<FundingRequest, 'id' | 'createdAt'>) => string;
   updateFundingRequest: (id: string, updates: Partial<FundingRequest>) => void;
-  addComplianceRun: (run: Omit<ComplianceRun, 'id' | 'createdAt'>) => void;
+  addComplianceRun: (run: Omit<ComplianceRun, 'id' | 'createdAt'>) => string;
   updateComplianceRun: (id: string, updates: Partial<ComplianceRun>) => void;
-  addProofPack: (pack: Omit<ProofPack, 'id' | 'createdAt'>) => void;
+  addProofPack: (pack: Omit<ProofPack, 'id' | 'createdAt'>) => string;
+  updateProofPack: (id: string, updates: Partial<ProofPack>) => void;
   addPartnerInvite: (invite: Omit<PartnerInvite, 'id' | 'createdAt'>) => void;
-  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => void;
+  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => string;
   updatePayment: (id: string, updates: Partial<Payment>) => void;
   updatePartner: (id: string, updates: Partial<Partner>) => void;
 };
@@ -135,7 +138,7 @@ const initialPartners: Partner[] = [
   },
 ];
 
-export const useAppStore = create<AppStore>((set) => ({
+export const useAppStore = create<AppStore>((set, get) => ({
   trades: [],
   fundingRequests: [],
   complianceRuns: [],
@@ -144,21 +147,36 @@ export const useAppStore = create<AppStore>((set) => ({
   payments: [],
   partners: initialPartners,
 
-  addTrade: (trade) =>
+  addTrade: (trade) => {
+    const id = `trade-${Date.now()}`;
     set((state) => ({
       trades: [
         ...state.trades,
-        { ...trade, id: `trade-${Date.now()}`, createdAt: new Date() },
+        { ...trade, id, createdAt: new Date() },
       ],
+    }));
+    return id;
+  },
+
+  updateTrade: (id, updates) =>
+    set((state) => ({
+      trades: state.trades.map((trade) =>
+        trade.id === id ? { ...trade, ...updates } : trade
+      ),
     })),
 
-  addFundingRequest: (request) =>
+  getTrade: (id) => get().trades.find((t) => t.id === id),
+
+  addFundingRequest: (request) => {
+    const id = `funding-${Date.now()}`;
     set((state) => ({
       fundingRequests: [
         ...state.fundingRequests,
-        { ...request, id: `funding-${Date.now()}`, createdAt: new Date() },
+        { ...request, id, createdAt: new Date() },
       ],
-    })),
+    }));
+    return id;
+  },
 
   updateFundingRequest: (id, updates) =>
     set((state) => ({
@@ -167,13 +185,16 @@ export const useAppStore = create<AppStore>((set) => ({
       ),
     })),
 
-  addComplianceRun: (run) =>
+  addComplianceRun: (run) => {
+    const id = `compliance-${Date.now()}`;
     set((state) => ({
       complianceRuns: [
         ...state.complianceRuns,
-        { ...run, id: `compliance-${Date.now()}`, createdAt: new Date() },
+        { ...run, id, createdAt: new Date() },
       ],
-    })),
+    }));
+    return id;
+  },
 
   updateComplianceRun: (id, updates) =>
     set((state) => ({
@@ -182,12 +203,22 @@ export const useAppStore = create<AppStore>((set) => ({
       ),
     })),
 
-  addProofPack: (pack) =>
+  addProofPack: (pack) => {
+    const id = `proof-${Date.now()}`;
     set((state) => ({
       proofPacks: [
         ...state.proofPacks,
-        { ...pack, id: `proof-${Date.now()}`, createdAt: new Date() },
+        { ...pack, id, createdAt: new Date() },
       ],
+    }));
+    return id;
+  },
+
+  updateProofPack: (id, updates) =>
+    set((state) => ({
+      proofPacks: state.proofPacks.map((pack) =>
+        pack.id === id ? { ...pack, ...updates } : pack
+      ),
     })),
 
   addPartnerInvite: (invite) =>
@@ -198,13 +229,16 @@ export const useAppStore = create<AppStore>((set) => ({
       ],
     })),
 
-  addPayment: (payment) =>
+  addPayment: (payment) => {
+    const id = `payment-${Date.now()}`;
     set((state) => ({
       payments: [
         ...state.payments,
-        { ...payment, id: `payment-${Date.now()}`, createdAt: new Date() },
+        { ...payment, id, createdAt: new Date() },
       ],
-    })),
+    }));
+    return id;
+  },
 
   updatePayment: (id, updates) =>
     set((state) => ({

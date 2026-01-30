@@ -20,6 +20,7 @@ import DealAssistant from "@/pages/DealAssistant";
 import Counterparties from "@/pages/Counterparties";
 import RiskPolicy from "@/pages/RiskPolicy";
 import Evidence from "@/pages/Evidence";
+import TradeWorkspace from "@/pages/TradeWorkspace";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function Router() {
             {/* Operator Routes */}
             <Route path="/space" component={MySpace} />
             <Route path="/intelligence" component={TradeIntelligence} />
+            <Route path="/trade/:id" component={TradeWorkspace} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
             <Route path="/compliance-proofs" component={ComplianceAndProofs} />
