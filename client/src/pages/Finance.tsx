@@ -18,6 +18,7 @@ export default function Finance() {
     fundingRequests, 
     offers,
     infoRequests,
+    trades,
     addPayment, 
     addFundingRequest,
     updateFundingRequest,
@@ -36,7 +37,14 @@ export default function Finance() {
   }, [tabParam]);
 
   const handleCreatePayment = () => {
+    const defaultTrade = trades[0];
+    if (!defaultTrade) {
+      alert("Please create a trade first from Trade Intelligence");
+      return;
+    }
+    
     addPayment({
+      tradeId: defaultTrade.id,
       amount: 50000,
       currency: "USD",
       beneficiary: "Trade Partner Inc",
@@ -47,7 +55,14 @@ export default function Finance() {
   };
 
   const handleRequestFunding = () => {
+    const defaultTrade = trades[0];
+    if (!defaultTrade) {
+      alert("Please create a trade first from Trade Intelligence");
+      return;
+    }
+    
     addFundingRequest({
+      tradeId: defaultTrade.id,
       amount: 200000,
       type: "lc",
       status: "pending",
@@ -80,7 +95,7 @@ export default function Finance() {
     });
 
     addNotification({
-      type: 'info-request',
+      type: 'info-provided',
       targetRole: 'financier',
       tradeId: infoReq.tradeId,
       fundingRequestId: infoReq.fundingRequestId,

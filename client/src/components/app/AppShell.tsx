@@ -240,7 +240,7 @@ function NavRail() {
     // Financier notifications for Funding Desk (info provided, offer accepted/rejected)
     if (role === "financier" && href === "/funding-desk") {
       return unreadNotifications.filter(n => 
-        n.type === 'info-request' || n.type === 'approval' || n.type === 'rejection'
+        n.type === 'info-provided' || n.type === 'approval' || n.type === 'rejection'
       ).length;
     }
     

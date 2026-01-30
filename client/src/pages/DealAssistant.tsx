@@ -130,6 +130,9 @@ export default function DealAssistant() {
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-title-deal-assistant">
             Deal Assistant
           </h1>
+          <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
+            Demo Mode
+          </span>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           AI-powered deal analysis and risk assessment

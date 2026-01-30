@@ -58,7 +58,7 @@ export default function CompliancePage() {
   const tabParam = queryParams.get("tab");
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
   const [activeTab, setActiveTab] = useState<string>(tabParam || "checks");
-  const { complianceRuns, proofPacks, addComplianceRun, addProofPack } = useAppStore();
+  const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
 
   useEffect(() => {
     if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports") {
@@ -74,9 +74,16 @@ export default function CompliancePage() {
   }, []);
 
   const handleRunChecks = () => {
+    const defaultTrade = trades[0];
+    if (!defaultTrade) {
+      alert("Please create a trade first from Trade Intelligence");
+      return;
+    }
+    
     setRun("running");
     setTimeout(() => {
       addComplianceRun({
+        tradeId: defaultTrade.id,
         targetEntity: "Trade Counterparty",
         checks: ["sanctions", "kyc", "restricted-goods", "pep"],
         status: "passed",
@@ -90,7 +97,14 @@ export default function CompliancePage() {
   };
 
   const handleGenerateProofPack = () => {
+    const defaultTrade = trades[0];
+    if (!defaultTrade) {
+      alert("Please create a trade first from Trade Intelligence");
+      return;
+    }
+    
     addProofPack({
+      tradeId: defaultTrade.id,
       title: `Compliance Pack ${new Date().toLocaleDateString()}`,
       documents: ["Commercial Invoice", "Bill of Lading", "Certificate of Origin", "Inspection Certificate"],
       status: "ready",

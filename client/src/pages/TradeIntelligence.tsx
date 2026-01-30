@@ -288,7 +288,12 @@ export default function TradeIntelligence() {
     <div className="h-full flex flex-col bg-background">
       <div className="px-8 py-4 border-b border-border flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Trade Intelligence</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Trade Intelligence</h1>
+            <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
+              Demo Mode
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">AI-powered trade planning + execution</p>
         </div>
         

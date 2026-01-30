@@ -26,7 +26,7 @@ export type Trade = {
 
 export type FundingRequest = {
   id: string;
-  tradeId?: string;
+  tradeId: string;
   amount: number;
   type: 'lc' | 'factoring' | 'supply-chain';
   status: 'pending' | 'reviewing' | 'info-requested' | 'offered' | 'approved' | 'rejected';
@@ -41,7 +41,7 @@ export type FundingRequest = {
 export type Offer = {
   id: string;
   fundingRequestId: string;
-  tradeId?: string;
+  tradeId: string;
   tenor: number;
   rate: number;
   fees: number;
@@ -55,7 +55,7 @@ export type Offer = {
 export type InfoRequest = {
   id: string;
   fundingRequestId: string;
-  tradeId?: string;
+  tradeId: string;
   requestedBy: string;
   message: string;
   status: 'pending' | 'provided' | 'closed';
@@ -66,9 +66,9 @@ export type InfoRequest = {
 
 export type Notification = {
   id: string;
-  type: 'offer' | 'info-request' | 'approval' | 'rejection' | 'proof-verified';
+  type: 'offer' | 'info-request' | 'info-provided' | 'approval' | 'rejection' | 'proof-verified';
   targetRole: 'operator' | 'financier';
-  tradeId?: string;
+  tradeId: string;
   fundingRequestId?: string;
   message: string;
   read: boolean;
@@ -77,7 +77,7 @@ export type Notification = {
 
 export type TimelineEvent = {
   id: string;
-  tradeId?: string;
+  tradeId: string;
   fundingRequestId?: string;
   type: 'created' | 'info-requested' | 'info-provided' | 'offer-proposed' | 'approved' | 'rejected' | 'verified';
   actor: string;
@@ -87,7 +87,7 @@ export type TimelineEvent = {
 
 export type ComplianceRun = {
   id: string;
-  tradeId?: string;
+  tradeId: string;
   targetEntity: string;
   checks: string[];
   status: 'pending' | 'running' | 'passed' | 'failed';
@@ -97,7 +97,7 @@ export type ComplianceRun = {
 
 export type ProofPack = {
   id: string;
-  tradeId?: string;
+  tradeId: string;
   title: string;
   documents: string[];
   status: 'draft' | 'ready' | 'verified';
@@ -114,7 +114,7 @@ export type PartnerInvite = {
 
 export type Payment = {
   id: string;
-  tradeId?: string;
+  tradeId: string;
   amount: number;
   currency: string;
   beneficiary: string;
@@ -168,6 +168,8 @@ type AppStore = {
   markNotificationRead: (id: string) => void;
   addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'createdAt'>) => string;
   getUnreadNotifications: (role: 'operator' | 'financier') => Notification[];
+  loadDemoData: () => void;
+  resetDemoData: () => void;
 };
 
 const initialPartners: Partner[] = [
@@ -375,4 +377,103 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   getUnreadNotifications: (role) =>
     get().notifications.filter((n) => n.targetRole === role && !n.read),
+
+  loadDemoData: () => {
+    const state = get();
+    
+    // Only load if no trades exist (idempotent)
+    if (state.trades.length > 0) return;
+
+    // Create demo trades
+    const trade1Id = `trade-demo-1-${Date.now()}`;
+    const trade2Id = `trade-demo-2-${Date.now() + 1}`;
+    
+    set({
+      trades: [
+        {
+          id: trade1Id,
+          title: "Kenya Coffee Import",
+          corridor: "Kenya → EU",
+          status: "active",
+          value: 250000,
+          currency: "USD",
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          parties: [
+            { name: "Kijani Cooperative", role: "seller", region: "Kenya" },
+            { name: "NordWerk Logistics", role: "shipper", region: "EU" }
+          ],
+          goods: "Coffee Beans (Arabica)",
+          incoterms: "FOB Mombasa",
+          timelineStep: "funding",
+          documents: ["Commercial Invoice", "Packing List", "Certificate of Origin"],
+          notes: "Premium grade coffee beans, organic certified"
+        },
+        {
+          id: trade2Id,
+          title: "Medical Supplies Export",
+          corridor: "US → SEA",
+          status: "active",
+          value: 450000,
+          currency: "USD",
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+          parties: [
+            { name: "MedTech Solutions", role: "seller", region: "US" },
+            { name: "Aster Mills", role: "buyer", region: "Singapore" }
+          ],
+          goods: "Diagnostic Equipment",
+          incoterms: "CIF Singapore",
+          timelineStep: "compliance",
+          documents: ["Invoice", "FDA Certificate", "Insurance Certificate"],
+          notes: "Temperature-controlled shipping required"
+        }
+      ],
+      fundingRequests: [
+        {
+          id: `funding-demo-1-${Date.now()}`,
+          tradeId: trade1Id,
+          amount: 200000,
+          type: "lc",
+          status: "pending",
+          requesterName: "Kenya Coffee Trader",
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+          notes: "LC needed for coffee shipment",
+          corridor: "Kenya → EU"
+        }
+      ],
+      proofPacks: [
+        {
+          id: `proof-demo-1-${Date.now()}`,
+          tradeId: trade2Id,
+          title: "Medical Supplies Compliance Pack",
+          documents: ["FDA Certificate", "Product Specifications", "Safety Data Sheet", "Quality Assurance Report"],
+          status: "ready",
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
+        }
+      ],
+      partnerInvites: [
+        {
+          id: `invite-demo-1-${Date.now()}`,
+          partnerName: "Global Trade Finance Ltd",
+          email: "partnerships@gtf-trade.example",
+          status: "sent",
+          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
+        }
+      ]
+    });
+  },
+
+  resetDemoData: () => {
+    set({
+      trades: [],
+      fundingRequests: [],
+      complianceRuns: [],
+      proofPacks: [],
+      partnerInvites: [],
+      payments: [],
+      offers: [],
+      infoRequests: [],
+      notifications: [],
+      timelineEvents: [],
+    });
+  },
 }));
