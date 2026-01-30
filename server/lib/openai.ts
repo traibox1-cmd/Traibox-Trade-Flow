@@ -100,50 +100,50 @@ function generateDemoResponse(messages: Array<{ role: string; content: string }>
   const lastUserMessage = messages[messages.length - 1]?.content || "";
   const lower = lastUserMessage.toLowerCase();
   
-  // Generate contextual demo responses based on user query
+  // Generate concise contextual demo responses
   if (lower.includes("compliance") || lower.includes("check") || lower.includes("kyc") || lower.includes("sanction")) {
-    return `I can help with compliance checks for your trade. Based on your query, here's what I recommend:\n\n1. **Sanctions Screening**: Run automated checks against OFAC, EU, and UN sanctions lists\n2. **KYC Verification**: Verify counterparty identity and business registration\n3. **Document Review**: Ensure all required compliance documentation is complete\n\nWould you like me to initiate a compliance check for a specific counterparty? (Demo mode active - using simulated AI responses)`;
+    return `I can run compliance checks including sanctions screening (OFAC, EU, UN), KYC verification, and document review. This ensures your trade meets regulatory requirements and maintains audit readiness. (Demo mode active)`;
   }
   
   if (lower.includes("fund") || lower.includes("financ") || lower.includes("capital") || lower.includes("offer")) {
-    return `I can assist with trade finance options for your transaction. Here are potential funding structures:\n\n**Option 1: Letter of Credit (LC)**\n- Cost: 1.5-2.5% of transaction value\n- Timeline: 5-7 business days\n- Best for: High-value trades with established banks\n\n**Option 2: Invoice Factoring**\n- Cost: 2-4% of invoice value\n- Timeline: 1-2 business days\n- Best for: Immediate liquidity needs\n\n**Option 3: Supply Chain Finance**\n- Cost: 1-3% APR\n- Timeline: 3-5 business days\n- Best for: Long-term relationships\n\nShall I help you request funding? (Demo mode - OpenAI quota limit reached)`;
+    return `I'll help you explore trade finance options: Letter of Credit (1.5-2.5%, 5-7 days), Invoice Factoring (2-4%, 1-2 days), or Supply Chain Finance (1-3% APR, 3-5 days). Each option has different cost-speed tradeoffs. (Demo mode)`;
   }
   
   if (lower.includes("pay") || lower.includes("payment") || lower.includes("settlement") || lower.includes("transfer")) {
-    return `I'll help you set up cross-border payment routing. Here are your options:\n\n**Traditional Rails:**\n- SWIFT: 2-3 days, $25-45 fees, widely accepted\n- ACH/SEPA: 1-2 days, lower fees, regional\n\n**Alternative Settlement:**\n- Stablecoin rails: Same-day, lower fees, requires crypto infrastructure\n- Payment providers: Instant, competitive FX rates\n\nFor your corridor, I recommend comparing settlement speed vs. cost. Would you like me to create a payment instruction? (Demo mode active)`;
+    return `I can set up cross-border payment routing via SWIFT (2-3 days, $25-45), ACH/SEPA (1-2 days, lower fees), or stablecoin rails (same-day). I'll help you compare settlement speed vs cost for your corridor. (Demo mode)`;
   }
   
   if (lower.includes("proof") || lower.includes("doc") || lower.includes("evidence") || lower.includes("certificate")) {
-    return `I can generate a comprehensive proof pack for your trade. This will include:\n\n- Commercial Invoice\n- Bill of Lading / Airway Bill\n- Certificate of Origin\n- Inspection Certificate\n- Insurance Certificate\n- Compliance verification records\n\nAll documents will be timestamped and ready for blockchain anchoring if needed. Shall I prepare the proof pack? (Demo mode - simulated response)`;
+    return `I'll generate a comprehensive proof pack with commercial invoice, bill of lading, certificates (origin, inspection, insurance), and compliance records. All documents will be timestamped and ready for blockchain anchoring. (Demo mode)`;
   }
   
   if (lower.includes("partner") || lower.includes("invite") || lower.includes("network") || lower.includes("connect")) {
-    return `I can help you manage your trade network. Here's what I can do:\n\n- **Invite Partners**: Send private invitations to new counterparties\n- **Verify Credentials**: Check KYC status and trust level\n- **Match Opportunities**: Find verified partners for your corridor\n\nYour network operates on a private-by-default model — you control what's shared. Would you like to invite a partner or explore matchmaking? (Demo mode active)`;
+    return `I can help manage your trade network with private-by-default security. I'll assist with partner invitations, credential verification, and matchmaking opportunities in your corridor. (Demo mode)`;
   }
   
-  // Default response with context awareness
-  return `I'm TRAIBOX, your AI trade intelligence assistant. I can help you with:\n\n- **Trade Planning**: Corridor analysis, documentation, milestones\n- **Compliance**: Sanctions screening, KYC, policy checks\n- **Funding**: Compare financing options and request capital\n- **Payments**: Route cross-border payments efficiently\n- **Documentation**: Generate proof packs and certificates\n- **Network**: Invite partners and manage relationships\n\nWhat would you like to work on? (Demo mode active - OpenAI API unavailable)`;
+  // Default concise response
+  return `I'm TRAIBOX, your AI trade assistant. I help with compliance checks, funding requests, payment routing, documentation, and partner management. What specific operation can I assist with? (Demo mode active)`;
 }
 
 function getSystemPromptForMode(mode: string): string {
-  const basePrompt = `You are TRAIBOX, an AI-first trade intelligence assistant designed to help operators and financiers execute cross-border trade with trust-first workflows. You provide calm, professional, evidence-linked guidance.`;
+  const basePrompt = `You are TRAIBOX, an AI-first trade intelligence assistant. Respond in 2-3 concise sentences. Keep responses short, professional, and actionable. Avoid long essays.`;
 
   const modePrompts: Record<string, string> = {
-    auto: `${basePrompt} Analyze the user's request and provide the most relevant assistance across trade planning, compliance, funding, payments, documentation, contracts, or tracking.`,
+    auto: `${basePrompt} Analyze requests and provide focused guidance on trade planning, compliance, funding, payments, or documentation.`,
     
-    "trade-plan": `${basePrompt} Focus on helping create comprehensive trade plans including corridor analysis, counterparty details, Incoterms, milestones, and documentation requirements.`,
+    "trade-plan": `${basePrompt} Help create trade plans with corridor analysis, counterparty details, Incoterms, and milestones.`,
     
-    compliance: `${basePrompt} Focus on compliance checks, sanctions screening, KYC/AML requirements, policy verification, and regulatory guidance. Always emphasize evidence collection and audit readiness.`,
+    compliance: `${basePrompt} Guide on compliance checks, sanctions screening, KYC/AML, and regulatory requirements.`,
     
-    funding: `${basePrompt} Focus on trade finance options, comparing funding offers (APR, tenor, collateral), and helping select the best financing approach based on risk and timeline.`,
+    funding: `${basePrompt} Compare trade finance options (LC, factoring, supply chain finance) with clear APR and timeline guidance.`,
     
-    payments: `${basePrompt} Focus on payment routing, settlement options, FX considerations, and comparing different rails (bank transfer, SWIFT, alternative settlement). Present blockchain/stablecoin options neutrally as "stable rails" when relevant.`,
+    payments: `${basePrompt} Advise on cross-border payment routing, SWIFT vs ACH vs stablecoin rails, with cost-speed tradeoffs.`,
     
-    docs: `${basePrompt} Focus on trade documentation requirements, document generation, verification, and ensuring all paperwork is complete and compliant.`,
+    docs: `${basePrompt} Guide on trade documentation: invoices, bills of lading, certificates, compliance records.`,
     
-    "contracts-escrow": `${basePrompt} Focus on contract structuring, escrow arrangements, release conditions, and settlement mechanisms. Present smart contract options as "automated settlement" when relevant.`,
+    "contracts-escrow": `${basePrompt} Help structure contracts, escrow terms, and automated settlement mechanisms.`,
     
-    "track-trace": `${basePrompt} Focus on shipment tracking, milestone verification, and providing status updates on trade execution progress.`,
+    "track-trace": `${basePrompt} Provide shipment tracking and milestone verification guidance.`,
   };
 
   return modePrompts[mode] || modePrompts.auto;

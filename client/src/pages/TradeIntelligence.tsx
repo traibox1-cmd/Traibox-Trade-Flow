@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Send, Bot, User, AlertCircle, Loader2 } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 type Message = {
   role: "user" | "assistant";
@@ -33,6 +35,7 @@ const ACTION_CHIPS = [
 ];
 
 export default function TradeIntelligence() {
+  const [, setLocation] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,6 +43,8 @@ export default function TradeIntelligence() {
   const [mode, setMode] = useState("auto");
   const [actionCards, setActionCards] = useState<ActionCard[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { addFundingRequest, addComplianceRun, addProofPack, addPartnerInvite } = useAppStore();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -174,6 +179,46 @@ export default function TradeIntelligence() {
     }
   };
 
+  const handleActionClick = (card: ActionCard) => {
+    // Execute the action and create state
+    if (card.type === "compliance") {
+      addComplianceRun({
+        targetEntity: "Trade Counterparty",
+        checks: ["sanctions", "kyc", "documents"],
+        status: "running",
+        findings: [{ type: "pass", message: "No sanctions matches found" }],
+      });
+      setLocation("/compliance-proofs?tab=checks");
+    } else if (card.type === "funding") {
+      addFundingRequest({
+        amount: 100000,
+        type: "lc",
+        status: "pending",
+        requesterName: "Current User",
+        notes: "Generated from AI chat",
+      });
+      setLocation("/finance?tab=funding");
+    } else if (card.type === "payment") {
+      setLocation("/finance?tab=payments");
+    } else if (card.type === "proof-pack") {
+      addProofPack({
+        title: "Trade Documentation Package",
+        documents: ["Commercial Invoice", "Bill of Lading", "Certificate of Origin"],
+        status: "draft",
+      });
+      setLocation("/compliance-proofs?tab=proofs");
+    } else if (card.type === "invite-partner") {
+      addPartnerInvite({
+        partnerName: "New Trade Partner",
+        email: "partner@example.com",
+        status: "sent",
+      });
+      setLocation("/network");
+    } else {
+      setLocation("/space");
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-background">
       <div className="px-8 py-4 border-b border-border flex items-center justify-between">
@@ -266,6 +311,7 @@ export default function TradeIntelligence() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
                   <button
                     data-testid={`action-${card.type}`}
+                    onClick={() => handleActionClick(card)}
                     className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                   >
                     Execute Action

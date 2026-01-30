@@ -279,21 +279,13 @@ function NavRail() {
     >
       <div className="p-4 flex items-center justify-between">
         <div className="min-w-0 flex items-center gap-3">
-          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <svg 
-              viewBox="0 0 24 24" 
-              className="h-5 w-5 text-primary"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
+          <div className="flex-shrink-0 h-6 flex items-center">
+            <img 
+              src="/traibox-logo.png" 
+              alt="TRAIBOX" 
+              className="h-6 w-auto object-contain"
+              style={{ maxHeight: '24px' }}
+            />
           </div>
           <AnimatePresence>
             {shouldExpand && (
@@ -302,9 +294,11 @@ function NavRail() {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="font-semibold text-sm tracking-tight whitespace-nowrap"
+                className="flex items-center gap-2"
               >
-                TRAIBOX
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
+                  AI-FIRST
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -344,12 +338,13 @@ function NavRail() {
                   type="button"
                   onClick={() => handleItemClick(item)}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all focus-ring w-full",
+                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all focus-ring w-full relative",
                     active
                       ? "bg-primary/10 text-foreground shadow-sm"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                   data-testid={item.testId}
+                  title={!shouldExpand ? item.label : undefined}
                 >
                   <span
                     className={cn(
