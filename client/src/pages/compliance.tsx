@@ -575,7 +575,7 @@ export default function CompliancePage() {
                       <Download className="mr-2 h-3 w-3" />
                       Export PDF
                     </Button>
-                    <Button variant="outline" size="sm" className="h-8 flex-1" onClick={() => window.location.href = '/trade-passport'}>
+                    <Button variant="outline" size="sm" className="h-8 flex-1" onClick={() => window.location.href = '/trade-passport'} data-testid="button-view-full-passport">
                       View Full Passport
                     </Button>
                   </div>

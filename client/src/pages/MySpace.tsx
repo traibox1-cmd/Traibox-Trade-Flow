@@ -78,7 +78,7 @@ export default function MySpace() {
           </div>
           <div 
             className="bg-card border border-border rounded-xl p-6 cursor-pointer hover:border-primary/30 transition-colors"
-            onClick={() => setLocation('/trade-passport')}
+            onClick={() => setLocation('/compliance?tab=passport')}
             data-testid="card-trade-passport"
           >
             <div className="flex items-center gap-2 mb-2">

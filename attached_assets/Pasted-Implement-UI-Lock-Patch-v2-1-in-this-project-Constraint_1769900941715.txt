@@ -1,0 +1,114 @@
+Implement UI Lock Patch v2.1 in this project. Constraints: refinement only, preserve premium minimal style, do NOT delete existing Milestones 1–4 flows, do NOT redesign navigation. Only fix missing/broken UX behaviors.
+
+1) Trade Intelligence: conversation-first + working Explore/Trade + multimodal controls
+
+1A — Conversation-first rendering
+
+Ensure Trade Intelligence always renders a true multi-turn conversation timeline (user + assistant message stream).
+
+Assistant must always show coherent text output (no card-only responses).
+
+Action cards are secondary attachments under the assistant message (max 1–3).
+
+Add visible Thinking/streaming state while waiting for AI.
+
+Persist conversation across navigation (don’t reset on tab changes).
+
+1B — Explore Mode vs Trade Mode must change behavior
+
+Keep labels: “Explore Mode” and “Trade Mode”.
+
+Under the toggle show a one-line hint:
+
+Explore Mode: “Insights, best practices, partners, routes”
+
+Trade Mode: “Create & execute a trade workflow”
+
+Trade Mode gating: if no trade selected, show assistant message: “Select or create a trade to execute.” and buttons: [Create trade] [Select trade]. No silent failure.
+
+If trade selected, Trade Mode scopes all actions and responses to that tradeId.
+
+Explore Mode returns conversational answers (summary + bullet points + follow-up questions), no forced forms.
+
+Trade Mode returns (assistant_text + optional actions[]) aligned to execution.
+
+1C — Fix server contract so AI isn’t messy
+
+Standardize backend response shape:
+{ assistant_text: string, actions?: ActionCard[], meta?: { mode, agent, tradeId } }
+
+If model returns malformed JSON or JSON-in-text, safely parse and fallback to text.
+
+UI must render assistant_text as primary; actions render as attachments below.
+
+1D — Restore multimodal entry points (upload works)
+
+Add a “+” (or paperclip) menu in the composer with:
+
+Upload documents (WORKING)
+
+Voice (placeholder w/ tooltip “Coming soon”)
+
+Camera (placeholder w/ tooltip “Coming soon”)
+
+Agents (opens agent picker drawer)
+
+Restore file chips shown above composer when attached.
+
+Enable drag & drop: show “Drop documents to start a trade.”
+
+If user uploads docs with no trade selected: assistant message + action card “Create trade from documents” that creates/selects a new trade and attaches docs (mock extraction OK).
+
+If user uploads in Trade Mode with a trade selected: attach docs to that trade’s Documents list.
+
+1E — Agents discoverability
+
+Add “Agents” entry accessible from the + menu.
+
+Implement a minimal agent drawer/picker: Auto, Compliance Officer, Logistics Coordinator, Trade Finance Desk, Legal (terms), Sustainability.
+
+Selecting agent shows a chip near mode toggle and scopes assistant responses/suggested actions.
+
+2) Trade Passport: canonical under Compliance & Proofs + shortcuts
+
+In Compliance & Proofs ensure tabs: Compliance | Proofs | Trade Passport | Track & Trace
+
+Trade Passport must be reachable here (not only My Space).
+
+My Space “Trade Passport” card deep-links to Compliance & Proofs → Trade Passport.
+
+Trade Workspace header chip “Passport: xx%” deep-links to Compliance & Proofs → Trade Passport.
+
+3) My Network: capability chips + edit + trade roles clarity
+
+3A — Directory capability chips
+
+In My Network → Directory list/cards, display capability chips labeled “Can act as”: Buyer, Supplier, Financier, Logistics, Customs, Insurance, etc. (multi).
+
+Add a party drawer/modal where user can edit these capabilities (multi-select) and persist in store.
+
+3B — Trade-specific roles
+
+In Trade Workspace → Parties tab, allow linking parties from Directory and assigning “Role in this trade” (multi-select) separate from capabilities.
+
+Ensure UI wording distinguishes:
+
+“Can act as” (capability)
+
+“Role in this trade” (trade-specific)
+
+Acceptance tests (must pass)
+
+Explore Mode: ask “Best route PT→PL for wine?” → coherent conversational answer visible in chat thread.
+
+Trade Mode without trade selected → prompts select/create trade (no silent failure).
+
+Trade Mode with trade selected → coherent message + action cards attached below message.
+
+Upload docs → chips show; in no-trade state offers “Create trade from documents”.
+
+Compliance & Proofs tabs show Trade Passport; My Space shortcut deep-links.
+
+My Network Directory shows capability chips and capability edit persists.
+
+Provide a short report: which files changed and how to test each acceptance item.

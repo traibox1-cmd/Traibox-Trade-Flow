@@ -11,6 +11,12 @@ type FileAttachment = {
   size: number;
 };
 
+type ActionCard = {
+  type: string;
+  label: string;
+  description: string;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -19,9 +25,9 @@ type Message = {
 };
 
 type AIResponse = {
-  summary: string;
-  missing_inputs: string[];
-  next_actions: { type: string; label: string; description: string }[];
+  assistant_text: string;
+  actions?: ActionCard[];
+  meta?: { mode?: string; agent?: string; tradeId?: string };
   trade_updates?: {
     title?: string;
     corridor?: string;
@@ -77,21 +83,21 @@ export default function TradeIntelligence() {
     if (chatMode === "trade" && !selectedTradeId) {
       // Show prompt immediately on mode switch
       const lastMessage = messages[messages.length - 1];
-      const isAlreadyPrompt = lastMessage?.structured?.next_actions?.some(a => a.type === "create-trade" || a.type === "select-trade");
+      const isAlreadyPrompt = lastMessage?.structured?.actions?.some(a => a.type === "create-trade" || a.type === "select-trade");
       
       if (!isAlreadyPrompt) {
         setMessages(prev => [
           ...prev,
           {
             role: "assistant",
-            content: "To use Trade Mode, please select or create a trade first.",
+            content: "",
             structured: {
-              summary: "Trade Mode requires a trade context to execute workflows.",
-              missing_inputs: [],
-              next_actions: [
+              assistant_text: "To use **Trade Mode**, please select or create a trade first.\n\nTrade Mode lets you execute workflows like compliance checks, funding requests, and document generation scoped to a specific trade.",
+              actions: [
                 { type: "create-trade", label: "Create Trade", description: "Create a new trade to get started" },
-                { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" },
+                { type: "select-trade", label: "Select Trade", description: "Choose an existing trade from your trades" },
               ],
+              meta: { mode: "trade" }
             },
           },
         ]);
@@ -138,14 +144,14 @@ export default function TradeIntelligence() {
         },
         {
           role: "assistant",
-          content: "To use Trade Mode, please select or create a trade first.",
+          content: "",
           structured: {
-            summary: "Trade Mode requires a trade context to execute workflows.",
-            missing_inputs: [],
-            next_actions: [
+            assistant_text: "To use **Trade Mode**, please select or create a trade first.\n\nTrade Mode lets you execute workflows scoped to a specific trade.",
+            actions: [
               { type: "create-trade", label: "Create Trade", description: "Create a new trade to get started" },
               { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" },
             ],
+            meta: { mode: "trade" }
           },
         },
       ]);
@@ -246,12 +252,19 @@ export default function TradeIntelligence() {
                 });
               } else if (data.type === "done") {
                 try {
-                  const structured = JSON.parse(fullContent) as AIResponse;
+                  const parsed = JSON.parse(fullContent);
+                  // Handle legacy format with summary/next_actions
+                  const structured: AIResponse = parsed.assistant_text ? parsed : {
+                    assistant_text: parsed.summary || fullContent,
+                    actions: parsed.next_actions || [],
+                    trade_updates: parsed.trade_updates,
+                    meta: { mode: chatMode }
+                  };
                   setMessages((prev) => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1] = {
                       role: "assistant",
-                      content: structured.summary,
+                      content: "",
                       structured,
                     };
                     return newMessages;
@@ -335,17 +348,17 @@ export default function TradeIntelligence() {
           },
           {
             role: "assistant",
-            content: "I can help you create a trade from these documents.",
+            content: "",
             structured: {
-              summary: "I can analyze these documents and create a trade plan with extracted details.",
-              missing_inputs: [],
-              next_actions: [
+              assistant_text: "I can analyze these documents and **create a trade plan** with extracted details.\n\nI'll look for:\n• Trade corridors and parties\n• Product/commodity information\n• Values and payment terms\n• Shipping and logistics details",
+              actions: [
                 {
                   type: "create-trade",
                   label: "Create Trade from Documents",
-                  description: "Extract trade details from uploaded documents and create a new trade",
+                  description: "Extract trade details and create a new trade workspace",
                 }
               ],
+              meta: { mode: "explore" }
             },
           },
         ]);
@@ -433,31 +446,58 @@ export default function TradeIntelligence() {
     }
   };
 
+  // Render markdown-like text with basic formatting
+  const renderMarkdownText = (text: string) => {
+    // Split by double newlines for paragraphs
+    const paragraphs = text.split(/\n\n+/);
+    
+    return paragraphs.map((para, pIdx) => {
+      // Handle bullet points
+      if (para.includes('\n•') || para.startsWith('•')) {
+        const lines = para.split('\n');
+        return (
+          <div key={pIdx} className="space-y-1">
+            {lines.map((line, lIdx) => {
+              if (line.startsWith('•')) {
+                return <div key={lIdx} className="text-sm leading-relaxed pl-2">{renderInlineFormatting(line)}</div>;
+              }
+              return <div key={lIdx} className="text-sm leading-relaxed font-medium">{renderInlineFormatting(line)}</div>;
+            })}
+          </div>
+        );
+      }
+      return <p key={pIdx} className="text-sm leading-relaxed">{renderInlineFormatting(para)}</p>;
+    });
+  };
+
+  // Render inline **bold** formatting
+  const renderInlineFormatting = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const renderStructuredResponse = (msg: Message) => {
     if (!msg.structured) {
       return <p className="text-sm leading-relaxed">{msg.content}</p>;
     }
 
-    const { summary, missing_inputs, next_actions } = msg.structured;
+    const { assistant_text, actions } = msg.structured;
 
     return (
       <div className="space-y-4">
-        <p className="text-sm leading-relaxed">{summary}</p>
+        <div className="space-y-3">
+          {renderMarkdownText(assistant_text)}
+        </div>
 
-        {missing_inputs && missing_inputs.length > 0 && (
-          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3">
-            <div className="text-xs font-medium text-yellow-500 mb-2">Missing Information</div>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              {missing_inputs.map((input, idx) => (
-                <li key={idx}>• {input}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {next_actions && next_actions.length > 0 && (
-          <div className="space-y-2 mt-3">
-            {next_actions.map((action, idx) => {
+        {actions && actions.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className="text-xs text-muted-foreground font-medium">Actions</div>
+            {actions.map((action, idx) => {
               const getDeepLink = () => {
                 if (selectedTradeId) {
                   if (action.type === "compliance") return `/trade/${selectedTradeId}#compliance`;
@@ -472,9 +512,9 @@ export default function TradeIntelligence() {
               const deepLink = getDeepLink();
 
               return (
-                <div key={idx} className="rounded-xl border bg-card p-3 flex items-start gap-3">
+                <div key={idx} className="rounded-xl border bg-card/50 p-3 flex items-start gap-3">
                   <div className="flex-1">
-                    <div className="text-sm font-semibold mb-1">{action.label}</div>
+                    <div className="text-sm font-medium">{action.label}</div>
                     <div className="text-xs text-muted-foreground">{action.description}</div>
                   </div>
                   <div className="flex gap-2">

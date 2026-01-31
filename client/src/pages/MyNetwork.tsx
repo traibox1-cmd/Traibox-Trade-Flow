@@ -17,10 +17,28 @@ import {
   Plus,
   Mail,
   CheckCircle2,
+  X,
+  Check,
 } from "lucide-react";
 import { useAppStore, type Partner } from "@/lib/store";
 
-function PartnerCard({ p, onConnect }: { p: Partner; onConnect: (id: string) => void }) {
+const ALL_CAPABILITIES = [
+  "Buyer",
+  "Supplier",
+  "Financier",
+  "Logistics",
+  "Forwarding",
+  "Customs",
+  "Insurance",
+  "Manufacturing",
+  "QA",
+  "Trade docs",
+  "Aggregation",
+  "Fulfillment",
+  "Local compliance",
+];
+
+function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConnect: (id: string) => void; onEditCapabilities: (p: Partner) => void }) {
   const tone =
     p.trust === "verified"
       ? "success"
@@ -87,6 +105,7 @@ function PartnerCard({ p, onConnect }: { p: Partner; onConnect: (id: string) => 
               variant="ghost"
               size="sm" 
               className="h-8 text-xs px-2" 
+              onClick={() => onEditCapabilities(p)}
               data-testid={`button-edit-capabilities-${p.id}`}
             >
               Edit
@@ -118,7 +137,29 @@ export default function MyNetwork() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
+  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [editCapabilities, setEditCapabilities] = useState<string[]>([]);
   const { partners, partnerInvites, updatePartner, addPartnerInvite } = useAppStore();
+
+  const handleOpenCapabilityEdit = (partner: Partner) => {
+    setEditingPartner(partner);
+    setEditCapabilities([...partner.capabilities]);
+  };
+
+  const handleToggleCapability = (cap: string) => {
+    setEditCapabilities(prev => 
+      prev.includes(cap) 
+        ? prev.filter(c => c !== cap) 
+        : [...prev, cap]
+    );
+  };
+
+  const handleSaveCapabilities = () => {
+    if (editingPartner) {
+      updatePartner(editingPartner.id, { capabilities: editCapabilities });
+      setEditingPartner(null);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -234,7 +275,7 @@ export default function MyNetwork() {
 
               <div className="mt-4 grid gap-3">
                 {filtered.map((p) => (
-                  <PartnerCard key={p.id} p={p} onConnect={handleConnect} />
+                  <PartnerCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />
                 ))}
               </div>
 
@@ -549,6 +590,64 @@ export default function MyNetwork() {
                   Join
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingPartner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={() => setEditingPartner(null)}
+          />
+          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Capabilities</h3>
+              <button
+                onClick={() => setEditingPartner(null)}
+                className="p-1 rounded-lg hover:bg-accent"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-sm text-muted-foreground mb-4">
+              Select capabilities for <span className="font-medium text-foreground">{editingPartner.name}</span>
+            </div>
+            <div className="text-xs font-medium text-muted-foreground mb-2">Can act as:</div>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {ALL_CAPABILITIES.map((cap) => (
+                <button
+                  key={cap}
+                  onClick={() => handleToggleCapability(cap)}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                    editCapabilities.includes(cap)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-accent"
+                  }`}
+                  data-testid={`cap-chip-${cap.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  {editCapabilities.includes(cap) && <Check className="w-3 h-3 inline mr-1" />}
+                  {cap}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setEditingPartner(null)}
+                data-testid="button-cancel-capability-edit"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSaveCapabilities}
+                data-testid="button-save-capabilities"
+              >
+                Save Changes
+              </Button>
             </div>
           </div>
         </div>
