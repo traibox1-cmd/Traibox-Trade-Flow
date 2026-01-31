@@ -14,6 +14,7 @@ import Finance from "@/pages/Finance";
 import ComplianceAndProofs from "@/pages/Assurance";
 import Settings from "@/pages/Settings";
 import TradePassport from "@/pages/TradePassport";
+import RiskAssessment from "@/pages/RiskAssessment";
 
 import CapitalConsole from "@/pages/CapitalConsole";
 import FundingDesk from "@/pages/FundingDesk";
@@ -42,6 +43,7 @@ function Router() {
             <Route path="/finance" component={Finance} />
             <Route path="/compliance-proofs" component={ComplianceAndProofs} />
             <Route path="/trade-passport" component={TradePassport} />
+            <Route path="/risk-assessment" component={RiskAssessment} />
             
             {/* Financier Routes */}
             <Route path="/capital-console" component={CapitalConsole} />

@@ -81,6 +81,13 @@ const OPERATOR_NAV: NavItem[] = [
     ],
   },
   {
+    href: "/risk-assessment",
+    label: "Risk Assessment",
+    icon: AlertTriangle,
+    testId: "nav-risk-assessment",
+    subtitle: "AI-driven analysis",
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: Settings2,
