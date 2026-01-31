@@ -1,0 +1,46 @@
+Implement Hotfix Pack to eliminate regressions and make UI reliable. Constraints: refinement only, do NOT remove existing modules/features, do NOT redesign layout.
+
+1) TRADE PASSPORT MUST NOT 404
+
+Trade Passport must live INSIDE Compliance & Proofs as a tab: Checks & Findings | Reports | Proof Packs | Verification & Anchoring | Trade Passport | Track & Trace (keep existing tabs).
+
+Update My Space “Trade Passport” card to navigate to Compliance & Proofs and open the Trade Passport tab (use query param or internal tab state).
+
+Remove/stop using any standalone /passport route unless it is actually registered. The My Space card must never produce a router 404.
+
+2) AI MUST NEVER STALL ON “THINKING…”
+
+Add a frontend timeout (10–15 seconds). If exceeded, stop Thinking and show an assistant error bubble with a Retry button.
+
+Ensure AI responses always render coherent assistant text. Standard response shape:
+{ assistant_text: string, actions?: [], meta?: {} }
+
+If backend returns malformed JSON or only cards, fallback: render text-only response.
+
+If backend errors (quota/network), show a friendly error in-chat (not console-only).
+
+3) EXPLORE MODE MUST BE CONVERSATIONAL
+
+In Explore Mode, always return normal conversational responses (short paragraph + bullets + 1–2 follow-up questions).
+
+Do NOT replace responses only with “Missing Information” cards. Cards are optional attachments.
+
+4) MY NETWORK: CAPABILITIES (“CAN ACT AS”)
+
+In My Network → Directory, add capability chips labeled “Can act as”: Buyer, Supplier, Financier, Logistics, Customs, Insurance (multi-select).
+
+Add an Edit modal/drawer to update these capabilities per party and persist in store.
+
+Keep existing tags like “Forwarding/Customs/Trade docs” as “Services”, separate from “Can act as”.
+
+Acceptance tests (must pass)
+
+Click My Space “Trade Passport” → opens Compliance & Proofs on Trade Passport tab (NO 404).
+
+Ask any question → Thinking ends with a message OR an error bubble + Retry (no infinite spinner).
+
+Explore Mode question → conversational text appears (not only cards).
+
+Directory shows “Can act as” chips and Edit updates them.
+
+Provide a short completion note explaining how you implemented routing/tab state for Trade Passport and how AI timeout/retry works.

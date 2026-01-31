@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,14 @@ export default function TradeIntelligence() {
   const [selectedAgent, setSelectedAgent] = useState<string>("auto");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
+
+  const AI_TIMEOUT_MS = 12000; // 12 second timeout
 
   // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
@@ -189,11 +194,23 @@ export default function TradeIntelligence() {
     setLoading(true);
     setStreaming(true);
     setError(null);
+    setLastUserMessage(textToSend);
+
+    // Create abort controller for timeout
+    abortControllerRef.current = new AbortController();
+    
+    // Set up timeout
+    timeoutIdRef.current = setTimeout(() => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }, AI_TIMEOUT_MS);
 
     try {
       const response = await fetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({ 
             role: m.role, 
@@ -215,6 +232,12 @@ export default function TradeIntelligence() {
           } : undefined,
         }),
       });
+
+      // Clear timeout on successful response start
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to get response from TRAIBOX");
@@ -274,17 +297,29 @@ export default function TradeIntelligence() {
                   }
                   setAIStatus('connected');
                 } catch {
-                  setMessages((prev) => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1] = {
-                      role: "assistant",
-                      content: fullContent,
-                    };
-                    return newMessages;
-                  });
-                  // Fallback recovery - no status update needed
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('JSON parse recovered with plain text fallback');
+                  // Fallback: if JSON parse fails, show as plain text or create structured response
+                  if (fullContent.trim()) {
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      newMessages[newMessages.length - 1] = {
+                        role: "assistant",
+                        content: "",
+                        structured: {
+                          assistant_text: fullContent,
+                          meta: { mode: chatMode }
+                        }
+                      };
+                      return newMessages;
+                    });
+                  } else {
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      newMessages[newMessages.length - 1] = {
+                        role: "assistant",
+                        content: fullContent || "I received your message but couldn't generate a complete response. Please try again.",
+                      };
+                      return newMessages;
+                    });
                   }
                 }
               } else if (data.type === "error") {
@@ -298,13 +333,56 @@ export default function TradeIntelligence() {
       }
     } catch (err) {
       console.error("Chat error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setMessages((prev) => prev.slice(0, -1));
+      const isTimeout = err instanceof Error && (err.name === 'AbortError' || err.message.includes('timeout'));
+      const errorMessage = isTimeout 
+        ? "Response timed out. The AI is taking too long to respond."
+        : err instanceof Error ? err.message : "An error occurred";
+      
+      // Replace the empty assistant message with error message
+      setMessages((prev) => {
+        const lastIndex = prev.length - 1;
+        if (lastIndex >= 0 && prev[lastIndex].role === "assistant" && !prev[lastIndex].content && !prev[lastIndex].structured) {
+          const newMessages = [...prev];
+          newMessages[lastIndex] = {
+            role: "assistant",
+            content: "",
+            structured: {
+              assistant_text: `**Error:** ${errorMessage}\n\nPlease try again or rephrase your question.`,
+              actions: [{ type: "retry", label: "Retry", description: "Try sending the message again" }],
+              meta: { mode: chatMode }
+            }
+          };
+          return newMessages;
+        }
+        return prev;
+      });
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setStreaming(false);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      abortControllerRef.current = null;
     }
   };
+
+  const handleRetry = useCallback(() => {
+    if (lastUserMessage) {
+      setError(null);
+      // Remove the last error message
+      setMessages(prev => {
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg?.structured?.actions?.some(a => a.type === "retry")) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+      handleSend(lastUserMessage);
+    }
+  }, [lastUserMessage]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -443,6 +521,8 @@ export default function TradeIntelligence() {
       setLocation(`/trade/${tradeId}`);
     } else if (action.type === "invite-partner") {
       setLocation("/network?tab=invites");
+    } else if (action.type === "retry") {
+      handleRetry();
     }
   };
 

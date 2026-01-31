@@ -61,7 +61,7 @@ export default function CompliancePage() {
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
 
   useEffect(() => {
-    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "passport" || tabParam === "track-trace") {
+    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "passport" || tabParam === "track-trace" || tabParam === "anchoring") {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -208,19 +208,22 @@ export default function CompliancePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="tabs-compliance">
           <TabsList className="w-full justify-start" data-testid="tabslist-compliance">
             <TabsTrigger value="checks" data-testid="tab-checks">
-              Checks
-            </TabsTrigger>
-            <TabsTrigger value="proofs" data-testid="tab-proofs">
-              Proof Packs
+              Checks & Findings
             </TabsTrigger>
             <TabsTrigger value="reports" data-testid="tab-reports">
               Reports
             </TabsTrigger>
-            <TabsTrigger value="track-trace" data-testid="tab-track-trace">
-              Track & Trace
+            <TabsTrigger value="proofs" data-testid="tab-proofs">
+              Proof Packs
+            </TabsTrigger>
+            <TabsTrigger value="anchoring" data-testid="tab-anchoring">
+              Verification & Anchoring
             </TabsTrigger>
             <TabsTrigger value="passport" data-testid="tab-passport">
               Trade Passport
+            </TabsTrigger>
+            <TabsTrigger value="track-trace" data-testid="tab-track-trace">
+              Track & Trace
             </TabsTrigger>
           </TabsList>
 
@@ -414,6 +417,70 @@ export default function CompliancePage() {
                 <div className="text-sm font-medium">No saved reports yet</div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   Generate a report after checks complete, or from within a trade workspace.
+                </div>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          <TabsContent value="anchoring" className="mt-4" data-testid="panel-anchoring">
+            <TBCard
+              title="Verification & Anchoring"
+              subtitle="Document verification and blockchain anchoring"
+              state="idle"
+              icon={<ShieldCheck className="h-4 w-4" />}
+              dataTestId="card-anchoring"
+            >
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <div className="text-sm font-medium mb-3">Document Verification</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-green-600" />
+                        <span className="text-sm">Bill of Lading</span>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 rounded">Verified</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-green-600" />
+                        <span className="text-sm">Commercial Invoice</span>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 rounded">Verified</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm">Certificate of Origin</span>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-600 rounded">Pending</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <div className="text-sm font-medium mb-3">Blockchain Anchoring</div>
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Anchor document hashes to an immutable ledger for tamper-proof verification.
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <span className="text-sm">Last anchor</span>
+                      <span className="text-xs text-muted-foreground">2 hours ago</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <span className="text-sm">Documents anchored</span>
+                      <span className="text-xs font-medium">5</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button variant="secondary" size="sm" className="h-8">
+                      Anchor Documents
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8">
+                      View Proof
+                    </Button>
+                  </div>
                 </div>
               </div>
             </TBCard>

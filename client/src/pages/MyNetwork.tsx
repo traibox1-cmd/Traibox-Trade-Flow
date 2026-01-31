@@ -20,16 +20,19 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useAppStore, type Partner } from "@/lib/store";
+import { useAppStore, type Partner, type PartnerRole } from "@/lib/store";
 
-const ALL_CAPABILITIES = [
+const CAN_ACT_AS_ROLES: PartnerRole[] = [
   "Buyer",
   "Supplier",
   "Financier",
   "Logistics",
-  "Forwarding",
   "Customs",
   "Insurance",
+];
+
+const SERVICE_CAPABILITIES = [
+  "Forwarding",
   "Manufacturing",
   "QA",
   "Trade docs",
@@ -77,19 +80,37 @@ function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConne
           >
             {p.region}
           </div>
-          <div
-            className="mt-3 flex flex-wrap gap-2"
-            data-testid={`list-partner-caps-${p.id}`}
-          >
-            {p.capabilities.map((c) => (
-              <div
-                key={c}
-                className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px]"
-              >
-                {c}
+          {p.canActAs && p.canActAs.length > 0 && (
+            <div className="mt-2" data-testid={`list-partner-roles-${p.id}`}>
+              <div className="text-[10px] text-muted-foreground mb-1">Can act as</div>
+              <div className="flex flex-wrap gap-1.5">
+                {p.canActAs.map((role) => (
+                  <div
+                    key={role}
+                    className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium"
+                    data-testid={`chip-role-${p.id}-${role}`}
+                  >
+                    {role}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+          {p.capabilities.length > 0 && (
+            <div className="mt-2" data-testid={`list-partner-caps-${p.id}`}>
+              <div className="text-[10px] text-muted-foreground mb-1">Services</div>
+              <div className="flex flex-wrap gap-1.5">
+                {p.capabilities.map((c) => (
+                  <div
+                    key={c}
+                    className="rounded-full border bg-background/70 px-2 py-0.5 text-[10px]"
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-end gap-2">
@@ -139,11 +160,13 @@ export default function MyNetwork() {
   const [inviteName, setInviteName] = useState("");
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editCapabilities, setEditCapabilities] = useState<string[]>([]);
+  const [editCanActAs, setEditCanActAs] = useState<PartnerRole[]>([]);
   const { partners, partnerInvites, updatePartner, addPartnerInvite } = useAppStore();
 
   const handleOpenCapabilityEdit = (partner: Partner) => {
     setEditingPartner(partner);
     setEditCapabilities([...partner.capabilities]);
+    setEditCanActAs([...(partner.canActAs || [])]);
   };
 
   const handleToggleCapability = (cap: string) => {
@@ -154,9 +177,17 @@ export default function MyNetwork() {
     );
   };
 
+  const handleToggleCanActAs = (role: PartnerRole) => {
+    setEditCanActAs(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role) 
+        : [...prev, role]
+    );
+  };
+
   const handleSaveCapabilities = () => {
     if (editingPartner) {
-      updatePartner(editingPartner.id, { capabilities: editCapabilities });
+      updatePartner(editingPartner.id, { capabilities: editCapabilities, canActAs: editCanActAs });
       setEditingPartner(null);
     }
   };
@@ -601,9 +632,9 @@ export default function MyNetwork() {
             className="absolute inset-0 bg-black/50" 
             onClick={() => setEditingPartner(null)}
           />
-          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
+          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Edit Capabilities</h3>
+              <h3 className="text-lg font-semibold">Edit Partner</h3>
               <button
                 onClick={() => setEditingPartner(null)}
                 className="p-1 rounded-lg hover:bg-accent"
@@ -612,26 +643,51 @@ export default function MyNetwork() {
               </button>
             </div>
             <div className="text-sm text-muted-foreground mb-4">
-              Select capabilities for <span className="font-medium text-foreground">{editingPartner.name}</span>
+              Update <span className="font-medium text-foreground">{editingPartner.name}</span>
             </div>
-            <div className="text-xs font-medium text-muted-foreground mb-2">Can act as:</div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {ALL_CAPABILITIES.map((cap) => (
-                <button
-                  key={cap}
-                  onClick={() => handleToggleCapability(cap)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                    editCapabilities.includes(cap)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border hover:bg-accent"
-                  }`}
-                  data-testid={`cap-chip-${cap.toLowerCase().replace(/\s+/g, "-")}`}
-                >
-                  {editCapabilities.includes(cap) && <Check className="w-3 h-3 inline mr-1" />}
-                  {cap}
-                </button>
-              ))}
+            
+            <div className="mb-4">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Can act as:</div>
+              <div className="flex flex-wrap gap-2">
+                {CAN_ACT_AS_ROLES.map((role) => (
+                  <button
+                    key={role}
+                    onClick={() => handleToggleCanActAs(role)}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                      editCanActAs.includes(role)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:bg-accent"
+                    }`}
+                    data-testid={`role-chip-${role.toLowerCase()}`}
+                  >
+                    {editCanActAs.includes(role) && <Check className="w-3 h-3 inline mr-1" />}
+                    {role}
+                  </button>
+                ))}
+              </div>
             </div>
+            
+            <div className="mb-6">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Services:</div>
+              <div className="flex flex-wrap gap-2">
+                {SERVICE_CAPABILITIES.map((cap) => (
+                  <button
+                    key={cap}
+                    onClick={() => handleToggleCapability(cap)}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                      editCapabilities.includes(cap)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:bg-accent"
+                    }`}
+                    data-testid={`cap-chip-${cap.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {editCapabilities.includes(cap) && <Check className="w-3 h-3 inline mr-1" />}
+                    {cap}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
             <div className="flex gap-2">
               <Button
                 variant="outline"

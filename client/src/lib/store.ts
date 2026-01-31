@@ -162,11 +162,14 @@ export type Payment = {
   notes?: string;
 };
 
+export type PartnerRole = 'Buyer' | 'Supplier' | 'Financier' | 'Logistics' | 'Customs' | 'Insurance';
+
 export type Partner = {
   id: string;
   name: string;
   region: string;
-  capabilities: string[];
+  capabilities: string[]; // Services: Forwarding, Customs, Trade docs, etc.
+  canActAs: PartnerRole[]; // Roles: Buyer, Supplier, Financier, Logistics, Customs, Insurance
   trust: 'verified' | 'partner' | 'new';
   visibility: 'private' | 'shared';
   connectionStatus: 'none' | 'pending' | 'connected';
@@ -219,6 +222,7 @@ const initialPartners: Partner[] = [
     name: "NordWerk Logistics",
     region: "EU",
     capabilities: ["Forwarding", "Customs", "Trade docs"],
+    canActAs: ["Logistics", "Customs"],
     trust: "verified",
     visibility: "private",
     connectionStatus: "connected",
@@ -228,6 +232,7 @@ const initialPartners: Partner[] = [
     name: "Aster Mills",
     region: "SEA",
     capabilities: ["Manufacturing", "QA", "Insurance"],
+    canActAs: ["Supplier"],
     trust: "partner",
     visibility: "shared",
     connectionStatus: "connected",
@@ -237,6 +242,7 @@ const initialPartners: Partner[] = [
     name: "Kijani Cooperative",
     region: "Africa",
     capabilities: ["Aggregation", "Fulfillment", "Local compliance"],
+    canActAs: ["Supplier", "Buyer"],
     trust: "new",
     visibility: "private",
     connectionStatus: "none",
