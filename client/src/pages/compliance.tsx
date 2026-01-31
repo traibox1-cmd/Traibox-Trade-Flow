@@ -61,7 +61,7 @@ export default function CompliancePage() {
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
 
   useEffect(() => {
-    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "track-trace" || tabParam === "passport") {
+    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "passport" || tabParam === "track-trace") {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -427,45 +427,161 @@ export default function CompliancePage() {
               icon={<Package className="h-4 w-4" />}
               dataTestId="card-track-trace"
             >
-              <div
-                className="rounded-2xl border bg-background/60 p-4"
-                data-testid="track-trace-content"
-              >
-                <div className="text-sm font-medium">Shipment Tracking Integration</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  View logistics milestones and shipping events from the Trade Workspace Logistics tab.
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <div className="text-sm font-medium mb-3">Provider Connection</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="text-sm">Not connected</span>
+                    </div>
+                    <Button variant="secondary" size="sm" className="h-8">
+                      Connect Provider
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <div className="text-sm font-medium mb-3">Milestone Timeline</div>
+                  <div className="space-y-3">
+                    {[
+                      { key: "booked", label: "Booking Confirmed", status: "confirmed" },
+                      { key: "pickup", label: "Goods Picked Up", status: "confirmed" },
+                      { key: "export-cleared", label: "Export Cleared", status: "confirmed" },
+                      { key: "in-transit", label: "In Transit", status: "pending" },
+                      { key: "import-cleared", label: "Import Cleared", status: "pending" },
+                      { key: "delivered", label: "Delivered / POD", status: "pending" },
+                    ].map((milestone) => (
+                      <div key={milestone.key} className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          milestone.status === "confirmed" 
+                            ? "bg-green-500/20 text-green-600" 
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {milestone.status === "confirmed" ? "✓" : "○"}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{milestone.label}</div>
+                          {milestone.status === "confirmed" && (
+                            <div className="text-xs text-muted-foreground">Completed</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    View detailed logistics tracking from the Trade Workspace Logistics tab.
+                  </div>
                 </div>
               </div>
             </TBCard>
           </TabsContent>
 
           <TabsContent value="passport" className="mt-4" data-testid="panel-passport">
-            <TBCard
-              title="Trade Passport"
-              subtitle="Identity, compliance status, and shareable credentials"
-              state="idle"
-              icon={<BadgeCheck className="h-4 w-4" />}
-              dataTestId="card-passport-panel"
-            >
-              <div
-                className="rounded-2xl border bg-background/60 p-4"
-                data-testid="passport-redirect-card"
+            <div className="space-y-4">
+              <TBCard
+                title="Trade Passport"
+                subtitle="Identity, compliance status, and shareable verification credentials"
+                state="warn"
+                icon={<BadgeCheck className="h-4 w-4" />}
+                dataTestId="card-passport-panel"
               >
-                <div className="text-sm font-medium mb-2">View your Trade Passport</div>
-                <div className="text-sm text-muted-foreground mb-3">
-                  Access your complete identity verification, beneficial ownership, compliance status, and share controls.
+                <div className="space-y-4">
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="text-xs font-semibold mb-1">Missing information</div>
+                        <ul className="text-xs text-muted-foreground space-y-0.5">
+                          <li>• Beneficial ownership declaration</li>
+                          <li>• ESG compliance report</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Company Identity (KYB)</div>
+                    <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground">Company Name</div>
+                        <div className="text-xs font-medium">Global Trade Solutions Ltd</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground">Registration No.</div>
+                        <div className="text-xs font-medium">GB123456789</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Beneficial Ownership (UBO)</div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-2">UBO declaration pending submission</div>
+                      <Button size="sm" variant="outline" className="h-7 text-xs">
+                        Upload Declaration
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Compliance Status</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-xs font-medium">KYC/KYB</span>
+                        <div className="px-1.5 py-0.5 bg-green-500/20 text-green-600 text-[10px] rounded">Complete</div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-xs font-medium">AML</span>
+                        <div className="px-1.5 py-0.5 bg-green-500/20 text-green-600 text-[10px] rounded">Clear</div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-xs font-medium">UBO</span>
+                        <div className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 text-[10px] rounded">Pending</div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-xs font-medium">ESG</span>
+                        <div className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 text-[10px] rounded">Pending</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Evidence & Proof Packs</div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground">
+                        {proofPacks.length} proof pack(s) linked • {complianceRuns.length} compliance check(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Share Controls</div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="h-7 text-xs flex-1">
+                        Internal Only
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-7 text-xs flex-1">
+                        Trade Parties
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-7 text-xs flex-1">
+                        Financiers
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-border">
+                    <Button variant="secondary" size="sm" className="h-8 flex-1">
+                      <Download className="mr-2 h-3 w-3" />
+                      Export PDF
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 flex-1" onClick={() => window.location.href = '/trade-passport'}>
+                      View Full Passport
+                    </Button>
+                  </div>
                 </div>
-                <Button 
-                  variant="secondary" 
-                  className="h-8"
-                  onClick={() => window.location.href = '/trade-passport'}
-                  data-testid="button-view-passport"
-                >
-                  <BadgeCheck className="mr-2 h-3 w-3" />
-                  View Trade Passport
-                </Button>
-              </div>
-            </TBCard>
+              </TBCard>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

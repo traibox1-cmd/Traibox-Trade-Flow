@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload } from "lucide-react";
+import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppStore, type TradeDocument } from "@/lib/store";
@@ -55,6 +55,7 @@ export default function TradeIntelligence() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState("auto");
   const [chatMode, setChatMode] = useState<"trade" | "explore">("explore");
@@ -62,20 +63,41 @@ export default function TradeIntelligence() {
   const [pendingTradeUpdates, setPendingTradeUpdates] = useState<AIResponse["trade_updates"] | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<string>("auto");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
-  // Auto-switch to Trade mode when trade is selected
+  // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
-    if (selectedTradeId && chatMode === "explore") {
-      setChatMode("trade");
-    } else if (!selectedTradeId && chatMode === "trade") {
-      setChatMode("explore");
+    if (chatMode === "trade" && !selectedTradeId) {
+      // Show prompt immediately on mode switch
+      const lastMessage = messages[messages.length - 1];
+      const isAlreadyPrompt = lastMessage?.structured?.next_actions?.some(a => a.type === "create-trade" || a.type === "select-trade");
+      
+      if (!isAlreadyPrompt) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "To use Trade Mode, please select or create a trade first.",
+            structured: {
+              summary: "Trade Mode requires a trade context to execute workflows.",
+              missing_inputs: [],
+              next_actions: [
+                { type: "create-trade", label: "Create Trade", description: "Create a new trade to get started" },
+                { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" },
+              ],
+            },
+          },
+        ]);
+      }
     }
-  }, [selectedTradeId]);
+  }, [chatMode, selectedTradeId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -106,6 +128,31 @@ export default function TradeIntelligence() {
     const textToSend = message || input.trim();
     if (!textToSend || loading) return;
 
+    // Check if Trade Mode without trade selected
+    if (chatMode === "trade" && !selectedTradeId) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "user",
+          content: textToSend,
+        },
+        {
+          role: "assistant",
+          content: "To use Trade Mode, please select or create a trade first.",
+          structured: {
+            summary: "Trade Mode requires a trade context to execute workflows.",
+            missing_inputs: [],
+            next_actions: [
+              { type: "create-trade", label: "Create Trade", description: "Create a new trade to get started" },
+              { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" },
+            ],
+          },
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
     const userMessage: Message = { 
       role: "user", 
       content: textToSend,
@@ -134,6 +181,7 @@ export default function TradeIntelligence() {
     setInput("");
     setAttachments([]);
     setLoading(true);
+    setStreaming(true);
     setError(null);
 
     try {
@@ -172,7 +220,7 @@ export default function TradeIntelligence() {
       const decoder = new TextDecoder();
       let fullContent = "";
 
-      setMessages((prev) => [...prev, { role: "assistant", content: "..." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -241,6 +289,7 @@ export default function TradeIntelligence() {
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
+      setStreaming(false);
     }
   };
 
@@ -583,7 +632,7 @@ export default function TradeIntelligence() {
                         : "bg-card border border-border"
                     }`}
                   >
-                    {msg.role === "assistant" && msg.content === "..." ? (
+                    {msg.role === "assistant" && (msg.content === "" || msg.content === "...") ? (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Thinking...
@@ -628,42 +677,41 @@ export default function TradeIntelligence() {
 
         <div className="px-8 py-4 border-t border-border">
           <div className="max-w-3xl mx-auto space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="inline-flex items-center rounded-lg border border-border bg-background p-1" data-testid="toggle-chat-mode">
                   <button
-                    onClick={() => setChatMode("trade")}
-                    disabled={!selectedTradeId}
-                    className={`px-3 py-1 text-xs rounded transition-colors ${
-                      chatMode === "trade" 
-                        ? "bg-primary text-primary-foreground" 
-                        : "hover:bg-accent"
-                    } ${!selectedTradeId ? "opacity-50 cursor-not-allowed" : ""}`}
-                    data-testid="button-mode-trade"
-                  >
-                    Trade
-                  </button>
-                  <button
                     onClick={() => setChatMode("explore")}
-                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                    className={`px-3 py-1.5 text-xs rounded transition-colors ${
                       chatMode === "explore" 
                         ? "bg-primary text-primary-foreground" 
                         : "hover:bg-accent"
                     }`}
                     data-testid="button-mode-explore"
                   >
-                    Explore
+                    Explore Mode
+                  </button>
+                  <button
+                    onClick={() => setChatMode("trade")}
+                    className={`px-3 py-1.5 text-xs rounded transition-colors ${
+                      chatMode === "trade" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-accent"
+                    }`}
+                    data-testid="button-mode-trade"
+                  >
+                    Trade Mode
                   </button>
                 </div>
-                <div className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20" data-testid="pill-current-mode">
-                  Mode: {chatMode === "trade" ? "Trade" : "Explore"}
+                <div className="px-2.5 py-1 text-[11px] rounded-full bg-muted text-muted-foreground border border-border" data-testid="pill-agent">
+                  Agent: {selectedAgent === "auto" ? "Auto" : selectedAgent === "compliance" ? "Compliance Officer" : selectedAgent === "logistics" ? "Logistics Coordinator" : selectedAgent === "finance" ? "Trade Finance Desk" : selectedAgent === "legal" ? "Legal" : "Sustainability"}
                 </div>
               </div>
-              {chatMode === "explore" && (
-                <p className="text-xs text-muted-foreground">
-                  Explore: insights, best practices, partners, routes
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                {chatMode === "explore" 
+                  ? "Explore Mode: Insights, best practices, partners, routes" 
+                  : "Trade Mode: Create & execute a trade workflow"}
+              </p>
             </div>
 
             {attachments.length > 0 && (
@@ -683,7 +731,7 @@ export default function TradeIntelligence() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -692,43 +740,76 @@ export default function TradeIntelligence() {
                 multiple
                 className="hidden"
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3"
-                data-testid="button-attach"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="px-3"
-                    disabled
-                    data-testid="button-voice"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Coming soon</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="px-3"
-                    disabled
-                    data-testid="button-camera"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Coming soon</TooltipContent>
-              </Tooltip>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  className="px-3"
+                  data-testid="button-attach-menu"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                {showAttachMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowAttachMenu(false)}
+                    />
+                    <div className="absolute bottom-full left-0 mb-2 w-56 rounded-lg border border-border bg-card shadow-lg p-1 z-50">
+                    <button
+                      onClick={() => {
+                        fileInputRef.current?.click();
+                        setShowAttachMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2"
+                      data-testid="menu-upload"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload documents
+                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          disabled
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2 opacity-50"
+                          data-testid="menu-voice"
+                        >
+                          <Mic className="w-4 h-4" />
+                          Voice
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Coming soon</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          disabled
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2 opacity-50"
+                          data-testid="menu-camera"
+                        >
+                          <Camera className="w-4 h-4" />
+                          Camera
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Coming soon</TooltipContent>
+                    </Tooltip>
+                    <div className="h-px bg-border my-1" />
+                    <button
+                      onClick={() => {
+                        setShowAgentPicker(true);
+                        setShowAttachMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2"
+                      data-testid="menu-agents"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Agents
+                    </button>
+                  </div>
+                  </>
+                )}
+              </div>
               <input
                 type="text"
                 value={input}
@@ -754,6 +835,62 @@ export default function TradeIntelligence() {
           </div>
         </div>
       </div>
+
+      {/* Agent Picker Modal */}
+      {showAgentPicker && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setShowAgentPicker(false)}
+        >
+          <div 
+            className="bg-card rounded-2xl border border-border p-6 w-full max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users2 className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-lg">Select Agent</h3>
+              </div>
+              <button
+                onClick={() => setShowAgentPicker(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose a specialized agent to scope the assistant's responses and suggested actions.
+            </p>
+            <div className="space-y-2">
+              {[
+                { id: "auto", label: "Auto", desc: "General trade assistance" },
+                { id: "compliance", label: "Compliance Officer", desc: "Sanctions, KYC, and regulatory checks" },
+                { id: "logistics", label: "Logistics Coordinator", desc: "Shipping, tracking, and documentation" },
+                { id: "finance", label: "Trade Finance Desk", desc: "Funding, payments, and financing" },
+                { id: "legal", label: "Legal", desc: "Terms, contracts, and legal compliance" },
+                { id: "sustainability", label: "Sustainability", desc: "ESG and sustainability reporting" },
+              ].map((agent) => (
+                <button
+                  key={agent.id}
+                  onClick={() => {
+                    setSelectedAgent(agent.id);
+                    setShowAgentPicker(false);
+                  }}
+                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    selectedAgent === agent.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 hover:bg-accent"
+                  }`}
+                  data-testid={`agent-${agent.id}`}
+                >
+                  <div className="font-medium text-sm">{agent.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{agent.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

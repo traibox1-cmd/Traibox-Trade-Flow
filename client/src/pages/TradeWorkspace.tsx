@@ -187,6 +187,13 @@ export default function TradeWorkspace() {
               ? `${trade.logisticsMilestones.filter(m => m.status === 'issue').length} issues` 
               : 'On track'}
           </button>
+          <button
+            onClick={() => navigate("/compliance?tab=passport")}
+            className="px-3 py-1 rounded-full bg-background border border-border text-xs hover:bg-accent transition-colors"
+            data-testid="chip-quick-passport"
+          >
+            Passport: 75%
+          </button>
         </div>
       </div>
 
@@ -401,14 +408,17 @@ export default function TradeWorkspace() {
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-xs font-medium text-muted-foreground">Linked Parties</div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">Linked Parties from Network</div>
+                      <div className="text-[10px] text-muted-foreground">Role in this trade</div>
+                    </div>
                     <Button size="sm" variant="outline" className="h-7 text-xs">
                       <UserPlus className="w-3 h-3 mr-1" />
                       Link
                     </Button>
                   </div>
                   {trade.linkedParties.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No linked partners. Use My Network to link trade parties.</p>
+                    <p className="text-xs text-muted-foreground">No linked partners. Use My Network to link trade parties and assign roles.</p>
                   ) : (
                     <div className="space-y-2">
                       {trade.linkedParties.map((lp, idx) => (
@@ -420,6 +430,9 @@ export default function TradeWorkspace() {
                                 {role}
                               </div>
                             ))}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-1">
+                            See full capabilities in My Network
                           </div>
                         </div>
                       ))}
