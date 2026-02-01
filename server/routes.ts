@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { streamChatCompletion, detectIntent, hasValidApiKey, createStructuredChatCompletion } from "./lib/openai";
+import { streamChatCompletion, detectIntent, hasValidApiKey, createStructuredChatCompletion, generateTrendAnalysis } from "./lib/openai";
 import { insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -632,6 +632,18 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Risk analysis error:", error);
       res.status(500).json({ error: "Failed to generate risk analysis" });
+    }
+  });
+
+  // AI-driven trade trend analysis and forecasting
+  app.get("/api/trends", async (req, res) => {
+    try {
+      const trades = await storage.getTrades();
+      const analysis = await generateTrendAnalysis(trades);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Trend analysis error:", error);
+      res.status(500).json({ error: "Failed to generate trend analysis" });
     }
   });
 

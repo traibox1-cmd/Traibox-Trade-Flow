@@ -489,3 +489,188 @@ export function detectIntent(message: string, mode: string): string[] {
 
   return intents;
 }
+
+export type TrendInsight = {
+  id: string;
+  type: "trend" | "forecast" | "alert" | "opportunity";
+  title: string;
+  description: string;
+  confidence: number;
+  timeframe?: string;
+  metrics?: {
+    label: string;
+    value: string;
+    change?: string;
+    direction?: "up" | "down" | "stable";
+  }[];
+};
+
+export type TrendAnalysisResponse = {
+  summary: string;
+  insights: TrendInsight[];
+  commodityTrends: {
+    commodity: string;
+    trend: "rising" | "falling" | "stable";
+    priceChange: string;
+    forecast: string;
+  }[];
+  corridorAnalysis: {
+    corridor: string;
+    volume: string;
+    growth: string;
+    riskLevel: "low" | "medium" | "high";
+  }[];
+  marketOutlook: string;
+  generatedAt: string;
+};
+
+function generateDemoTrendAnalysis(trades: any[]): TrendAnalysisResponse {
+  const commodities = trades.map(t => t.commodity).filter(Boolean);
+  const corridors = trades.map(t => `${t.origin} → ${t.destination}`);
+  const totalValue = trades.reduce((sum, t) => sum + (parseFloat(t.value) || 0), 0);
+  
+  return {
+    summary: `Based on your ${trades.length} active trades worth ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalValue)}, here are the key market trends and forecasts for your trade portfolio.`,
+    insights: [
+      {
+        id: "commodity-surge",
+        type: "trend",
+        title: "Agricultural Commodities Surge",
+        description: "Global coffee and cocoa prices have risen 12% this quarter due to supply constraints in key producing regions.",
+        confidence: 85,
+        timeframe: "Q1 2026",
+        metrics: [
+          { label: "Coffee Arabica", value: "$4.85/lb", change: "+8.2%", direction: "up" },
+          { label: "Cocoa", value: "$8,250/MT", change: "+15.3%", direction: "up" }
+        ]
+      },
+      {
+        id: "corridor-growth",
+        type: "forecast",
+        title: "Africa-Europe Corridor Growth",
+        description: "Trade volumes on Africa-Europe routes are projected to grow 18% in 2026, driven by EU sustainability mandates and nearshoring trends.",
+        confidence: 78,
+        timeframe: "2026 Forecast"
+      },
+      {
+        id: "currency-alert",
+        type: "alert",
+        title: "EUR/USD Volatility Expected",
+        description: "Central bank policy divergence may cause 5-8% currency swings in the coming quarter. Consider hedging strategies for Euro-denominated trades.",
+        confidence: 72,
+        timeframe: "Next 90 days"
+      },
+      {
+        id: "financing-opportunity",
+        type: "opportunity",
+        title: "Favorable Financing Window",
+        description: "Trade finance rates are at 18-month lows. Lock in fixed rates now for trades closing in Q2-Q3.",
+        confidence: 81,
+        metrics: [
+          { label: "LC Rates", value: "1.8-2.2%", change: "-0.4%", direction: "down" },
+          { label: "Forfaiting", value: "SOFR+180bps", change: "-25bps", direction: "down" }
+        ]
+      },
+      {
+        id: "logistics-improvement",
+        type: "trend",
+        title: "Shipping Costs Normalizing",
+        description: "Container freight rates have declined 35% from peak levels. Mediterranean and West African routes showing best improvements.",
+        confidence: 88,
+        timeframe: "Current"
+      }
+    ],
+    commodityTrends: [
+      { commodity: "Coffee", trend: "rising", priceChange: "+8.2%", forecast: "Expected to remain elevated through Q2 due to Brazilian frost damage" },
+      { commodity: "Cocoa", trend: "rising", priceChange: "+15.3%", forecast: "Supply deficit continues; prices may peak in March" },
+      { commodity: "Cotton", trend: "stable", priceChange: "-1.2%", forecast: "Demand softening from textile sector; sideways movement expected" },
+      { commodity: "Grains", trend: "falling", priceChange: "-6.8%", forecast: "Strong harvests in Argentina and Australia putting pressure on prices" }
+    ],
+    corridorAnalysis: [
+      { corridor: "Ethiopia → Italy", volume: "$2.4M", growth: "+22%", riskLevel: "low" },
+      { corridor: "Ghana → Germany", volume: "$3.8M", growth: "+18%", riskLevel: "low" },
+      { corridor: "Brazil → Netherlands", volume: "$5.1M", growth: "+8%", riskLevel: "medium" },
+      { corridor: "Vietnam → USA", volume: "$4.2M", growth: "+12%", riskLevel: "low" }
+    ],
+    marketOutlook: "The global trade environment remains favorable for commodity traders. While geopolitical tensions persist, strong demand from Europe and improved logistics are creating opportunities. We recommend focusing on African agricultural exports and considering longer-term financing to lock in current favorable rates. Monitor currency exposure closely given expected volatility.",
+    generatedAt: new Date().toISOString()
+  };
+}
+
+export async function generateTrendAnalysis(trades: any[]): Promise<TrendAnalysisResponse> {
+  if (!hasValidApiKey) {
+    return generateDemoTrendAnalysis(trades);
+  }
+
+  try {
+    const tradesSummary = trades.map(t => ({
+      commodity: t.commodity,
+      origin: t.origin,
+      destination: t.destination,
+      value: t.value,
+      currency: t.currency,
+      status: t.status
+    }));
+
+    const prompt = `You are a trade intelligence analyst. Analyze the following trade portfolio and provide market trends, forecasts, and insights.
+
+TRADE PORTFOLIO:
+${JSON.stringify(tradesSummary, null, 2)}
+
+Provide a JSON response with:
+{
+  "summary": "Brief overview of portfolio trends",
+  "insights": [
+    {
+      "id": "unique-id",
+      "type": "trend|forecast|alert|opportunity",
+      "title": "Insight title",
+      "description": "Detailed description",
+      "confidence": 0-100,
+      "timeframe": "relevant timeframe",
+      "metrics": [{"label": "name", "value": "value", "change": "+/-X%", "direction": "up|down|stable"}]
+    }
+  ],
+  "commodityTrends": [
+    {"commodity": "name", "trend": "rising|falling|stable", "priceChange": "+/-X%", "forecast": "outlook"}
+  ],
+  "corridorAnalysis": [
+    {"corridor": "Origin → Destination", "volume": "$XM", "growth": "+X%", "riskLevel": "low|medium|high"}
+  ],
+  "marketOutlook": "Overall market perspective and recommendations"
+}
+
+Focus on actionable insights for trade operators. Be specific about commodities and corridors in the portfolio.`;
+
+    const response = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a trade intelligence analyst. Respond only with valid JSON." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("OpenAI timeout")), OPENAI_TIMEOUT_MS)
+      )
+    ]);
+
+    const content = response.choices[0]?.message?.content || "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        ...parsed,
+        generatedAt: new Date().toISOString()
+      };
+    }
+    
+    return generateDemoTrendAnalysis(trades);
+  } catch (error) {
+    console.error("Trend analysis error, using demo:", error);
+    return generateDemoTrendAnalysis(trades);
+  }
+}

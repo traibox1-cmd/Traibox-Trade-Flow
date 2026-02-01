@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   FileCheck,
   Coins,
+  TrendingUp,
 } from "lucide-react";
 
 type NavItem = {
@@ -88,6 +89,13 @@ const OPERATOR_NAV: NavItem[] = [
     icon: AlertTriangle,
     testId: "nav-risk-assessment",
     subtitle: "AI-driven analysis",
+  },
+  {
+    href: "/trends",
+    label: "Trade Trends",
+    icon: TrendingUp,
+    testId: "nav-trends",
+    subtitle: "AI forecasts",
   },
   {
     href: "/settings",

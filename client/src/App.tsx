@@ -24,6 +24,7 @@ import RiskPolicy from "@/pages/RiskPolicy";
 import Settlement from "@/pages/Settlement";
 import Evidence from "@/pages/Evidence";
 import TradeWorkspace from "@/pages/TradeWorkspace";
+import TradeTrends from "@/pages/TradeTrends";
 
 function Router() {
   return (
@@ -54,6 +55,7 @@ function Router() {
               <Redirect to="/compliance-proofs?tab=passport" />
             </Route>
             <Route path="/risk-assessment" component={RiskAssessment} />
+            <Route path="/trends" component={TradeTrends} />
             
             {/* Financier Routes */}
             <Route path="/capital-console" component={CapitalConsole} />
