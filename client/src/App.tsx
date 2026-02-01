@@ -12,6 +12,7 @@ import TradeIntelligence from "@/pages/TradeIntelligence";
 import MyNetwork from "@/pages/MyNetwork";
 import Finance from "@/pages/Finance";
 import ComplianceAndProofs from "@/pages/Assurance";
+import CompliancePage from "@/pages/compliance";
 import Settings from "@/pages/Settings";
 import TradePassport from "@/pages/TradePassport";
 import RiskAssessment from "@/pages/RiskAssessment";
@@ -42,6 +43,7 @@ function Router() {
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
             <Route path="/compliance-proofs" component={ComplianceAndProofs} />
+            <Route path="/compliance" component={CompliancePage} />
             <Route path="/trade-passport" component={TradePassport} />
             <Route path="/risk-assessment" component={RiskAssessment} />
             
