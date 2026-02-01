@@ -22,7 +22,8 @@ import {
   Plus,
   UserPlus,
 } from "lucide-react";
-import { useAppStore, type TradeTimelineStep } from "@/lib/store";
+import { useAppStore, type TradeTimelineStep, ALL_PARTNER_ROLES } from "@/lib/store";
+import { X } from "lucide-react";
 
 const TIMELINE_STEPS: { key: TradeTimelineStep; label: string; icon: React.ReactNode }[] = [
   { key: "plan", label: "Plan", icon: <ClipboardList className="h-4 w-4" /> },
@@ -47,15 +48,22 @@ export default function TradeWorkspace() {
     fundingRequests,
     payments,
     proofPacks,
+    partners,
     updateTrade,
     addComplianceRun,
     addFundingRequest,
     addPayment,
     addProofPack,
+    linkPartyToTrade,
+    unlinkPartyFromTrade,
+    getPartnerById,
   } = useAppStore();
 
   const trade = useMemo(() => trades.find((t) => t.id === tradeId), [trades, tradeId]);
   const [inspectorTab, setInspectorTab] = useState("context");
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const tradeComplianceRuns = useMemo(
     () => complianceRuns.filter((r) => r.tradeId === tradeId),
@@ -412,30 +420,54 @@ export default function TradeWorkspace() {
                       <div className="text-xs font-medium text-muted-foreground">Linked Parties from Network</div>
                       <div className="text-[10px] text-muted-foreground">Role in this trade</div>
                     </div>
-                    <Button size="sm" variant="outline" className="h-7 text-xs">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setSelectedPartnerId("");
+                        setSelectedRoles([]);
+                        setShowLinkModal(true);
+                      }}
+                      data-testid="button-link-party"
+                    >
                       <UserPlus className="w-3 h-3 mr-1" />
                       Link
                     </Button>
                   </div>
                   {trade.linkedParties.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No linked partners. Use My Network to link trade parties and assign roles.</p>
+                    <p className="text-xs text-muted-foreground">No linked partners yet. Click "Link" to add partners from your network.</p>
                   ) : (
                     <div className="space-y-2">
-                      {trade.linkedParties.map((lp, idx) => (
-                        <div key={idx} className="p-2 rounded-lg border bg-background/60">
-                          <div className="text-sm font-medium">Partner {lp.partnerId}</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {lp.roles.map((role, ridx) => (
-                              <div key={ridx} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                                {role}
+                      {trade.linkedParties.map((lp, idx) => {
+                        const partner = getPartnerById(lp.partnerId);
+                        return (
+                          <div key={idx} className="p-2 rounded-lg border bg-background/60" data-testid={`linked-party-${lp.partnerId}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium">{partner?.name || `Partner ${lp.partnerId}`}</div>
+                              <button
+                                onClick={() => unlinkPartyFromTrade(tradeId, lp.partnerId)}
+                                className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive"
+                                data-testid={`button-unlink-${lp.partnerId}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {lp.roles.map((role, ridx) => (
+                                <div key={ridx} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                  {role}
+                                </div>
+                              ))}
+                            </div>
+                            {partner && (
+                              <div className="text-[10px] text-muted-foreground mt-1">
+                                {partner.region} • Can act as: {partner.canActAs.join(", ")}
                               </div>
-                            ))}
+                            )}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-1">
-                            See full capabilities in My Network
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -452,6 +484,92 @@ export default function TradeWorkspace() {
                   ))}
                 </div>
               </div>
+              
+              {showLinkModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowLinkModal(false)}>
+                  <div 
+                    className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4"
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="modal-link-party"
+                  >
+                    <h3 className="text-lg font-semibold mb-4">Link Partner to Trade</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-2 block">Select Partner</label>
+                        <select
+                          value={selectedPartnerId}
+                          onChange={(e) => setSelectedPartnerId(e.target.value)}
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm"
+                          data-testid="select-partner"
+                        >
+                          <option value="">Choose a partner...</option>
+                          {partners
+                            .filter((p) => !trade.linkedParties.some((lp) => lp.partnerId === p.id))
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.region})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-2 block">Assign Roles for This Trade</label>
+                        <div className="flex flex-wrap gap-2">
+                          {ALL_PARTNER_ROLES.map((role) => (
+                            <button
+                              key={role}
+                              type="button"
+                              onClick={() =>
+                                setSelectedRoles((prev) =>
+                                  prev.includes(role)
+                                    ? prev.filter((r) => r !== role)
+                                    : [...prev, role]
+                                )
+                              }
+                              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                                selectedRoles.includes(role)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border hover:border-primary/50"
+                              }`}
+                              data-testid={`role-chip-${role}`}
+                            >
+                              {role}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 mt-6">
+                      <Button
+                        variant="secondary"
+                        className="flex-1"
+                        onClick={() => setShowLinkModal(false)}
+                        data-testid="button-cancel-link"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        disabled={!selectedPartnerId || selectedRoles.length === 0}
+                        onClick={() => {
+                          if (selectedPartnerId && selectedRoles.length > 0) {
+                            linkPartyToTrade(tradeId, selectedPartnerId, selectedRoles);
+                            setShowLinkModal(false);
+                            setSelectedPartnerId("");
+                            setSelectedRoles([]);
+                          }
+                        }}
+                        data-testid="button-confirm-link"
+                      >
+                        Link Partner
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="documents" className="flex-1 p-4 mt-0" data-testid="panel-inspector-documents">

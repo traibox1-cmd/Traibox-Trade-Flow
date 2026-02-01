@@ -162,7 +162,18 @@ export type Payment = {
   notes?: string;
 };
 
-export type PartnerRole = 'Buyer' | 'Supplier' | 'Financier' | 'Logistics' | 'Customs' | 'Insurance';
+export type PartnerRole = 'Buyer' | 'Supplier' | 'Financier' | 'Logistics' | 'Customs' | 'Insurance' | 'Broker' | 'Auditor/Certifier';
+
+export const ALL_PARTNER_ROLES: PartnerRole[] = [
+  'Buyer',
+  'Supplier',
+  'Financier',
+  'Logistics',
+  'Customs',
+  'Insurance',
+  'Broker',
+  'Auditor/Certifier'
+];
 
 export type Partner = {
   id: string;
@@ -226,6 +237,10 @@ type AppStore = {
   resetDemoData: () => void;
   fetchTradesFromAPI: () => Promise<void>;
   syncTradeFromAPI: (id: string) => Promise<void>;
+  linkPartyToTrade: (tradeId: string, partnerId: string, roles: string[]) => void;
+  unlinkPartyFromTrade: (tradeId: string, partnerId: string) => void;
+  updateLinkedPartyRoles: (tradeId: string, partnerId: string, roles: string[]) => void;
+  getPartnerById: (id: string) => Partner | undefined;
 };
 
 const initialPartners: Partner[] = [
@@ -720,4 +735,48 @@ export const useAppStore = create<AppStore>((set, get) => ({
       console.error('Failed to sync trade from API:', error);
     }
   },
+
+  linkPartyToTrade: (tradeId: string, partnerId: string, roles: string[]) =>
+    set((state) => ({
+      trades: state.trades.map((trade) =>
+        trade.id === tradeId
+          ? {
+              ...trade,
+              linkedParties: trade.linkedParties.some((lp) => lp.partnerId === partnerId)
+                ? trade.linkedParties.map((lp) =>
+                    lp.partnerId === partnerId ? { ...lp, roles } : lp
+                  )
+                : [...trade.linkedParties, { partnerId, roles }],
+            }
+          : trade
+      ),
+    })),
+
+  unlinkPartyFromTrade: (tradeId: string, partnerId: string) =>
+    set((state) => ({
+      trades: state.trades.map((trade) =>
+        trade.id === tradeId
+          ? {
+              ...trade,
+              linkedParties: trade.linkedParties.filter((lp) => lp.partnerId !== partnerId),
+            }
+          : trade
+      ),
+    })),
+
+  updateLinkedPartyRoles: (tradeId: string, partnerId: string, roles: string[]) =>
+    set((state) => ({
+      trades: state.trades.map((trade) =>
+        trade.id === tradeId
+          ? {
+              ...trade,
+              linkedParties: trade.linkedParties.map((lp) =>
+                lp.partnerId === partnerId ? { ...lp, roles } : lp
+              ),
+            }
+          : trade
+      ),
+    })),
+
+  getPartnerById: (id: string) => get().partners.find((p) => p.id === id),
 }));

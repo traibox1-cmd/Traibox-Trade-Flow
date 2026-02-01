@@ -20,16 +20,9 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useAppStore, type Partner, type PartnerRole } from "@/lib/store";
+import { useAppStore, type Partner, type PartnerRole, ALL_PARTNER_ROLES } from "@/lib/store";
 
-const CAN_ACT_AS_ROLES: PartnerRole[] = [
-  "Buyer",
-  "Supplier",
-  "Financier",
-  "Logistics",
-  "Customs",
-  "Insurance",
-];
+const CAN_ACT_AS_ROLES: PartnerRole[] = ALL_PARTNER_ROLES;
 
 const SERVICE_CAPABILITIES = [
   "Forwarding",
@@ -154,6 +147,7 @@ function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConne
 
 export default function MyNetwork() {
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<PartnerRole | "all">("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -193,10 +187,19 @@ export default function MyNetwork() {
   };
 
   const filtered = useMemo(() => {
+    let result = partners;
+    
     const q = query.trim().toLowerCase();
-    if (!q) return partners;
-    return partners.filter((p) => p.name.toLowerCase().includes(q));
-  }, [query, partners]);
+    if (q) {
+      result = result.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    
+    if (roleFilter !== "all") {
+      result = result.filter((p) => p.canActAs && p.canActAs.includes(roleFilter));
+    }
+    
+    return result;
+  }, [query, partners, roleFilter]);
 
   const handleConnect = (id: string) => {
     updatePartner(id, { connectionStatus: "pending" });
@@ -292,17 +295,45 @@ export default function MyNetwork() {
               icon={<Globe className="h-4 w-4" />}
               dataTestId="card-directory"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search partners…"
+                  className="flex-1 min-w-[200px]"
                   data-testid="input-partner-search"
                 />
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value as PartnerRole | "all")}
+                  className="h-10 px-3 rounded-lg border border-border bg-background text-sm"
+                  data-testid="select-role-filter"
+                >
+                  <option value="all">All Roles</option>
+                  {CAN_ACT_AS_ROLES.map((role) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
                 <Button variant="secondary" data-testid="button-add-partner">
                   Add
                 </Button>
               </div>
+              
+              {roleFilter !== "all" && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Filtered by:</span>
+                  <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium">
+                    {roleFilter}
+                    <button 
+                      onClick={() => setRoleFilter("all")}
+                      className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                      data-testid="button-clear-role-filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-4 grid gap-3">
                 {filtered.map((p) => (
