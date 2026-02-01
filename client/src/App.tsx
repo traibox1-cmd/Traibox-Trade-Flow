@@ -14,7 +14,6 @@ import MyNetwork from "@/pages/MyNetwork";
 import Finance from "@/pages/Finance";
 import CompliancePage from "@/pages/compliance";
 import Settings from "@/pages/Settings";
-import RiskAssessment from "@/pages/RiskAssessment";
 
 import CapitalConsole from "@/pages/CapitalConsole";
 import FundingDesk from "@/pages/FundingDesk";
@@ -54,7 +53,9 @@ function Router() {
             <Route path="/trade-passport">
               <Redirect to="/compliance-proofs?tab=passport" />
             </Route>
-            <Route path="/risk-assessment" component={RiskAssessment} />
+            <Route path="/risk-assessment">
+              <Redirect to="/compliance-proofs?tab=risk" />
+            </Route>
             <Route path="/trends" component={TradeTrends} />
             
             {/* Financier Routes */}

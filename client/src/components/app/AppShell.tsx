@@ -81,14 +81,8 @@ const OPERATOR_NAV: NavItem[] = [
       { label: "Verification", href: "/compliance-proofs?tab=verification", testId: "nav-cp-anchoring" },
       { label: "Trade Passport", href: "/compliance-proofs?tab=passport", testId: "nav-cp-passport" },
       { label: "Track & Trace", href: "/compliance-proofs?tab=track", testId: "nav-cp-track" },
+      { label: "Risk Assessment", href: "/compliance-proofs?tab=risk", testId: "nav-cp-risk" },
     ],
-  },
-  {
-    href: "/risk-assessment",
-    label: "Risk Assessment",
-    icon: AlertTriangle,
-    testId: "nav-risk-assessment",
-    subtitle: "AI-driven analysis",
   },
   {
     href: "/trends",

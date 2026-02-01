@@ -16,6 +16,7 @@ import {
   Download,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { RiskAssessmentContent } from "./RiskAssessment";
 
 type Check = {
   id: string;
@@ -55,7 +56,7 @@ export default function CompliancePage() {
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
   
-  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track"];
+  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track", "risk"];
   
   // Read tab from browser URL (wouter's useLocation doesn't include query string)
   const getTabFromUrl = useCallback(() => {
@@ -65,6 +66,7 @@ export default function CompliancePage() {
     if (tab === "proofs") return "proof-packs";
     if (tab === "anchoring") return "verification";
     if (tab === "track-trace") return "track";
+    if (tab === "risk-assessment") return "risk";
     return validTabs.includes(tab || "") ? tab! : "checks";
   }, []);
   
@@ -249,6 +251,9 @@ export default function CompliancePage() {
             </TabsTrigger>
             <TabsTrigger value="track" data-testid="tab-track">
               Track & Trace
+            </TabsTrigger>
+            <TabsTrigger value="risk" data-testid="tab-risk">
+              Risk Assessment
             </TabsTrigger>
           </TabsList>
 
@@ -635,6 +640,10 @@ export default function CompliancePage() {
                 </div>
               </TBCard>
             </div>
+          </TabsContent>
+
+          <TabsContent value="risk" className="mt-4" data-testid="panel-risk">
+            <RiskAssessmentContent />
           </TabsContent>
         </Tabs>
       </div>

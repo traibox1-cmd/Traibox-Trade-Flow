@@ -347,7 +347,7 @@ type ApiRiskAnalysis = {
   generatedAt: string;
 };
 
-export default function RiskAssessment() {
+export function RiskAssessmentContent() {
   const { trades } = useAppStore();
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(trades[0]?.id || null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -679,3 +679,5 @@ export default function RiskAssessment() {
     </div>
   );
 }
+
+export default RiskAssessmentContent;
