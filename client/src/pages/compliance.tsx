@@ -390,45 +390,6 @@ export default function CompliancePage() {
 
           <TabsContent value="reports" className="mt-4" data-testid="panel-reports">
             <TBCard
-              title="Actions"
-              subtitle="Intents that produce evidence"
-              state="idle"
-              icon={<BadgeCheck className="h-4 w-4" />}
-              dataTestId="card-actions"
-            >
-              <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { title: "Create verification request", desc: "Scoped request with deadline" },
-                  { title: "Escalate to compliance", desc: "Add reviewer and rationale" },
-                  { title: "Record decision", desc: "Approve with notes and policy refs" },
-                  { title: "Generate report", desc: "Export evidence bundle" },
-                ].map((a) => (
-                  <div
-                    key={a.title}
-                    className="rounded-2xl border bg-background/60 p-4"
-                    data-testid={`card-action-${a.title
-                      .replace(/\s+/g, "-")
-                      .toLowerCase()}`}
-                  >
-                    <div className="font-medium">{a.title}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">{a.desc}</div>
-                    <Button
-                      variant="secondary"
-                      className="mt-3 h-8"
-                      data-testid={`button-action-${a.title
-                        .replace(/\s+/g, "-")
-                        .toLowerCase()}`}
-                    >
-                      Open
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </TBCard>
-          </TabsContent>
-
-          <TabsContent value="reports" className="mt-4" data-testid="panel-reports">
-            <TBCard
               title="Reports"
               subtitle="Audit-ready exports"
               state="idle"
