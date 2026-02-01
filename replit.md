@@ -47,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 - **Multimodal & Document Upload**: Supports attaching documents to trades and chat, with drag-and-drop functionality and the ability to create trades from documents.
 - **Perplexity-like Sidebar**: Compact icon rail with expand/pin functionality and inline SVG logo.
 - **Design System**: Premium minimal design using theme-aware components, rounded elements, and consistent iconography.
+- **Trade Trends & Forecasting**: AI-driven market intelligence with commodity price trends, corridor analysis, key insights (trends, forecasts, alerts, opportunities), and market outlook. Accessible via `/trends` route with demo fallback for reliable responses.
 
 ## External Dependencies
 
