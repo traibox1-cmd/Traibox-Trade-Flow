@@ -76,13 +76,15 @@ export default function TradeIntelligence() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const watchdogIdRef = useRef<NodeJS.Timeout | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [thinkingTime, setThinkingTime] = useState(0);
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
-  const AI_TIMEOUT_MS = 15000; // 15 second timeout for responsive UX
+  const AI_TIMEOUT_MS = 10000; // 10 second total timeout
+  const WATCHDOG_MS = 3000; // 3 second watchdog for stalled connections
 
   // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
@@ -266,7 +268,24 @@ export default function TradeIntelligence() {
       const decoder = new TextDecoder();
       let fullContent = "";
 
+      // Reset watchdog function - call this each time we receive data
+      // Aborts if no activity for WATCHDOG_MS (handles both initial and mid-stream stalls)
+      const resetWatchdog = () => {
+        if (watchdogIdRef.current) {
+          clearTimeout(watchdogIdRef.current);
+        }
+        watchdogIdRef.current = setTimeout(() => {
+          if (abortControllerRef.current) {
+            console.warn("Watchdog: Stream stalled, aborting after no activity");
+            abortControllerRef.current.abort();
+          }
+        }, WATCHDOG_MS);
+      };
+
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+      
+      // Start watchdog for initial connection
+      resetWatchdog();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -285,6 +304,7 @@ export default function TradeIntelligence() {
                   console.warn("Invalid token data received:", data);
                   continue;
                 }
+                resetWatchdog(); // Reset watchdog on each token to detect mid-stream stalls
                 fullContent += data.content;
                 setMessages((prev) => {
                   const newMessages = [...prev];
@@ -356,9 +376,9 @@ export default function TradeIntelligence() {
       }
     } catch (err) {
       console.error("Chat error:", err, err instanceof Error ? err.message : "", err instanceof Error ? err.stack : "");
-      const isTimeout = err instanceof Error && (err.name === 'AbortError' || err.message.includes('timeout'));
-      const errorMessage = isTimeout 
-        ? "Response timed out. The AI is taking too long to respond."
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      const errorMessage = isAbort 
+        ? "Connection stalled. The AI didn't respond in time."
         : err instanceof Error ? err.message : "An error occurred";
       
       // Replace the empty assistant message with error message
@@ -384,9 +404,14 @@ export default function TradeIntelligence() {
     } finally {
       setLoading(false);
       setStreaming(false);
+      setThinkingTime(0);
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
+      }
+      if (watchdogIdRef.current) {
+        clearTimeout(watchdogIdRef.current);
+        watchdogIdRef.current = null;
       }
       abortControllerRef.current = null;
     }

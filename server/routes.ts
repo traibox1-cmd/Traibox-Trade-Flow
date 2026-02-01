@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { streamChatCompletion, detectIntent } from "./lib/openai";
+import { streamChatCompletion, detectIntent, hasValidApiKey } from "./lib/openai";
 import { insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -10,15 +10,27 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Health check endpoint
-  app.get("/api/chat/health", async (req, res) => {
+  // AI health check endpoint - confirms mode: live (OpenAI) vs demo
+  app.get("/api/ai/health", async (req, res) => {
     try {
-      // Simple health check - returns ok if server is running
-      // In production, this could test OpenAI API connectivity
-      res.json({ status: "ok", mode: "demo" });
+      const mode = hasValidApiKey ? "live" : "demo";
+      res.json({ 
+        ok: true, 
+        mode, 
+        hasKey: hasValidApiKey 
+      });
     } catch (error) {
-      res.status(500).json({ status: "error", mode: "demo" });
+      res.status(500).json({ 
+        ok: false, 
+        mode: "demo", 
+        hasKey: false 
+      });
     }
+  });
+
+  // Legacy health check endpoint
+  app.get("/api/chat/health", async (req, res) => {
+    res.json({ status: "ok", mode: hasValidApiKey ? "live" : "demo" });
   });
   
   // Chat endpoints
@@ -78,6 +90,8 @@ export async function registerRoutes(
           type: "error", 
           message: error instanceof Error ? error.message : "An error occurred" 
         })}\n\n`);
+        // Always send done event to cleanly end SSE stream
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       }
     } catch (error) {

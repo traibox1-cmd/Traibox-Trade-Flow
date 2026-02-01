@@ -1,6 +1,9 @@
 import OpenAI from "openai";
 
-const hasValidApiKey = !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "demo-key";
+export const hasValidApiKey = !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "demo-key";
+
+// Server-side timeout for OpenAI calls (8 seconds to leave buffer for streaming)
+const OPENAI_TIMEOUT_MS = 8000;
 
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "sk-demo-key-placeholder",
@@ -310,13 +313,22 @@ Only include trade_updates when creating/updating a trade. Keep actions to 1-3 m
   ];
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: allMessages as any,
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: "json_object" },
+    // Create a timeout promise to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("OpenAI timeout")), OPENAI_TIMEOUT_MS);
     });
+
+    // Race between OpenAI call and timeout
+    const completion = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: allMessages as any,
+        temperature: 0.7,
+        max_tokens: 1000,
+        response_format: { type: "json_object" },
+      }),
+      timeoutPromise
+    ]);
 
     const content = completion.choices[0]?.message?.content || "";
     try {
@@ -341,8 +353,9 @@ Only include trade_updates when creating/updating a trade. Keep actions to 1-3 m
       };
     }
   } catch (error: any) {
-    console.error("OpenAI error, falling back to demo mode:", error);
-    return generateDemoResponse(messages, mode);
+    const isTimeout = error.message === "OpenAI timeout";
+    console.error(isTimeout ? "OpenAI timeout, falling back to demo mode" : "OpenAI error, falling back to demo mode:", error);
+    return generateDemoResponse(messages, mode, tradeContext, chatMode);
   }
 }
 
