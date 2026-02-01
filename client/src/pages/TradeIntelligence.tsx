@@ -82,7 +82,7 @@ export default function TradeIntelligence() {
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
-  const AI_TIMEOUT_MS = 45000; // 45 second timeout to allow OpenAI to respond
+  const AI_TIMEOUT_MS = 15000; // 15 second timeout for responsive UX
 
   // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
@@ -600,7 +600,7 @@ export default function TradeIntelligence() {
         {actions && actions.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-border/50">
             <div className="text-xs text-muted-foreground font-medium">Actions</div>
-            {actions.map((action, idx) => {
+            {actions.slice(0, 3).map((action, idx) => {
               const getDeepLink = () => {
                 if (selectedTradeId) {
                   if (action.type === "compliance") return `/trade/${selectedTradeId}#compliance`;
