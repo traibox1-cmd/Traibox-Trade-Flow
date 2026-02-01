@@ -334,7 +334,7 @@ export async function registerRoutes(
   // Chat endpoints
   app.post("/api/chat/stream", async (req, res) => {
     try {
-      const { messages, mode = "auto", chatMode = "explore", conversationId, tradeContext } = req.body;
+      const { messages, mode = "auto", chatMode = "explore", conversationId, tradeContext, agent = "auto" } = req.body;
 
       if (!Array.isArray(messages) || messages.length === 0) {
         return res.status(400).json({ error: "Messages array is required" });
@@ -361,8 +361,8 @@ export async function registerRoutes(
       }, 2000);
 
       try {
-        // Stream the AI response with trade context and chat mode
-        for await (const chunk of streamChatCompletion(messages, mode, tradeContext, chatMode)) {
+        // Stream the AI response with trade context, chat mode, and agent
+        for await (const chunk of streamChatCompletion(messages, mode, tradeContext, chatMode, agent)) {
           streamingStarted = true;
           clearInterval(heartbeatInterval); // Stop heartbeats once tokens start
           fullResponse += chunk;

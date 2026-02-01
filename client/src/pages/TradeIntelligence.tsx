@@ -69,7 +69,6 @@ export default function TradeIntelligence() {
   const [pendingTradeUpdates, setPendingTradeUpdates] = useState<AIResponse["trade_updates"] | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>("auto");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -238,6 +237,7 @@ export default function TradeIntelligence() {
           })),
           mode,
           chatMode,
+          agent: selectedAgent,
           tradeContext: chatMode === "trade" && selectedTrade ? {
             id: selectedTrade.id,
             title: selectedTrade.title,
@@ -894,7 +894,7 @@ export default function TradeIntelligence() {
                   </button>
                 </div>
                 <div className="px-2.5 py-1 text-[11px] rounded-full bg-muted text-muted-foreground border border-border" data-testid="pill-agent">
-                  Agent: {selectedAgent === "auto" ? "Auto" : selectedAgent === "compliance" ? "Compliance Officer" : selectedAgent === "logistics" ? "Logistics Coordinator" : selectedAgent === "finance" ? "Trade Finance Desk" : selectedAgent === "legal" ? "Legal" : "Sustainability"}
+                  Agent: {selectedAgent === "auto" ? "Auto" : selectedAgent === "trade-planner" ? "Trade Planner" : selectedAgent === "compliance" ? "Compliance Officer" : selectedAgent === "finance" ? "Finance Advisor" : "Auto"}
                 </div>
                 <div 
                   className={`px-2.5 py-1 text-[11px] rounded-full border flex items-center gap-1.5 ${
@@ -936,85 +936,82 @@ export default function TradeIntelligence() {
               </div>
             )}
 
+            {/* Agent selector chip - visible and discoverable */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={() => setShowAgentPicker(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-border bg-background hover:border-primary/50 hover:bg-accent transition-colors"
+                data-testid="button-agent-selector"
+              >
+                <Sparkles className="w-3 h-3 text-primary" />
+                <span className="font-medium">
+                  {selectedAgent === "auto" ? "Auto" : 
+                   selectedAgent === "trade-planner" ? "Trade Planner" : 
+                   selectedAgent === "compliance" ? "Compliance Officer" : 
+                   selectedAgent === "finance" ? "Finance Advisor" : "Auto"}
+                </span>
+              </button>
+              <span className="text-[10px] text-muted-foreground">← Switch agent</span>
+            </div>
+
             <div className="flex gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept=".pdf,image/*"
+                accept=".pdf,image/*,.doc,.docx,.xls,.xlsx"
                 multiple
                 className="hidden"
               />
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAttachMenu(!showAttachMenu)}
-                  className="px-3"
-                  data-testid="button-attach-menu"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                {showAttachMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowAttachMenu(false)}
-                    />
-                    <div className="absolute bottom-full left-0 mb-2 w-56 rounded-lg border border-border bg-card shadow-lg p-1 z-50">
-                    <button
-                      onClick={() => {
-                        fileInputRef.current?.click();
-                        setShowAttachMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2"
-                      data-testid="menu-upload"
-                    >
-                      <Upload className="w-4 h-4" />
-                      Upload documents
-                    </button>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          disabled
-                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2 opacity-50"
-                          data-testid="menu-voice"
-                        >
-                          <Mic className="w-4 h-4" />
-                          Voice
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Coming soon</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          disabled
-                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2 opacity-50"
-                          data-testid="menu-camera"
-                        >
-                          <Camera className="w-4 h-4" />
-                          Camera
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Coming soon</TooltipContent>
-                    </Tooltip>
-                    <div className="h-px bg-border my-1" />
-                    <button
-                      onClick={() => {
-                        setShowAgentPicker(true);
-                        setShowAttachMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent flex items-center gap-2"
-                      data-testid="menu-agents"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Agents
-                    </button>
-                  </div>
-                  </>
-                )}
-              </div>
+              
+              {/* Paperclip - Upload button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3"
+                    data-testid="button-attach"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Attach files</TooltipContent>
+              </Tooltip>
+
+              {/* Microphone - Coming soon */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled
+                    className="px-3 opacity-50"
+                    data-testid="button-mic"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Voice input - Coming soon</TooltipContent>
+              </Tooltip>
+
+              {/* Camera - Coming soon */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled
+                    className="px-3 opacity-50"
+                    data-testid="button-camera"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Camera capture - Coming soon</TooltipContent>
+              </Tooltip>
+
               <input
                 type="text"
                 value={input}
@@ -1068,12 +1065,10 @@ export default function TradeIntelligence() {
             </p>
             <div className="space-y-2">
               {[
-                { id: "auto", label: "Auto", desc: "General trade assistance" },
+                { id: "auto", label: "Auto", desc: "General trade assistance - automatically adapts to context" },
+                { id: "trade-planner", label: "Trade Planner", desc: "Trade structuring, corridors, and workflow planning" },
                 { id: "compliance", label: "Compliance Officer", desc: "Sanctions, KYC, and regulatory checks" },
-                { id: "logistics", label: "Logistics Coordinator", desc: "Shipping, tracking, and documentation" },
-                { id: "finance", label: "Trade Finance Desk", desc: "Funding, payments, and financing" },
-                { id: "legal", label: "Legal", desc: "Terms, contracts, and legal compliance" },
-                { id: "sustainability", label: "Sustainability", desc: "ESG and sustainability reporting" },
+                { id: "finance", label: "Finance Advisor", desc: "Funding, payments, LC, and financing terms" },
               ].map((agent) => (
                 <button
                   key={agent.id}

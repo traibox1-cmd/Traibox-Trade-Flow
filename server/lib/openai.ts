@@ -45,11 +45,21 @@ export type AIResponse = {
   };
 };
 
-function generateDemoResponse(messages: Array<{ role: string; content: string; attachments?: any[] }>, mode: string, tradeContext?: any, chatMode?: string): AIResponse {
+function generateDemoResponse(messages: Array<{ role: string; content: string; attachments?: any[] }>, mode: string, tradeContext?: any, chatMode?: string, agent?: string): AIResponse {
   const lastUserMessage = messages[messages.length - 1]?.content || "";
   const lower = lastUserMessage.toLowerCase();
   const hasAttachments = messages[messages.length - 1]?.attachments && messages[messages.length - 1].attachments!.length > 0;
   const isExploreMode = chatMode === "explore";
+  
+  // Agent-specific response prefix
+  let agentIntro = "";
+  if (agent === "trade-planner") {
+    agentIntro = "**[Trade Planner]** ";
+  } else if (agent === "compliance") {
+    agentIntro = "**[Compliance Officer]** ";
+  } else if (agent === "finance") {
+    agentIntro = "**[Finance Advisor]** ";
+  }
 
   if (mode === "deal-assistant") {
     if (lower.includes("risk") || lower.includes("assess") || lower.includes("analyze")) {
@@ -319,13 +329,24 @@ export async function createStructuredChatCompletion(
   messages: Array<{ role: string; content: string; attachments?: any[] }>,
   mode: string = "auto",
   tradeContext?: any,
-  chatMode: string = "explore"
+  chatMode: string = "explore",
+  agent: string = "auto"
 ): Promise<AIResponse> {
   if (!hasValidApiKey) {
-    return generateDemoResponse(messages, mode, tradeContext, chatMode);
+    return generateDemoResponse(messages, mode, tradeContext, chatMode, agent);
   }
 
   let systemPrompt = "";
+  
+  // Agent-specific persona prefix
+  let agentPrefix = "";
+  if (agent === "trade-planner") {
+    agentPrefix = "You are a Trade Planner specialist. Focus on trade structuring, corridor optimization, logistics planning, and workflow sequencing. ";
+  } else if (agent === "compliance") {
+    agentPrefix = "You are a Compliance Officer. Focus on sanctions screening, KYC verification, regulatory requirements, and risk flags. ";
+  } else if (agent === "finance") {
+    agentPrefix = "You are a Finance Advisor. Focus on funding options, payment terms, LC structures, trade finance products, and working capital optimization. ";
+  }
   
   // Add trade context to system prompt if available
   let contextSection = "";
@@ -360,7 +381,7 @@ export async function createStructuredChatCompletion(
 Write assistant_text as if speaking to a colleague. Use bullet points and bold for key info.
 Focus on: credit risk, corridor risk, documentation gaps, pricing recommendations.${contextSection}`;
   } else {
-    systemPrompt = `You are TRAIBOX, an AI trade assistant. Respond conversationally with valid JSON:
+    systemPrompt = `${agentPrefix}You are TRAIBOX, an AI trade assistant. Respond conversationally with valid JSON:
 {
   "assistant_text": "Your full conversational response. Use **markdown** formatting, bullet points, and follow-up questions.",
   "actions": [{"type": "action-type", "label": "Button Label", "description": "What this does"}],
@@ -436,9 +457,10 @@ export async function* streamChatCompletion(
   messages: Array<{ role: string; content: string; attachments?: any[] }>,
   mode: string = "auto",
   tradeContext?: any,
-  chatMode: string = "explore"
+  chatMode: string = "explore",
+  agent: string = "auto"
 ) {
-  const response = await createStructuredChatCompletion(messages, mode, tradeContext, chatMode);
+  const response = await createStructuredChatCompletion(messages, mode, tradeContext, chatMode, agent);
   const jsonStr = JSON.stringify(response);
   
   for (const char of jsonStr) {
