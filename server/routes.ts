@@ -1,9 +1,31 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { streamChatCompletion, detectIntent, hasValidApiKey } from "./lib/openai";
+import { streamChatCompletion, detectIntent, hasValidApiKey, createStructuredChatCompletion } from "./lib/openai";
 import { insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+let lastAIError: string | null = null;
+let lastAIErrorAt: Date | null = null;
+
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadDir,
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + "-" + file.originalname);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -32,7 +54,233 @@ export async function registerRoutes(
   app.get("/api/chat/health", async (req, res) => {
     res.json({ status: "ok", mode: hasValidApiKey ? "live" : "demo" });
   });
-  
+
+  // Enhanced status endpoint with error tracking
+  app.get("/api/ai/status", async (req, res) => {
+    const mode = hasValidApiKey ? "live" : "demo";
+    res.json({
+      hasKey: hasValidApiKey,
+      mode: mode, // canonical field for acceptance tests
+      aiMode: mode, // alias for backward compatibility
+      lastError: lastAIError,
+      lastErrorAt: lastAIErrorAt?.toISOString() || null,
+    });
+  });
+
+  // Canonical AI chat endpoint (non-streaming, guaranteed response)
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const { mode = "explore", tradeId, agent, messages, attachments } = req.body;
+
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: "messages array is required" });
+      }
+
+      let tradeContext: any = null;
+      let tradeParties: any[] = [];
+      let tradeDocs: any[] = [];
+
+      // Trade Mode: load trade context
+      if (mode === "trade") {
+        if (!tradeId) {
+          return res.json({
+            assistant_text: "To use Trade Mode, you need to select or create a trade first. Would you like to create a new trade or select an existing one?",
+            actions: [
+              { type: "create_trade", label: "Create New Trade" },
+              { type: "select_trade", label: "Select Existing Trade" },
+            ],
+            meta: { mode, agent, tradeId: null, aiMode: hasValidApiKey ? "live" : "demo" },
+          });
+        }
+
+        const trade = await storage.getTrade(tradeId);
+        if (!trade) {
+          return res.status(404).json({ error: "Trade not found" });
+        }
+
+        tradeParties = await storage.getTradeParties(tradeId);
+        tradeDocs = await storage.getTradeDocuments(tradeId);
+
+        tradeContext = {
+          id: trade.id,
+          title: trade.title,
+          origin: trade.origin,
+          destination: trade.destination,
+          value: trade.value,
+          currency: trade.currency,
+          status: trade.status,
+          commodity: trade.commodity,
+          incoterm: trade.incoterm,
+          parties: tradeParties.map(tp => ({
+            name: tp.party.name,
+            type: tp.party.type,
+            roles: tp.roles,
+          })),
+          documents: tradeDocs.map(d => d.filename),
+        };
+      }
+
+      // Store user message
+      const lastUserMsg = messages[messages.length - 1];
+      if (lastUserMsg?.role === "user") {
+        await storage.createChatMessage({
+          tradeId: tradeId || null,
+          mode,
+          agent: agent || null,
+          role: "user",
+          content: lastUserMsg.content,
+        });
+      }
+
+      let response: any;
+      let aiMode: "live" | "demo" = "demo";
+
+      try {
+        response = await createStructuredChatCompletion(messages, mode, tradeContext, mode);
+        aiMode = hasValidApiKey ? "live" : "demo";
+        lastAIError = null;
+      } catch (error) {
+        lastAIError = error instanceof Error ? error.message : "Unknown error";
+        lastAIErrorAt = new Date();
+        console.error("AI error, using fallback:", lastAIError);
+        
+        response = {
+          assistant_text: tradeContext
+            ? `I'm currently processing your request for the trade "${tradeContext.title}" (${tradeContext.origin} → ${tradeContext.destination}, ${tradeContext.currency} ${tradeContext.value}). The AI service is temporarily unavailable, but I can help you with basic trade management tasks.`
+            : "I'm here to help you explore trade opportunities and manage your operations. The AI service is temporarily in demo mode. What would you like to know about international trade?",
+          actions: tradeContext
+            ? [
+                { type: "compliance", label: "Run Compliance Checks" },
+                { type: "funding", label: "Request Funding" },
+              ]
+            : [
+                { type: "create_trade", label: "Create New Trade" },
+                { type: "explore", label: "Explore Trade Corridors" },
+              ],
+        };
+        aiMode = "demo";
+      }
+
+      // Store assistant response
+      await storage.createChatMessage({
+        tradeId: tradeId || null,
+        mode,
+        agent: agent || null,
+        role: "assistant",
+        content: JSON.stringify(response),
+      });
+
+      res.json({
+        ...response,
+        meta: { mode, agent, tradeId, aiMode },
+      });
+    } catch (error) {
+      console.error("Chat endpoint error:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  });
+
+  // Document upload endpoint
+  app.post("/api/docs/upload", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const { tradeId } = req.body;
+      
+      // Validate tradeId if provided
+      if (tradeId) {
+        const trade = await storage.getTrade(tradeId);
+        if (!trade) {
+          return res.status(404).json({ error: "Trade not found" });
+        }
+      }
+      
+      const doc = await storage.createDocument({
+        tradeId: tradeId || null,
+        filename: req.file.originalname,
+        mime: req.file.mimetype,
+        size: req.file.size,
+        storagePath: req.file.path,
+      });
+
+      res.json({
+        docId: doc.id,
+        filename: doc.filename,
+        mime: doc.mime,
+        size: doc.size,
+        tradeId: doc.tradeId,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Upload failed",
+      });
+    }
+  });
+
+  // Get trades
+  app.get("/api/trades", async (req, res) => {
+    try {
+      const trades = await storage.getTrades();
+      res.json(trades);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch trades" });
+    }
+  });
+
+  // Get single trade with context
+  app.get("/api/trades/:id", async (req, res) => {
+    try {
+      const trade = await storage.getTrade(req.params.id);
+      if (!trade) {
+        return res.status(404).json({ error: "Trade not found" });
+      }
+      
+      const parties = await storage.getTradeParties(trade.id);
+      const documents = await storage.getTradeDocuments(trade.id);
+      
+      res.json({
+        ...trade,
+        parties: parties.map(tp => ({
+          ...tp.party,
+          roles: tp.roles,
+        })),
+        documents,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch trade" });
+    }
+  });
+
+  // Create trade
+  app.post("/api/trades", async (req, res) => {
+    try {
+      const trade = await storage.createTrade(req.body);
+      res.json(trade);
+    } catch (error) {
+      console.error("Create trade error:", error);
+      res.status(500).json({ error: "Failed to create trade" });
+    }
+  });
+
+  // Get chat history
+  app.get("/api/chat/history", async (req, res) => {
+    try {
+      const { tradeId, mode = "explore" } = req.query;
+      const messages = await storage.getChatMessages(
+        tradeId as string | null,
+        mode as string
+      );
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+  });
+
   // Chat endpoints
   app.post("/api/chat/stream", async (req, res) => {
     try {

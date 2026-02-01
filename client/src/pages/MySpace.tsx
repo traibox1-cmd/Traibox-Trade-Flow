@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ShieldCheck, Banknote, FileCheck, X } from "lucide-react";
 
 export default function MySpace() {
-  const { trades, fundingRequests, partners, notifications } = useAppStore();
+  const { trades, fundingRequests, partners, notifications, fetchTradesFromAPI } = useAppStore();
+  
+  useEffect(() => {
+    fetchTradesFromAPI();
+  }, [fetchTradesFromAPI]);
   const [, setLocation] = useLocation();
   const [showHint, setShowHint] = useState(() => {
     const dismissed = localStorage.getItem('traibox-hint-dismissed');

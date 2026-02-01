@@ -80,7 +80,12 @@ export default function TradeIntelligence() {
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [thinkingTime, setThinkingTime] = useState(0);
   
-  const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
+  const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus, fetchTradesFromAPI } = useAppStore();
+
+  // Fetch trades from API on mount
+  useEffect(() => {
+    fetchTradesFromAPI();
+  }, [fetchTradesFromAPI]);
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
   const AI_TIMEOUT_MS = 12000; // 12 second total timeout (server sends heartbeats every 2s)

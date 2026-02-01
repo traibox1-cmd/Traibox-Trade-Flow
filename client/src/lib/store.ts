@@ -214,6 +214,8 @@ type AppStore = {
   setAIStatus: (status: 'connected' | 'demo') => void;
   loadDemoData: () => void;
   resetDemoData: () => void;
+  fetchTradesFromAPI: () => Promise<void>;
+  syncTradeFromAPI: (id: string) => Promise<void>;
 };
 
 const initialPartners: Partner[] = [
@@ -575,5 +577,107 @@ export const useAppStore = create<AppStore>((set, get) => ({
       notifications: [],
       timelineEvents: [],
     });
+  },
+
+  fetchTradesFromAPI: async () => {
+    try {
+      const response = await fetch('/api/trades');
+      if (!response.ok) return;
+      const apiTrades = await response.json();
+      
+      const formattedTrades: Trade[] = apiTrades.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        corridor: `${t.origin} → ${t.destination}`,
+        status: t.status === 'draft' ? 'planning' : t.status === 'active' ? 'active' : 'completed',
+        value: parseFloat(t.value),
+        currency: t.currency,
+        createdAt: new Date(t.createdAt),
+        parties: (t.parties || []).map((p: any) => ({
+          name: p.name,
+          role: p.type as any,
+          region: p.country || '',
+        })),
+        linkedParties: [],
+        goods: t.commodity || '',
+        incoterms: t.incoterm || 'FOB',
+        timelineStep: 'plan' as TradeTimelineStep,
+        documents: [],
+        uploadedDocuments: (t.documents || []).map((d: any) => ({
+          id: d.id,
+          name: d.filename,
+          type: 'pdf' as const,
+          uploadedAt: new Date(d.createdAt),
+        })),
+        logisticsMilestones: [
+          { key: 'booking' as const, label: 'Booking', status: 'pending' as const },
+          { key: 'picked-up' as const, label: 'Picked up', status: 'pending' as const },
+          { key: 'export-cleared' as const, label: 'Export cleared', status: 'pending' as const },
+          { key: 'departed' as const, label: 'Departed', status: 'pending' as const },
+          { key: 'arrived' as const, label: 'Arrived', status: 'pending' as const },
+          { key: 'import-cleared' as const, label: 'Import cleared', status: 'pending' as const },
+          { key: 'delivered' as const, label: 'Delivered/POD', status: 'pending' as const },
+        ],
+        logisticsEvents: [],
+        logisticsVisibility: 'internal' as const,
+      }));
+      
+      set({ trades: formattedTrades });
+    } catch (error) {
+      console.error('Failed to fetch trades from API:', error);
+    }
+  },
+
+  syncTradeFromAPI: async (id: string) => {
+    try {
+      const response = await fetch(`/api/trades/${id}`);
+      if (!response.ok) return;
+      const t = await response.json();
+      
+      const formattedTrade: Trade = {
+        id: t.id,
+        title: t.title,
+        corridor: `${t.origin} → ${t.destination}`,
+        status: t.status === 'draft' ? 'planning' : t.status === 'active' ? 'active' : 'completed',
+        value: parseFloat(t.value),
+        currency: t.currency,
+        createdAt: new Date(t.createdAt),
+        parties: (t.parties || []).map((p: any) => ({
+          name: p.name,
+          role: p.type as any,
+          region: p.country || '',
+        })),
+        linkedParties: [],
+        goods: t.commodity || '',
+        incoterms: t.incoterm || 'FOB',
+        timelineStep: 'plan' as TradeTimelineStep,
+        documents: [],
+        uploadedDocuments: (t.documents || []).map((d: any) => ({
+          id: d.id,
+          name: d.filename,
+          type: 'pdf' as const,
+          uploadedAt: new Date(d.createdAt),
+        })),
+        logisticsMilestones: [
+          { key: 'booking' as const, label: 'Booking', status: 'pending' as const },
+          { key: 'picked-up' as const, label: 'Picked up', status: 'pending' as const },
+          { key: 'export-cleared' as const, label: 'Export cleared', status: 'pending' as const },
+          { key: 'departed' as const, label: 'Departed', status: 'pending' as const },
+          { key: 'arrived' as const, label: 'Arrived', status: 'pending' as const },
+          { key: 'import-cleared' as const, label: 'Import cleared', status: 'pending' as const },
+          { key: 'delivered' as const, label: 'Delivered/POD', status: 'pending' as const },
+        ],
+        logisticsEvents: [],
+        logisticsVisibility: 'internal' as const,
+      };
+      
+      set((state) => ({
+        trades: state.trades.some(tr => tr.id === id)
+          ? state.trades.map(tr => tr.id === id ? formattedTrade : tr)
+          : [...state.trades, formattedTrade],
+      }));
+    } catch (error) {
+      console.error('Failed to sync trade from API:', error);
+    }
   },
 }));
