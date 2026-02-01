@@ -68,37 +68,52 @@ export async function registerRoutes(
     });
   });
 
-  // Test endpoint to verify OpenAI connection
+  // Test endpoint to verify OpenAI connection - GET returns usage, POST runs test
+  app.get("/api/ai/test", (req, res) => {
+    res.json({
+      ok: true,
+      usage: "POST JSON { prompt }",
+      example: { prompt: "ping" },
+      hasKey: hasValidApiKey,
+      mode: hasValidApiKey ? "live" : "demo",
+    });
+  });
+
   app.post("/api/ai/test", async (req, res) => {
+    const model = "gpt-4o-mini";
+    
     if (!hasValidApiKey) {
       return res.json({
         ok: false,
         error: "No valid API key configured",
-        mode: "demo",
+        statusCode: 401,
       });
     }
 
     try {
       const { OpenAI } = await import("openai");
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const prompt = req.body?.prompt || "ping";
       
       const response = await openai.chat.completions.create(
         {
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: "ping" }],
-          max_tokens: 10,
+          model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 50,
         },
-        { timeout: 5000 }
+        { timeout: 8000 }
       );
 
-      const text = response.choices[0]?.message?.content || "pong";
-      res.json({ ok: true, text, mode: "live" });
-    } catch (error) {
+      const reply = response.choices[0]?.message?.content || "pong";
+      res.json({ ok: true, model, reply });
+    } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      const statusCode = error?.status || error?.statusCode || 500;
       lastAIError = errorMsg;
       lastAIErrorAt = new Date();
-      console.error("[AI Test] Error:", errorMsg);
-      res.json({ ok: false, error: errorMsg, mode: "demo" });
+      console.error("[AI Test] Full error:", error);
+      console.error("[AI Test] Error message:", errorMsg, "Status:", statusCode);
+      res.json({ ok: false, error: errorMsg, statusCode });
     }
   });
 
@@ -325,10 +340,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Messages array is required" });
       }
 
-      // Set up SSE headers
+      // Set up SSE headers and flush immediately
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+      res.flushHeaders(); // Ensure headers are sent immediately
 
       let fullResponse = "";
       let detectedIntents: string[] = [];
@@ -385,20 +401,33 @@ export async function registerRoutes(
         res.end();
       } catch (error) {
         clearInterval(heartbeatInterval); // Clean up heartbeat on error
+        const errorMsg = error instanceof Error ? error.message : "An error occurred";
         console.error("Streaming error:", error);
+        // Store error for /api/ai/status
+        lastAIError = errorMsg;
+        lastAIErrorAt = new Date();
         res.write(`data: ${JSON.stringify({ 
           type: "error", 
-          message: error instanceof Error ? error.message : "An error occurred" 
+          message: errorMsg 
         })}\n\n`);
         // Always send done event to cleanly end SSE stream
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Internal server error";
       console.error("Chat error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Internal server error" 
-      });
+      // Store error for /api/ai/status
+      lastAIError = errorMsg;
+      lastAIErrorAt = new Date();
+      // If headers already sent (SSE mode), send error event
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ type: "error", message: errorMsg })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: errorMsg });
+      }
     }
   });
 
