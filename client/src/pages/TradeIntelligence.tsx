@@ -80,6 +80,8 @@ export default function TradeIntelligence() {
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [thinkingTime, setThinkingTime] = useState(0);
   const [aiMode, setAiMode] = useState<"live" | "demo">("demo");
+  const [aiModel, setAiModel] = useState<string>("");
+  const [aiLastError, setAiLastError] = useState<string | null>(null);
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus, fetchTradesFromAPI } = useAppStore();
 
@@ -89,6 +91,8 @@ export default function TradeIntelligence() {
       .then(res => res.json())
       .then(data => {
         setAiMode(data.mode || "demo");
+        setAiModel(data.model || "");
+        setAiLastError(data.lastError || null);
         setAIStatus(data.mode === "live" ? "connected" : "demo");
       })
       .catch(() => setAiMode("demo"));
@@ -824,27 +828,42 @@ export default function TradeIntelligence() {
                         : "bg-card border border-border"
                     }`}
                   >
-                    {msg.role === "assistant" && (msg.content === "" || msg.content === "...") ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Thinking{thinkingTime > 2 ? ` (${thinkingTime}s)` : "..."}</span>
-                      </div>
-                    ) : msg.role === "assistant" ? (
-                      renderStructuredResponse(msg)
-                    ) : (
-                      <div>
-                        <p className="text-sm">{msg.content}</p>
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {msg.attachments.map((att, attIdx) => (
-                              <div key={attIdx} className="text-xs px-2 py-1 rounded bg-primary-foreground/10 border border-primary-foreground/20">
-                                📎 {att.name}
-                              </div>
-                            ))}
+                    {(() => {
+                      // Proper structured response detection
+                      const hasStructured = msg.role === "assistant" && 
+                        msg.structured != null && 
+                        (typeof msg.structured !== "object" || Object.keys(msg.structured).length > 0);
+                      const isThinking = msg.role === "assistant" && 
+                        !hasStructured && 
+                        (msg.content === "" || msg.content === "...");
+                      
+                      if (isThinking) {
+                        return (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Thinking{thinkingTime > 2 ? ` (${thinkingTime}s)` : "..."}</span>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        );
+                      }
+                      if (msg.role === "assistant") {
+                        return renderStructuredResponse(msg);
+                      }
+                      // User messages
+                      return (
+                        <div>
+                          <p className="text-sm">{msg.content}</p>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {msg.attachments.map((att, attIdx) => (
+                                <div key={attIdx} className="text-xs px-2 py-1 rounded bg-primary-foreground/10 border border-primary-foreground/20">
+                                  📎 {att.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   {msg.role === "user" && (
                     <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
@@ -899,14 +918,19 @@ export default function TradeIntelligence() {
                   Agent: {selectedAgent === "auto" ? "Auto" : selectedAgent === "compliance" ? "Compliance Officer" : selectedAgent === "logistics" ? "Logistics Coordinator" : selectedAgent === "finance" ? "Trade Finance Desk" : selectedAgent === "legal" ? "Legal" : "Sustainability"}
                 </div>
                 <div 
-                  className={`px-2.5 py-1 text-[11px] rounded-full border ${
-                    aiMode === "live" 
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
-                      : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                  className={`px-2.5 py-1 text-[11px] rounded-full border flex items-center gap-1.5 ${
+                    aiLastError
+                      ? "bg-destructive/10 text-destructive border-destructive/30"
+                      : aiMode === "live" 
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/30"
                   }`}
                   data-testid="pill-ai-status"
+                  title={aiLastError ? `Last error: ${aiLastError}` : `Model: ${aiModel}`}
                 >
                   AI: {aiMode === "live" ? "Live" : "Demo"}
+                  {aiModel && <span className="opacity-60">({aiModel})</span>}
+                  {aiLastError && <AlertCircle className="w-3 h-3" />}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
