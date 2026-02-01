@@ -11,10 +11,8 @@ import MySpace from "@/pages/MySpace";
 import TradeIntelligence from "@/pages/TradeIntelligence";
 import MyNetwork from "@/pages/MyNetwork";
 import Finance from "@/pages/Finance";
-import ComplianceAndProofs from "@/pages/Assurance";
 import CompliancePage from "@/pages/compliance";
 import Settings from "@/pages/Settings";
-import TradePassport from "@/pages/TradePassport";
 import RiskAssessment from "@/pages/RiskAssessment";
 
 import CapitalConsole from "@/pages/CapitalConsole";
@@ -42,9 +40,14 @@ function Router() {
             <Route path="/trade/:id" component={TradeWorkspace} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
-            <Route path="/compliance-proofs" component={ComplianceAndProofs} />
+            {/* Redirects from legacy paths */}
+            <Route path="/compliance-proofs">
+              <Redirect to="/compliance" />
+            </Route>
+            <Route path="/trade-passport">
+              <Redirect to="/compliance?tab=passport" />
+            </Route>
             <Route path="/compliance" component={CompliancePage} />
-            <Route path="/trade-passport" component={TradePassport} />
             <Route path="/risk-assessment" component={RiskAssessment} />
             
             {/* Financier Routes */}
