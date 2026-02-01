@@ -1,0 +1,32 @@
+1 — Route & Nav Inventory + Canonical Map + Redirects
+Do a routing + navigation inventory and then enforce a canonical route map.
+Output a table: every sidebar/nav label → current path (including query params) → which page component renders it.
+Identify duplicates and collisions (e.g., Compliance vs Compliance & Proofs, /compliance vs /compliance-proofs, any standalone /passport or /track routes).
+Implement a canonical route map ONLY: /space, /trade, /trade/:id, /network, /compliance (tabs via ?tab=checks|reports|proofs|verification|passport|track).
+Remove duplicate routes and add redirects from legacy paths to canonical (e.g., /compliance-proofs → /compliance, any passport route → /compliance?tab=passport, any track route → /compliance?tab=track).
+Ensure no normal navigation produces 404.”
+
+2 — Consolidate Compliance Into One Page With Query-Tab Persistence
+Consolidate compliance into ONE page component (Compliance & Proofs) and make tabs deep-linkable and refresh-safe.
+Keep a single /compliance page that renders tabs: Checks & Findings, Reports, Proof Packs, Verification & Anchoring, Trade Passport, Track & Trace.
+Tab selection is controlled by query param tab=… with safe defaults (invalid/missing → checks).
+Fix the current issue where clicking Trade Passport from My Space sometimes opens the wrong UI (or shows 404).
+Make /compliance?tab=passport and /compliance?tab=track always work after refresh.”
+
+3 — Fix My Space Deep Links + Sidebar Links + Active Highlight
+Fix navigation wiring so UI doesn’t feel ‘misplaced’.
+In My Space, wire cards/shortcuts: Trade Passport → /compliance?tab=passport, Track & Trace → /compliance?tab=track, Compliance → /compliance.
+Ensure sidebar links point ONLY to canonical routes (no legacy paths).
+Fix active state highlighting so the correct icon is highlighted after redirects and tab changes.”
+
+4 — Regression Guard + Smoke Test Script (Must Pass)
+Add a regression guard and run a smoke test.
+Ensure Trade Passport is NOT a standalone page route; it must only be a tab inside /compliance.
+Ensure tab keys exactly match query values (passport, track, etc.).
+Run and report results of this checklist:
+/space → click Trade Passport card → lands on /compliance?tab=passport
+/compliance → click Passport tab → works
+open /compliance?tab=passport directly → works + refresh works
+open /compliance?tab=track directly → works + refresh works
+visit old URLs you found → they redirect correctly
+no 404 during normal navigation If any fails, fix and re-run until all pass.”
