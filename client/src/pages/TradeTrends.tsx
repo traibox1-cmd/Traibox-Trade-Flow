@@ -212,19 +212,19 @@ export default function TradeTrends() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">{insight.description}</p>
+                      <p className="text-sm text-muted-foreground" data-testid={`text-insight-desc-${insight.id}`}>{insight.description}</p>
                       {insight.metrics && insight.metrics.length > 0 && (
-                        <div className="flex flex-wrap gap-3 mt-3">
+                        <div className="flex flex-wrap gap-3 mt-3" data-testid={`metrics-${insight.id}`}>
                           {insight.metrics.map((metric, midx) => (
-                            <div key={midx} className="flex items-center gap-2 text-sm">
+                            <div key={midx} className="flex items-center gap-2 text-sm" data-testid={`metric-${insight.id}-${midx}`}>
                               <span className="font-medium">{metric.label}:</span>
-                              <span>{metric.value}</span>
+                              <span data-testid={`metric-value-${insight.id}-${midx}`}>{metric.value}</span>
                               {metric.change && (
                                 <span className={`flex items-center gap-0.5 ${
                                   metric.direction === "up" ? "text-green-500" :
                                   metric.direction === "down" ? "text-red-500" :
                                   "text-muted-foreground"
-                                }`}>
+                                }`} data-testid={`metric-change-${insight.id}-${midx}`}>
                                   {metric.direction === "up" && <ArrowUpRight className="h-3 w-3" />}
                                   {metric.direction === "down" && <ArrowDownRight className="h-3 w-3" />}
                                   {metric.change}
@@ -261,15 +261,15 @@ export default function TradeTrends() {
                   data-testid={`commodity-${ct.commodity.toLowerCase()}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium">{ct.commodity}</span>
+                    <span className="font-medium" data-testid={`commodity-name-${ct.commodity.toLowerCase()}`}>{ct.commodity}</span>
                     <div className="flex items-center gap-2">
                       <TrendIcon className={`h-4 w-4 ${tConfig.color}`} />
-                      <span className={`text-sm font-medium ${tConfig.color}`}>
+                      <span className={`text-sm font-medium ${tConfig.color}`} data-testid={`commodity-change-${ct.commodity.toLowerCase()}`}>
                         {ct.priceChange}
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{ct.forecast}</p>
+                  <p className="text-xs text-muted-foreground" data-testid={`commodity-forecast-${ct.commodity.toLowerCase()}`}>{ct.forecast}</p>
                 </motion.div>
               );
             })}
@@ -290,14 +290,14 @@ export default function TradeTrends() {
                 data-testid={`corridor-${idx}`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">{ca.corridor}</span>
-                  <span className={`text-xs rounded-full px-2 py-0.5 border ${riskColors[ca.riskLevel]}`}>
+                  <span className="text-sm font-medium" data-testid={`corridor-name-${idx}`}>{ca.corridor}</span>
+                  <span className={`text-xs rounded-full px-2 py-0.5 border ${riskColors[ca.riskLevel]}`} data-testid={`corridor-risk-${idx}`}>
                     {ca.riskLevel}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Volume: {ca.volume}</span>
-                  <span className="text-green-500">{ca.growth} growth</span>
+                  <span data-testid={`corridor-volume-${idx}`}>Volume: {ca.volume}</span>
+                  <span className="text-green-500" data-testid={`corridor-growth-${idx}`}>{ca.growth} growth</span>
                 </div>
               </motion.div>
             ))}
@@ -317,7 +317,7 @@ export default function TradeTrends() {
           state="idle"
           dataTestId="card-market-outlook"
         >
-          <p className="text-muted-foreground leading-relaxed">{analysis.marketOutlook}</p>
+          <p className="text-muted-foreground leading-relaxed" data-testid="text-market-outlook">{analysis.marketOutlook}</p>
         </TBCard>
       </motion.div>
     </div>
