@@ -7,6 +7,8 @@ export default function Settings() {
   const { loadDemoData, resetDemoData, trades, aiStatus, aiLastChecked, setAIStatus, tutorialCompleted, startTutorial, resetTutorial } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
+  
+  const hasDemoData = trades.some(t => t.title === "Kenya Coffee Import" || t.title === "Medical Supplies Export");
   return (
     <div className="h-full flex flex-col">
       <div className="px-8 py-6 border-b border-border">
@@ -88,9 +90,9 @@ export default function Settings() {
             </div>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {trades.length === 0 
+                {!hasDemoData 
                   ? "Load sample trades, funding requests, and proof packs to explore TRAIBOX features."
-                  : `${trades.length} trade(s) currently loaded. Reset to start fresh.`
+                  : `Demo data loaded (${trades.length} trade(s)). Reset to start fresh.`
                 }
               </p>
               <div className="flex gap-3">
@@ -100,7 +102,7 @@ export default function Settings() {
                     loadDemoData();
                     setTimeout(() => setLoading(false), 500);
                   }}
-                  disabled={loading || trades.length > 0}
+                  disabled={loading || hasDemoData}
                   variant="outline"
                   className="flex-1"
                   data-testid="button-load-demo-data"

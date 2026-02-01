@@ -233,7 +233,7 @@ type AppStore = {
   addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'createdAt'>) => string;
   getUnreadNotifications: (role: 'operator' | 'financier') => Notification[];
   setAIStatus: (status: 'connected' | 'demo') => void;
-  loadDemoData: () => void;
+  loadDemoData: (force?: boolean) => void;
   resetDemoData: () => void;
   fetchTradesFromAPI: () => Promise<void>;
   syncTradeFromAPI: (id: string) => Promise<void>;
@@ -505,11 +505,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   getUnreadNotifications: (role) =>
     get().notifications.filter((n) => n.targetRole === role && !n.read),
 
-  loadDemoData: () => {
+  loadDemoData: (force = false) => {
     const state = get();
     
-    // Only load if no trades exist (idempotent)
-    if (state.trades.length > 0) return;
+    // Check if demo data already exists (prevent duplicates)
+    const hasDemoData = state.trades.some(t => t.title === "Kenya Coffee Import" || t.title === "Medical Supplies Export");
+    if (hasDemoData && !force) return;
 
     // Create demo trades with stable IDs
     const trade1Id = `trade-demo-coffee-${Date.now()}`;

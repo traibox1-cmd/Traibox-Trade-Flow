@@ -395,21 +395,93 @@ export default function CompliancePage() {
 
           <TabsContent value="reports" className="mt-4" data-testid="panel-reports">
             <TBCard
-              title="Reports"
-              subtitle="Audit-ready exports"
+              title="Compliance Reports"
+              subtitle="Compliance check results and audit-ready exports"
               state="idle"
               icon={<FileText className="h-4 w-4" />}
               dataTestId="card-reports-panel"
             >
-              <div
-                className="rounded-2xl border bg-background/60 p-4"
-                data-testid="empty-reports"
-              >
-                <div className="text-sm font-medium">No saved reports yet</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Generate a report after checks complete, or from within a trade workspace.
+              {complianceRuns.length === 0 ? (
+                <div
+                  className="rounded-2xl border bg-background/60 p-4"
+                  data-testid="empty-reports"
+                >
+                  <div className="text-sm font-medium">No compliance reports yet</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Run compliance checks from the Checks tab or load demo data to see sample reports.
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3" data-testid="reports-list">
+                  {complianceRuns.map((run) => {
+                    const passedCount = run.findings.filter(f => f.type === 'pass').length;
+                    const warnCount = run.findings.filter(f => f.type === 'warn').length;
+                    const failCount = run.findings.filter(f => f.type === 'fail').length;
+                    const trade = trades.find(t => t.id === run.tradeId);
+                    
+                    return (
+                      <div
+                        key={run.id}
+                        className="rounded-xl border bg-background/60 p-4"
+                        data-testid={`report-${run.id}`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="font-medium text-sm">{run.targetEntity}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {trade ? trade.title : 'Unknown Trade'} • {new Date(run.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            run.status === 'passed' 
+                              ? 'bg-green-500/20 text-green-600' 
+                              : run.status === 'failed'
+                              ? 'bg-red-500/20 text-red-600'
+                              : 'bg-yellow-500/20 text-yellow-600'
+                          }`}>
+                            {run.status === 'passed' ? 'Passed' : run.status === 'failed' ? 'Failed' : 'Pending'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 mb-3 text-xs">
+                          <span className="flex items-center gap-1">
+                            <BadgeCheck className="w-3 h-3 text-green-600" />
+                            {passedCount} passed
+                          </span>
+                          {warnCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-yellow-600" />
+                              {warnCount} warnings
+                            </span>
+                          )}
+                          {failCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-red-600" />
+                              {failCount} failed
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1">
+                          {run.findings.slice(0, 4).map((finding, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs">
+                              {finding.type === 'pass' && <BadgeCheck className="w-3 h-3 text-green-600" />}
+                              {finding.type === 'warn' && <AlertTriangle className="w-3 h-3 text-yellow-600" />}
+                              {finding.type === 'fail' && <AlertTriangle className="w-3 h-3 text-red-600" />}
+                              <span className="text-muted-foreground">{finding.message}</span>
+                            </div>
+                          ))}
+                          {run.findings.length > 4 && (
+                            <div className="text-xs text-muted-foreground pl-5">
+                              +{run.findings.length - 4} more findings
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </TBCard>
           </TabsContent>
 
