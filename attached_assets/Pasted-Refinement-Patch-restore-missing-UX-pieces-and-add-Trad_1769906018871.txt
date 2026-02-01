@@ -1,0 +1,51 @@
+Refinement Patch: restore missing UX pieces and add Trade Passport (killer feature) without redesign. Address: (A) Trade Passport placement + UI, (B) Trade/Explore actually works + conversational chat, (C) multimodal attachments (files + drag/drop) restored, (D) My Network parties/roles visible + editable.
+
+A) TRADE PASSPORT (must be visible and shareable)
+
+Add a "Trade Passport" entry point that is easy to find but minimal:
+Add a small card on My Space (and Financier Capital Console) called “Trade Passport” with status (Ready / Missing items).
+Add a section under Compliance & Proofs called “Trade Passport” (tab/route) as the canonical home.
+Trade Passport page contents (light v1):
+Identity/Business (KYB) summary (company name, registration country, IDs placeholders)
+Beneficial ownership placeholders (UBO)
+Compliance status chips (KYC/KYB, AML checks, ESG, CBAM/CSRD/SFDR placeholders)
+Evidence list (linked proof packs + key docs)
+Share controls (Internal / Parties / Financier) + "Generate share link" (mock) + "Export passport PDF" (mock)
+Minimal "Missing info" panel that creates tasks/requests.
+B) TRADE INTELLIGENCE: make it truly usable (conversational + explainability)
+3) Fix Trade/Explore toggle behavior
+
+Trade mode: always scoped to current tradeId; outputs action-first but still allows free chat; ensure mode affects server prompt strongly.
+Explore mode: no trade scope; allow conversational explainability/insights; return concise answers + optional suggestions.
+Show a small “Mode: Trade / Explore” pill near header and reflect current selection.
+Ensure Trade mode is disabled only when no trade exists; otherwise it must work.
+Restore conversational chat feel
+Keep structured cards, but also allow a normal assistant message stream (like ChatGPT) with a "Thinking…" state and follow-up turns.
+Ensure the assistant can ask clarifying questions instead of only generating forms/cards.
+C) MULTIMODAL (files now; voice/visual placeholders)
+5) Restore chat composer attachment controls
+
+Add attachment button + drag/drop zone in Trade Intelligence.
+Allow attaching multiple files; show chips; allow remove.
+In Trade mode, attachments are saved into the trade Documents list; in Explore mode, they remain on the message only.
+“Drop messy docs → start a trade” promise (v1)
+Add a prominent empty-state drop area in Trade Intelligence (when no messages) with CTA: “Drop documents to start a trade”.
+On file drop, create an action card: “Create Trade from Documents” that generates a draft trade plan (mock extraction ok) and creates a new trade.
+Voice/visual inputs
+Add non-functional (for now) icons for voice and camera with tooltip “Coming soon” so the UI signals multimodality without heavy backend.
+D) MY NETWORK: parties + roles visibility
+8) Directory list should show roles/capabilities
+
+On each party card in My Network → Directory, show small chips for capabilities (Supplier/Buyer/Financier/Logistics/etc.).
+Add “Edit capabilities” action in party drawer/modal.
+Ensure capability tags are persisted in store and visible everywhere
+Confirm that capability tags are stored on Party objects and survive navigation.
+Ensure trade-specific roles remain in Trade Workspace Parties tab (already exists) and show role assignment there.
+Quality/acceptance
+
+Trade Passport is accessible from My Space and Compliance & Proofs and can export/share (mock).
+Trade/Explore toggle changes behavior; Trade mode works when a trade is selected; Explore mode supports conversational Q&A.
+Attachment button + drag/drop visible; docs appear in Trade Documents when in Trade mode.
+My Network Directory shows capability chips and can edit them.
+No regressions to Milestones 1–4 workflows and existing UI style.
+Constraints: no redesign; minimal premium style; no new dependencies; keep placeholders where backend is needed.
