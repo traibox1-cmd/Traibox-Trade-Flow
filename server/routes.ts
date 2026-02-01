@@ -49,10 +49,23 @@ export async function registerRoutes(
 
       let fullResponse = "";
       let detectedIntents: string[] = [];
+      let streamingStarted = false;
+
+      // Send immediate "thinking" event so frontend knows connection is alive
+      res.write(`data: ${JSON.stringify({ type: "thinking" })}\n\n`);
+
+      // Start heartbeat interval - sends heartbeat every 2s while waiting for OpenAI
+      const heartbeatInterval = setInterval(() => {
+        if (!streamingStarted) {
+          res.write(`data: ${JSON.stringify({ type: "heartbeat" })}\n\n`);
+        }
+      }, 2000);
 
       try {
         // Stream the AI response with trade context and chat mode
         for await (const chunk of streamChatCompletion(messages, mode, tradeContext, chatMode)) {
+          streamingStarted = true;
+          clearInterval(heartbeatInterval); // Stop heartbeats once tokens start
           fullResponse += chunk;
           res.write(`data: ${JSON.stringify({ type: "token", content: chunk })}\n\n`);
         }
@@ -78,6 +91,9 @@ export async function registerRoutes(
           });
         }
 
+        // Clean up heartbeat interval (safety - should already be cleared when tokens started)
+        clearInterval(heartbeatInterval);
+
         // Send completion event with intents
         res.write(`data: ${JSON.stringify({ 
           type: "done", 
@@ -85,6 +101,7 @@ export async function registerRoutes(
         })}\n\n`);
         res.end();
       } catch (error) {
+        clearInterval(heartbeatInterval); // Clean up heartbeat on error
         console.error("Streaming error:", error);
         res.write(`data: ${JSON.stringify({ 
           type: "error", 

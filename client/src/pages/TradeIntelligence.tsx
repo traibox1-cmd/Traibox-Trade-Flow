@@ -83,8 +83,8 @@ export default function TradeIntelligence() {
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
-  const AI_TIMEOUT_MS = 10000; // 10 second total timeout
-  const WATCHDOG_MS = 3000; // 3 second watchdog for stalled connections
+  const AI_TIMEOUT_MS = 12000; // 12 second total timeout (server sends heartbeats every 2s)
+  const WATCHDOG_MS = 5000; // 5 second watchdog - server sends heartbeats every 2s to keep alive
 
   // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
@@ -298,6 +298,13 @@ export default function TradeIntelligence() {
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
+
+              if (data.type === "thinking" || data.type === "heartbeat") {
+                // Server is processing - reset watchdog to prevent timeout during AI processing
+                // Heartbeats sent every 2s keep connection alive during OpenAI processing
+                resetWatchdog();
+                continue;
+              }
 
               if (data.type === "token") {
                 if (typeof data.content !== "string") {
