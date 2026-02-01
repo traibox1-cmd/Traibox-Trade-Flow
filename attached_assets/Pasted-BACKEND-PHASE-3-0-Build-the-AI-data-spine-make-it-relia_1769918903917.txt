@@ -1,0 +1,84 @@
+BACKEND PHASE 3.0 — Build the AI + data spine (make it reliable, not smart)
+
+The UI exists but AI still doesn’t work reliably. Implement a minimal backend foundation that guarantees responses, persists context, and supports Trade Mode properly.
+
+1) Add persistence (SQLite OK)
+
+Add a lightweight SQLite DB (or whichever DB already configured). If you already have a store, migrate to persistence gradually.
+
+Create tables/models (minimum fields only):
+
+users(id, email?, role) // role = operator|financier
+
+trades(id, title, origin, destination, value, currency, status, createdAt)
+
+parties(id, name, capabilitiesJson, createdAt)
+
+trade_parties(tradeId, partyId, rolesJson) // roles per trade
+
+messages(id, tradeIdNullable, mode, agentNullable, role, content, createdAt)
+
+documents(id, tradeIdNullable, filename, mime, size, storagePath, createdAt)
+
+Add seed/demo data ON FIRST RUN (so UI isn’t empty).
+
+2) Implement one canonical AI endpoint (non-stream first)
+
+Create POST /api/ai/chat that accepts:
+{ mode: \"explore\"|\"trade\", tradeId?: string, agent?: string, messages: [{role, content}], attachments?: [{docId, filename, mime}] }
+
+It must always return:
+{ assistant_text: string, actions?: [], meta: { mode, agent, tradeId, aiMode: \"live\"|\"demo\" } }
+
+Use OpenAI with OPENAI_API_KEY if available. If OpenAI fails (quota/network/error), return a high-quality DEMO fallback response (TRAIBOX style) — but always include assistant_text.
+
+Enforce server timeout (e.g., 10–15s). On timeout → fallback demo response.
+
+3) Make Trade Mode real (context binding)
+
+If mode=trade and tradeId exists:
+
+Load trade + linked parties + linked docs + compliance summary from DB
+
+Inject a concise trade context block into the system prompt
+
+If mode=trade but no tradeId:
+
+Return assistant_text prompting user to create/select a trade + actions: [{type:"create_trade"}, {type:"select_trade"}]
+
+4) Persist messages
+
+Every user message and assistant response must be stored in messages.
+
+Explore messages have tradeId=null.
+
+Trade messages store tradeId.
+
+5) Document upload endpoint
+
+Create POST /api/docs/upload to accept multipart upload, store in /uploads, create DB row.
+
+Return docId + metadata.
+
+If user uploads while tradeId present → link to trade.
+
+6) Health endpoint for debugging
+
+GET /api/ai/status returns:
+{ hasKey, aiMode: \"live\"|\"demo\", lastError?, lastErrorAt? }
+
+Acceptance tests (must pass)
+
+/api/ai/status shows correct mode (live if key, demo if missing).
+
+Explore chat returns assistant_text within 15 seconds even if OpenAI fails.
+
+Trade Mode without tradeId returns assistant_text + create/select trade actions.
+
+Trade Mode with tradeId includes trade context (origin/destination/value) and produces coherent output.
+
+Messages persist (refresh page → conversation history still visible for that trade).
+
+Upload a file → it creates a DB doc row and returns docId.
+
+Do NOT redesign UI; only wire it to the new endpoints and persistence. Provide a short list of files changed and how to test.
