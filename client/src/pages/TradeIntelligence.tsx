@@ -179,30 +179,9 @@ export default function TradeIntelligence() {
     const textToSend = message || input.trim();
     if (!textToSend || loading) return;
 
-    // Check if Trade Mode without trade selected
-    if (chatMode === "trade" && !selectedTradeId) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "user",
-          content: textToSend,
-        },
-        {
-          role: "assistant",
-          content: "",
-          structured: {
-            assistant_text: "To use **Trade Mode**, please select or create a trade first.\n\nTrade Mode lets you execute workflows scoped to a specific trade.",
-            actions: [
-              { type: "create-trade", label: "Create Trade", description: "Create a new trade to get started" },
-              { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" },
-            ],
-            meta: { mode: "trade" }
-          },
-        },
-      ]);
-      setInput("");
-      return;
-    }
+    // In Trade Mode without a trade, we still send the message but will include 
+    // create/select actions in the response for workflow-related queries
+    const needsTradeContext = chatMode === "trade" && !selectedTradeId;
 
     const userMessage: Message = { 
       role: "user", 

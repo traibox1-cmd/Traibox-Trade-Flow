@@ -78,6 +78,27 @@ function generateDemoResponse(messages: Array<{ role: string; content: string; a
     };
   }
 
+  // Trade Mode but no trade selected - still answer questions but offer to create/select trade
+  const isTradeModeNoTrade = chatMode === "trade" && !tradeContext;
+  
+  // Handle Incoterm questions (common in both modes)
+  if (lower.includes("incoterm") || lower.includes("fob") || lower.includes("cif") || lower.includes("exw") || lower.includes("dap") || lower.includes("ddp")) {
+    const baseActions: any[] = [];
+    
+    if (isTradeModeNoTrade) {
+      baseActions.push(
+        { type: "create-trade", label: "Create Trade", description: "Create a trade to apply Incoterms" },
+        { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+      );
+    }
+    
+    return {
+      assistant_text: `**Incoterms** define the responsibilities between buyer and seller. Here's a quick guide:\n\n**Most Common:**\n• **FOB (Free on Board)** - Seller delivers goods on board the vessel; risk transfers at that point\n• **CIF (Cost, Insurance & Freight)** - Seller pays for freight and insurance to destination port\n• **EXW (Ex Works)** - Buyer takes all responsibility from seller's premises\n• **DAP (Delivered at Place)** - Seller delivers to a named destination\n• **DDP (Delivered Duty Paid)** - Seller bears all costs including customs/duties\n\n**Recommendation:**\n• For exports: FOB or CIF gives you control over logistics\n• For imports: DAP or DDP reduces your risk\n\n${isTradeModeNoTrade ? "To apply Incoterms to a specific trade, please create or select a trade first." : "Would you like me to update the Incoterms for your trade?"}`,
+      actions: baseActions,
+      meta: { mode: chatMode }
+    };
+  }
+
   // Explore Mode: Conversational with insights
   if (isExploreMode) {
     if (lower.includes("route") || lower.includes("corridor") || lower.includes("best")) {
@@ -117,43 +138,79 @@ function generateDemoResponse(messages: Array<{ role: string; content: string; a
     };
   }
 
-  // Trade Mode: Execution-focused
+  // Trade Mode: Execution-focused (handles both with and without trade context)
   if (lower.includes("compliance") || lower.includes("check") || lower.includes("kyc") || lower.includes("sanction")) {
+    const actions: any[] = [
+      { type: "compliance", label: "Run Compliance Check", description: "Screen parties against sanctions lists and verify KYC" }
+    ];
+    if (isTradeModeNoTrade) {
+      actions.unshift(
+        { type: "create-trade", label: "Create Trade", description: "Create a trade first" },
+        { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+      );
+    }
     return {
-      assistant_text: "I'll run compliance checks for this trade including sanctions screening and KYC verification.",
-      actions: [
-        { type: "compliance", label: "Run Compliance Check", description: "Screen parties against sanctions lists and verify KYC" }
-      ],
+      assistant_text: isTradeModeNoTrade 
+        ? "Compliance checks include **sanctions screening**, **KYC verification**, and **document review**.\n\nTo run compliance on a specific trade, please create or select a trade first."
+        : "I'll run compliance checks for this trade including sanctions screening and KYC verification.",
+      actions,
       meta: { mode: "trade" }
     };
   }
 
   if (lower.includes("fund") || lower.includes("financ") || lower.includes("capital") || lower.includes("offer") || lower.includes("lc") || lower.includes("credit")) {
+    const actions: any[] = [
+      { type: "funding", label: "Request Trade Funding", description: "Submit funding request" }
+    ];
+    if (isTradeModeNoTrade) {
+      actions.unshift(
+        { type: "create-trade", label: "Create Trade", description: "Create a trade first" },
+        { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+      );
+    }
     return {
-      assistant_text: "I'll help you set up trade financing. Options include LC (1.5-2.5%), Invoice Factoring (2-4%), or Supply Chain Finance (1-3% APR).",
-      actions: [
-        { type: "funding", label: "Request Trade Funding", description: "Submit funding request" }
-      ],
+      assistant_text: isTradeModeNoTrade
+        ? "Trade financing options include:\n• **LC (Letter of Credit)** - 1.5-2.5%\n• **Invoice Factoring** - 2-4%\n• **Supply Chain Finance** - 1-3% APR\n\nTo request funding, please create or select a trade first."
+        : "I'll help you set up trade financing. Options include LC (1.5-2.5%), Invoice Factoring (2-4%), or Supply Chain Finance (1-3% APR).",
+      actions,
       meta: { mode: "trade" }
     };
   }
 
   if (lower.includes("pay") || lower.includes("payment") || lower.includes("settlement") || lower.includes("transfer") || lower.includes("swift")) {
+    const actions: any[] = [
+      { type: "payment", label: "Create Payment", description: "Set up payment routing" }
+    ];
+    if (isTradeModeNoTrade) {
+      actions.unshift(
+        { type: "create-trade", label: "Create Trade", description: "Create a trade first" },
+        { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+      );
+    }
     return {
-      assistant_text: "I'll set up cross-border payment routing. Available rails: SWIFT (2-3 days), ACH/SEPA (1-2 days), or stablecoin (same-day).",
-      actions: [
-        { type: "payment", label: "Create Payment", description: "Set up payment routing" }
-      ],
+      assistant_text: isTradeModeNoTrade
+        ? "Available payment rails:\n• **SWIFT** - 2-3 days, global coverage\n• **ACH/SEPA** - 1-2 days, regional\n• **Stablecoin** - Same-day settlement\n\nTo set up payments, please create or select a trade first."
+        : "I'll set up cross-border payment routing. Available rails: SWIFT (2-3 days), ACH/SEPA (1-2 days), or stablecoin (same-day).",
+      actions,
       meta: { mode: "trade" }
     };
   }
 
   if (lower.includes("proof") || lower.includes("doc") || lower.includes("evidence") || lower.includes("certificate") || lower.includes("pack")) {
+    const actions: any[] = [
+      { type: "proof-pack", label: "Generate Proof Pack", description: "Create document package" }
+    ];
+    if (isTradeModeNoTrade) {
+      actions.unshift(
+        { type: "create-trade", label: "Create Trade", description: "Create a trade first" },
+        { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+      );
+    }
     return {
-      assistant_text: "I'll generate a proof pack with commercial invoice, bill of lading, certificates, and compliance records.",
-      actions: [
-        { type: "proof-pack", label: "Generate Proof Pack", description: "Create document package" }
-      ],
+      assistant_text: isTradeModeNoTrade
+        ? "A **Proof Pack** includes:\n• Commercial invoice\n• Bill of lading\n• Certificates of origin\n• Compliance records\n\nTo generate a proof pack, please create or select a trade first."
+        : "I'll generate a proof pack with commercial invoice, bill of lading, certificates, and compliance records.",
+      actions,
       meta: { mode: "trade" }
     };
   }
@@ -180,13 +237,26 @@ function generateDemoResponse(messages: Array<{ role: string; content: string; a
     };
   }
 
-  return {
-    assistant_text: "I'm TRAIBOX, your AI trade assistant. I can help with trade planning, compliance, funding, payments, and documentation. What would you like to do?",
-    actions: [
+  // Default response for Trade Mode
+  const defaultActions: any[] = [];
+  if (isTradeModeNoTrade) {
+    defaultActions.push(
+      { type: "create-trade", label: "Create Trade", description: "Start a new trade" },
+      { type: "select-trade", label: "Select Trade", description: "Choose an existing trade" }
+    );
+  } else {
+    defaultActions.push(
       { type: "create-trade", label: "Plan New Trade", description: "Start a new trade" },
       { type: "compliance", label: "Run Compliance", description: "Check compliance" },
       { type: "funding", label: "Request Funding", description: "Explore finance options" }
-    ],
+    );
+  }
+
+  return {
+    assistant_text: isTradeModeNoTrade
+      ? "I'm ready to help with your trade. What would you like to know?\n\nFor **workflow actions** (compliance, funding, payments, proof packs), please create or select a trade first."
+      : "I'm TRAIBOX, your AI trade assistant. I can help with trade planning, compliance, funding, payments, and documentation. What would you like to do?",
+    actions: defaultActions,
     meta: { mode: "trade" }
   };
 }
@@ -271,6 +341,9 @@ export async function createStructuredChatCompletion(
     }
     if (tradeContext.timelineStep) contextSection += `Current step: ${tradeContext.timelineStep}\n`;
     contextSection += `\nAll responses must be scoped to this trade. Reference it by T-${tradeContext.id}. Focus on execution.`;
+  } else if (chatMode === "trade" && !tradeContext) {
+    // Trade mode but no trade selected - still answer questions but suggest creating/selecting a trade for workflow actions
+    contextSection = `\n\nTRADE MODE (no trade selected): Answer the user's question helpfully. If they ask about trade workflows (compliance, funding, payments, proof packs), include actions to create or select a trade. For general trade questions, just provide helpful information.`;
   } else if (chatMode === "explore") {
     contextSection = `\n\nEXPLORE MODE: Provide insights, best practices, route analysis. Keep structured but conversational.`;
   }
