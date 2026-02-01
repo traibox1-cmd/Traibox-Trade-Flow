@@ -511,9 +511,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     // Only load if no trades exist (idempotent)
     if (state.trades.length > 0) return;
 
-    // Create demo trades
-    const trade1Id = `trade-demo-1-${Date.now()}`;
-    const trade2Id = `trade-demo-2-${Date.now() + 1}`;
+    // Create demo trades with stable IDs
+    const trade1Id = `trade-demo-coffee-${Date.now()}`;
+    const trade2Id = `trade-demo-medical-${Date.now() + 1}`;
+    const now = Date.now();
     
     set({
       trades: [
@@ -524,12 +525,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
           status: "active",
           value: 250000,
           currency: "USD",
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000),
           parties: [
             { name: "Kijani Cooperative", role: "seller", region: "Kenya" },
-            { name: "NordWerk Logistics", role: "shipper", region: "EU" }
+            { name: "NordWerk Logistics", role: "shipper", region: "EU" },
+            { name: "Hamburg Port Authority", role: "insurer", region: "EU" }
           ],
-          linkedParties: [{ partnerId: "p1", roles: ["logistics", "customs"] }],
+          linkedParties: [
+            { partnerId: "p1", roles: ["logistics", "customs"] },
+            { partnerId: "p2", roles: ["buyer"] },
+            { partnerId: "p3", roles: ["supplier"] }
+          ],
           goods: "Coffee Beans (Arabica)",
           incoterms: "FOB Mombasa",
           timelineStep: "funding",
@@ -539,15 +545,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
           fundingType: "factoring",
           paymentTerms: "Net 60",
           logisticsMilestones: [
-            { key: 'booking', label: 'Booking', status: 'confirmed', timestamp: new Date() },
-            { key: 'picked-up', label: 'Picked up', status: 'confirmed', timestamp: new Date() },
-            { key: 'export-cleared', label: 'Export cleared', status: 'pending' },
-            { key: 'departed', label: 'Departed', status: 'pending' },
+            { key: 'booking', label: 'Booking', status: 'confirmed', timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000) },
+            { key: 'picked-up', label: 'Picked up', status: 'confirmed', timestamp: new Date(now - 5 * 24 * 60 * 60 * 1000) },
+            { key: 'export-cleared', label: 'Export cleared', status: 'confirmed', timestamp: new Date(now - 4 * 24 * 60 * 60 * 1000) },
+            { key: 'departed', label: 'Departed', status: 'confirmed', timestamp: new Date(now - 3 * 24 * 60 * 60 * 1000) },
             { key: 'arrived', label: 'Arrived', status: 'pending' },
             { key: 'import-cleared', label: 'Import cleared', status: 'pending' },
             { key: 'delivered', label: 'Delivered/POD', status: 'pending' },
           ],
-          logisticsEvents: [],
+          logisticsEvents: [
+            { id: `evt-1-${now}`, timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000), source: "CargoSmart", description: "Booking confirmed: Container MSCU1234567", confidence: "high" },
+            { id: `evt-2-${now}`, timestamp: new Date(now - 5 * 24 * 60 * 60 * 1000), source: "Carrier API", description: "Container picked up from Kijani warehouse, Nairobi", confidence: "high" },
+            { id: `evt-3-${now}`, timestamp: new Date(now - 4 * 24 * 60 * 60 * 1000), source: "Kenya Customs", description: "Export clearance approved, duties paid", confidence: "high" },
+            { id: `evt-4-${now}`, timestamp: new Date(now - 3 * 24 * 60 * 60 * 1000), source: "Maersk Tracking", description: "Vessel MSC AURORA departed Mombasa, ETA Hamburg 12 days", confidence: "high" },
+            { id: `evt-5-${now}`, timestamp: new Date(now - 1 * 24 * 60 * 60 * 1000), source: "AIS Signal", description: "Vessel transiting Suez Canal", confidence: "medium" },
+          ],
           logisticsVisibility: 'parties'
         },
         {
@@ -557,12 +569,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
           status: "active",
           value: 450000,
           currency: "USD",
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+          createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
           parties: [
             { name: "MedTech Solutions", role: "seller", region: "US" },
             { name: "Aster Mills", role: "buyer", region: "Singapore" }
           ],
-          linkedParties: [],
+          linkedParties: [{ partnerId: "p2", roles: ["buyer"] }],
           goods: "Diagnostic Equipment",
           incoterms: "CIF Singapore",
           timelineStep: "compliance",
@@ -572,7 +584,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           fundingType: "credit-line",
           paymentTerms: "Net 30",
           logisticsMilestones: [
-            { key: 'booking', label: 'Booking', status: 'pending' },
+            { key: 'booking', label: 'Booking', status: 'confirmed', timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000) },
             { key: 'picked-up', label: 'Picked up', status: 'pending' },
             { key: 'export-cleared', label: 'Export cleared', status: 'pending' },
             { key: 'departed', label: 'Departed', status: 'pending' },
@@ -580,40 +592,127 @@ export const useAppStore = create<AppStore>((set, get) => ({
             { key: 'import-cleared', label: 'Import cleared', status: 'pending' },
             { key: 'delivered', label: 'Delivered/POD', status: 'pending' },
           ],
-          logisticsEvents: [],
+          logisticsEvents: [
+            { id: `evt-6-${now}`, timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000), source: "FedEx Freight", description: "Booking confirmed for temperature-controlled container", confidence: "high" },
+          ],
           logisticsVisibility: 'internal'
         }
       ],
       fundingRequests: [
         {
-          id: `funding-demo-1-${Date.now()}`,
+          id: `funding-demo-1-${now}`,
           tradeId: trade1Id,
           amount: 200000,
           type: "lc",
           status: "pending",
           requesterName: "Kenya Coffee Trader",
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-          notes: "LC needed for coffee shipment",
+          createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+          notes: "LC needed for coffee shipment - 80% advance requested",
           corridor: "Kenya → EU"
         }
       ],
       proofPacks: [
         {
-          id: `proof-demo-1-${Date.now()}`,
+          id: `proof-demo-1-${now}`,
           tradeId: trade2Id,
           title: "Medical Supplies Compliance Pack",
           documents: ["FDA Certificate", "Product Specifications", "Safety Data Sheet", "Quality Assurance Report"],
           status: "ready",
-          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
+          createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `proof-demo-2-${now}`,
+          tradeId: trade1Id,
+          title: "Kenya Coffee Export Pack",
+          documents: ["Certificate of Origin", "Phytosanitary Certificate", "Commercial Invoice"],
+          status: "draft",
+          createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+        }
+      ],
+      complianceRuns: [
+        {
+          id: `compliance-demo-1-${now}`,
+          tradeId: trade1Id,
+          targetEntity: "Kijani Cooperative",
+          checks: ["Sanctions Screening", "KYC Verification", "AML Check", "PEP Screening"],
+          status: "passed",
+          findings: [
+            { type: "pass", message: "No sanctions matches found" },
+            { type: "pass", message: "KYC documents verified" },
+            { type: "warn", message: "UBO declaration expires in 30 days" },
+            { type: "pass", message: "No PEP associations detected" }
+          ],
+          createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `compliance-demo-2-${now}`,
+          tradeId: trade2Id,
+          targetEntity: "MedTech Solutions",
+          checks: ["Sanctions Screening", "KYC Verification", "Export License Check"],
+          status: "failed",
+          findings: [
+            { type: "pass", message: "No sanctions matches found" },
+            { type: "fail", message: "Missing: Proof of address (required)" },
+            { type: "fail", message: "Missing: UBO declaration (required)" },
+            { type: "warn", message: "Export license pending FDA review" }
+          ],
+          createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
         }
       ],
       partnerInvites: [
         {
-          id: `invite-demo-1-${Date.now()}`,
+          id: `invite-demo-1-${now}`,
           partnerName: "Global Trade Finance Ltd",
           email: "partnerships@gtf-trade.example",
           status: "sent",
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
+          createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `invite-demo-2-${now}`,
+          partnerName: "Singapore Freight Services",
+          email: "ops@sgfreight.example",
+          status: "accepted",
+          createdAt: new Date(now - 10 * 24 * 60 * 60 * 1000)
+        }
+      ],
+      timelineEvents: [
+        {
+          id: `timeline-1-${now}`,
+          tradeId: trade1Id,
+          type: "created",
+          actor: "System",
+          message: "Trade created: Kenya Coffee Import",
+          createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `timeline-2-${now}`,
+          tradeId: trade1Id,
+          fundingRequestId: `funding-demo-1-${now}`,
+          type: "created",
+          actor: "Operator",
+          message: "Funding request submitted for $200,000 LC",
+          createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `timeline-3-${now}`,
+          tradeId: trade2Id,
+          type: "created",
+          actor: "System",
+          message: "Trade created: Medical Supplies Export",
+          createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+        }
+      ],
+      payments: [
+        {
+          id: `payment-demo-1-${now}`,
+          tradeId: trade1Id,
+          amount: 50000,
+          currency: "USD",
+          beneficiary: "Kijani Cooperative",
+          rail: "swift",
+          status: "completed",
+          createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000),
+          notes: "Advance payment - 20% of trade value"
         }
       ]
     });

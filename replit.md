@@ -71,3 +71,36 @@ Preferred communication style: Simple, everyday language.
 - react-day-picker
 - recharts
 - vaul
+
+## UI Smoke Test Checklist
+
+After a fresh reload, click "Load Demo Data" (in Settings or onboarding), then verify the following screens show meaningful content:
+
+### Operator Role
+- [ ] **My Space**: Shows 2 demo trades (Kenya Coffee Import, Medical Supplies Export) with status badges
+- [ ] **Trade Intelligence**: Chat interface loads, can send messages, receives AI responses
+- [ ] **Trade Workspace**: Selecting a trade shows Overview, Parties (3 linked partners), Documents, Timeline tabs
+- [ ] **My Network → Directory**: Shows 3 partners (NordWerk Logistics, Aster Mills, Kijani Cooperative) with roles
+- [ ] **Finance → Funding**: Shows 1 funding request ($200K LC for Kenya Coffee)
+- [ ] **Finance → Payments**: Shows 1 completed payment ($50K advance)
+- [ ] **Compliance → Checks**: Shows compliance check summary
+- [ ] **Compliance → Reports**: Shows 2 compliance runs (1 passed, 1 failed with missing items)
+- [ ] **Compliance → Proof Packs**: Shows 2 proof packs (1 ready, 1 draft)
+- [ ] **Compliance → Trade Passport**: Shows passport data with missing items flagged
+- [ ] **Compliance → Track & Trace**: Shows logistics milestones (4 confirmed, 3 pending) and 5 events
+- [ ] **Compliance → Risk**: Shows risk assessment with charts and AI insights
+- [ ] **Trade Trends**: Shows AI-driven market intelligence with insights and forecasts
+
+### Financier Role
+- [ ] **Capital Console**: Dashboard loads with funding overview
+- [ ] **Funding Desk**: Shows pending funding requests
+- [ ] **Deal Assistant**: Chat interface for deal analysis
+
+### Acceptance Criteria
+1. No 404 errors on any navigation link
+2. All tabs render without blank screens
+3. Demo data populates immediately after "Load Demo Data" click
+4. AI chat responds (either real OpenAI or demo fallback) within 12 seconds
+5. Track & Trace timeline shows shipment progress with events
+6. Risk Assessment shows radar chart and category breakdown
+7. Compliance shows at least one finding with missing items (for passport demo)
