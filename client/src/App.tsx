@@ -6,6 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import NotFound from "@/pages/not-found";
 import { AppShell } from "@/components/app/AppShell";
 import { RoleProvider } from "@/components/app/role";
+import TutorialOverlay from "@/components/app/TutorialOverlay";
 
 import MySpace from "@/pages/MySpace";
 import TradeIntelligence from "@/pages/TradeIntelligence";
@@ -80,6 +81,7 @@ export default function App() {
         <Toaster />
         <RoleProvider>
           <Router />
+          <TutorialOverlay />
         </RoleProvider>
       </TooltipProvider>
     </QueryClientProvider>

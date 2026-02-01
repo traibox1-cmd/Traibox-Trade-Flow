@@ -190,6 +190,16 @@ type AppStore = {
   aiStatus: 'connected' | 'demo';
   aiLastChecked: Date | null;
   
+  // Tutorial state
+  tutorialActive: boolean;
+  tutorialStep: number;
+  tutorialCompleted: boolean;
+  startTutorial: () => void;
+  nextTutorialStep: () => void;
+  prevTutorialStep: () => void;
+  skipTutorial: () => void;
+  resetTutorial: () => void;
+  
   addTrade: (trade: Omit<Trade, 'id' | 'createdAt'>) => string;
   updateTrade: (id: string, updates: Partial<Trade>) => void;
   getTrade: (id: string) => Trade | undefined;
@@ -265,6 +275,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
   timelineEvents: [],
   aiStatus: 'demo',
   aiLastChecked: null,
+  
+  // Tutorial state - check localStorage for completion
+  tutorialActive: false,
+  tutorialStep: 0,
+  tutorialCompleted: typeof window !== 'undefined' && localStorage.getItem('traibox-tutorial-completed') === 'true',
+
+  startTutorial: () => set({ tutorialActive: true, tutorialStep: 0 }),
+  
+  nextTutorialStep: () => set((state) => {
+    const totalSteps = 6; // Total tutorial steps
+    if (state.tutorialStep >= totalSteps - 1) {
+      localStorage.setItem('traibox-tutorial-completed', 'true');
+      return { tutorialActive: false, tutorialStep: 0, tutorialCompleted: true };
+    }
+    return { tutorialStep: state.tutorialStep + 1 };
+  }),
+  
+  prevTutorialStep: () => set((state) => ({
+    tutorialStep: Math.max(0, state.tutorialStep - 1)
+  })),
+  
+  skipTutorial: () => {
+    localStorage.setItem('traibox-tutorial-completed', 'true');
+    set({ tutorialActive: false, tutorialStep: 0, tutorialCompleted: true });
+  },
+  
+  resetTutorial: () => {
+    localStorage.removeItem('traibox-tutorial-completed');
+    set({ tutorialActive: false, tutorialStep: 0, tutorialCompleted: false });
+  },
 
   setAIStatus: (status) =>
     set({ aiStatus: status, aiLastChecked: new Date() }),

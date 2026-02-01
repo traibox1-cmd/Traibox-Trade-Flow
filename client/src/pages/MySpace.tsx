@@ -5,11 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, ShieldCheck, Banknote, FileCheck, X } from "lucide-react";
 
 export default function MySpace() {
-  const { trades, fundingRequests, partners, notifications, fetchTradesFromAPI } = useAppStore();
+  const { trades, fundingRequests, partners, notifications, fetchTradesFromAPI, tutorialCompleted, startTutorial } = useAppStore();
   
   useEffect(() => {
     fetchTradesFromAPI();
   }, [fetchTradesFromAPI]);
+
+  // Show tutorial on first visit for new users
+  useEffect(() => {
+    if (!tutorialCompleted && trades.length === 0) {
+      const hasSeenWelcome = localStorage.getItem('traibox-welcome-seen');
+      if (!hasSeenWelcome) {
+        localStorage.setItem('traibox-welcome-seen', 'true');
+        startTutorial();
+      }
+    }
+  }, [tutorialCompleted, trades.length, startTutorial]);
+
   const [, setLocation] = useLocation();
   const [showHint, setShowHint] = useState(() => {
     const dismissed = localStorage.getItem('traibox-hint-dismissed');

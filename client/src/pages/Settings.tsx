@@ -1,10 +1,10 @@
-import { User, Bell, Shield, Database, Sparkles } from "lucide-react";
+import { User, Bell, Shield, Database, Sparkles, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 
 export default function Settings() {
-  const { loadDemoData, resetDemoData, trades, aiStatus, aiLastChecked, setAIStatus } = useAppStore();
+  const { loadDemoData, resetDemoData, trades, aiStatus, aiLastChecked, setAIStatus, tutorialCompleted, startTutorial, resetTutorial } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   return (
@@ -182,6 +182,41 @@ export default function Settings() {
                   {testStatus === 'failed' && "✗ Connection Failed"}
                   {testStatus === 'idle' && "Test AI Connection"}
                 </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <HelpCircle className="w-5 h-5 text-muted-foreground" />
+              <h2 className="text-lg font-light text-foreground">Tutorial</h2>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {tutorialCompleted 
+                  ? "You've completed the tutorial. Restart it anytime to refresh your memory."
+                  : "Take a quick tour to learn about TRAIBOX's key features."
+                }
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={startTutorial}
+                  variant="outline"
+                  className="flex-1"
+                  data-testid="button-start-tutorial"
+                >
+                  {tutorialCompleted ? "Restart Tutorial" : "Start Tutorial"}
+                </Button>
+                {tutorialCompleted && (
+                  <Button
+                    onClick={resetTutorial}
+                    variant="ghost"
+                    className="flex-1"
+                    data-testid="button-reset-tutorial"
+                  >
+                    Reset Tutorial State
+                  </Button>
+                )}
               </div>
             </div>
           </div>
