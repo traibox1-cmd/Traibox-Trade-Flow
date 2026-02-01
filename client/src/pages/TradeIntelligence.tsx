@@ -264,6 +264,10 @@ export default function TradeIntelligence() {
               const data = JSON.parse(line.slice(6));
 
               if (data.type === "token") {
+                if (typeof data.content !== "string") {
+                  console.warn("Invalid token data received:", data);
+                  continue;
+                }
                 fullContent += data.content;
                 setMessages((prev) => {
                   const newMessages = [...prev];
@@ -326,13 +330,15 @@ export default function TradeIntelligence() {
                 throw new Error(data.message);
               }
             } catch (parseErr) {
-              // Ignore parse errors for incomplete chunks
+              if (parseErr instanceof Error && !line.includes('{"type":"token"')) {
+                console.warn("SSE parse error:", parseErr.message, "Line:", line.substring(0, 100));
+              }
             }
           }
         }
       }
     } catch (err) {
-      console.error("Chat error:", err);
+      console.error("Chat error:", err, err instanceof Error ? err.message : "", err instanceof Error ? err.stack : "");
       const isTimeout = err instanceof Error && (err.name === 'AbortError' || err.message.includes('timeout'));
       const errorMessage = isTimeout 
         ? "Response timed out. The AI is taking too long to respond."
