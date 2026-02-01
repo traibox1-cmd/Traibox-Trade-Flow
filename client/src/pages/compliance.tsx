@@ -1,5 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,18 +52,40 @@ const checks: Check[] = [
 ];
 
 export default function CompliancePage() {
-  const [location] = useLocation();
-  const queryParams = new URLSearchParams(location.split("?")[1] || "");
-  const tabParam = queryParams.get("tab");
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
-  const [activeTab, setActiveTab] = useState<string>(tabParam || "checks");
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
+  
+  const validTabs = ["checks", "reports", "proofs", "anchoring", "passport", "track-trace"];
+  
+  // Read tab from browser URL (wouter's useLocation doesn't include query string)
+  const getTabFromUrl = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    return validTabs.includes(tab || "") ? tab! : "checks";
+  }, []);
+  
+  const [activeTab, setActiveTab] = useState<string>(getTabFromUrl);
 
+  // Sync URL when tab changes via UI clicks
+  const handleTabChange = useCallback((newTab: string) => {
+    setActiveTab(newTab);
+    // Update URL without full navigation (keeps scroll position)
+    const newUrl = newTab === "checks" ? "/compliance" : `/compliance?tab=${newTab}`;
+    window.history.replaceState(null, "", newUrl);
+  }, []);
+
+  // Listen for URL changes (popstate for back/forward, and re-check on mount)
   useEffect(() => {
-    if (tabParam === "checks" || tabParam === "proofs" || tabParam === "reports" || tabParam === "passport" || tabParam === "track-trace" || tabParam === "anchoring") {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
+    const handleUrlChange = () => {
+      setActiveTab(getTabFromUrl());
+    };
+    
+    window.addEventListener("popstate", handleUrlChange);
+    // Also check immediately in case we navigated here with a tab param
+    handleUrlChange();
+    
+    return () => window.removeEventListener("popstate", handleUrlChange);
+  }, [getTabFromUrl]);
 
   const summary = useMemo(() => {
     const passed = checks.filter((c) => c.status === "passed").length;
@@ -205,7 +226,7 @@ export default function CompliancePage() {
       </div>
 
       <div className="mt-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="tabs-compliance">
+        <Tabs value={activeTab} onValueChange={handleTabChange} data-testid="tabs-compliance">
           <TabsList className="w-full justify-start" data-testid="tabslist-compliance">
             <TabsTrigger value="checks" data-testid="tab-checks">
               Checks & Findings
