@@ -1,0 +1,125 @@
+2 (Routing + Navigation Consistency / Fix 404 + Passport/Compliance split)
+
+You are working inside the existing TRAIBOX Trade Flow repo. Do not create a new app. Fix the current app.
+
+Goal: Eliminate routing confusion and 404s by making Compliance & Proofs the canonical page, and ensuring Trade Passport + Track & Trace are tabs inside it. Also ensure My Space shortcuts open the correct tab (not a different page).
+
+A) Decide and enforce canonical routes
+
+Canonical compliance route must be:
+
+/compliance-proofs (this is the main Compliance & Proofs page)
+
+It supports ?tab= query param:
+
+checks (default)
+
+reports
+
+proof-packs
+
+verification
+
+passport
+
+track
+
+Alias route /compliance should not be a separate, different UI.
+
+It must redirect to /compliance-proofs while preserving ?tab=... if present.
+
+Example: /compliance?tab=passport → /compliance-proofs?tab=passport
+
+Remove/disable any old standalone pages/routes that cause conflicts:
+
+If there is a separate Compliance.tsx page and also ComplianceProofs.tsx, keep only one canonical page rendering the tabs.
+
+If you keep both components for reuse, ensure routing renders only the canonical one.
+
+B) Fix the 404 “Trade Passport disappeared” issue
+
+The 404 happens because a link points to a route that isn’t registered.
+
+Search for links pointing to any of:
+
+/trade-passport
+
+/passport
+
+/compliance/passport
+
+/compliance?tab=passport (this one is OK if it redirects correctly)
+
+Replace them to use:
+
+/compliance-proofs?tab=passport
+
+In the router (likely client/src/App.tsx or similar):
+
+Ensure routes exist for:
+
+/compliance-proofs
+
+/compliance (redirect)
+
+Ensure no route points to missing components.
+
+C) “My Space” Trade Passport tile must open the correct tab
+
+In client/src/pages/MySpace.tsx (or wherever the tile lives):
+
+The “Trade Passport” card/button should navigate to:
+
+/compliance-proofs?tab=passport
+
+If there are other compliance-related CTAs (run checks, proof packs), route them similarly:
+
+Run checks → /compliance-proofs?tab=checks
+
+Proof packs → /compliance-proofs?tab=proof-packs
+
+Track & Trace → /compliance-proofs?tab=track
+
+D) Compliance & Proofs tabs must include Trade Passport + Track & Trace
+
+In the canonical compliance page component:
+
+Ensure the tab bar includes:
+
+Checks & Findings
+
+Reports
+
+Proof Packs
+
+Verification & Anchoring
+
+Trade Passport
+
+Track & Trace
+
+Ensure tab switching is driven by ?tab= query param (so deep links work).
+
+Ensure default is checks when tab is absent/invalid.
+
+E) Sidebar nav should be consistent (no duplicate “Compliance” pages)
+
+In client/src/components/AppShell.tsx (or nav config):
+
+The Compliance sidebar item should navigate to:
+
+/compliance-proofs
+
+If there is a “Compliance” item elsewhere (top tabs etc.), also route to canonical.
+
+F) Acceptance tests (must pass)
+
+Visiting /compliance?tab=passport lands on Compliance & Proofs with the Trade Passport tab selected (no 404).
+
+Clicking “Trade Passport” card in My Space lands on Compliance & Proofs → Trade Passport tab (no wrong UI).
+
+Sidebar “Compliance” always lands on Compliance & Proofs canonical page.
+
+Track & Trace is visible as a tab inside Compliance & Proofs (and loads).
+
+Keep UI minimal/premium. No redesign — just fix routing and consistency.

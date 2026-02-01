@@ -55,12 +55,16 @@ export default function CompliancePage() {
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
   
-  const validTabs = ["checks", "reports", "proofs", "anchoring", "passport", "track-trace"];
+  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track"];
   
   // Read tab from browser URL (wouter's useLocation doesn't include query string)
   const getTabFromUrl = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
+    // Handle legacy tab names
+    if (tab === "proofs") return "proof-packs";
+    if (tab === "anchoring") return "verification";
+    if (tab === "track-trace") return "track";
     return validTabs.includes(tab || "") ? tab! : "checks";
   }, []);
   
@@ -70,7 +74,7 @@ export default function CompliancePage() {
   const handleTabChange = useCallback((newTab: string) => {
     setActiveTab(newTab);
     // Update URL without full navigation (keeps scroll position)
-    const newUrl = newTab === "checks" ? "/compliance" : `/compliance?tab=${newTab}`;
+    const newUrl = newTab === "checks" ? "/compliance-proofs" : `/compliance-proofs?tab=${newTab}`;
     window.history.replaceState(null, "", newUrl);
   }, []);
 
@@ -234,16 +238,16 @@ export default function CompliancePage() {
             <TabsTrigger value="reports" data-testid="tab-reports">
               Reports
             </TabsTrigger>
-            <TabsTrigger value="proofs" data-testid="tab-proofs">
+            <TabsTrigger value="proof-packs" data-testid="tab-proof-packs">
               Proof Packs
             </TabsTrigger>
-            <TabsTrigger value="anchoring" data-testid="tab-anchoring">
+            <TabsTrigger value="verification" data-testid="tab-verification">
               Verification & Anchoring
             </TabsTrigger>
             <TabsTrigger value="passport" data-testid="tab-passport">
               Trade Passport
             </TabsTrigger>
-            <TabsTrigger value="track-trace" data-testid="tab-track-trace">
+            <TabsTrigger value="track" data-testid="tab-track">
               Track & Trace
             </TabsTrigger>
           </TabsList>
@@ -318,7 +322,7 @@ export default function CompliancePage() {
             </TBCard>
           </TabsContent>
 
-          <TabsContent value="proofs" className="mt-4" data-testid="panel-proofs">
+          <TabsContent value="proof-packs" className="mt-4" data-testid="panel-proof-packs">
             <TBCard
               title="Proof Packs"
               subtitle="Documentation packages ready for verification"
@@ -443,7 +447,7 @@ export default function CompliancePage() {
             </TBCard>
           </TabsContent>
 
-          <TabsContent value="anchoring" className="mt-4" data-testid="panel-anchoring">
+          <TabsContent value="verification" className="mt-4" data-testid="panel-verification">
             <TBCard
               title="Verification & Anchoring"
               subtitle="Document verification and blockchain anchoring"
@@ -507,7 +511,7 @@ export default function CompliancePage() {
             </TBCard>
           </TabsContent>
 
-          <TabsContent value="track-trace" className="mt-4" data-testid="panel-track-trace">
+          <TabsContent value="track" className="mt-4" data-testid="panel-track">
             <TBCard
               title="Track & Trace"
               subtitle="Logistics tracking and shipment visibility"

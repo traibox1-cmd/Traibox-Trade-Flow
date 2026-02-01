@@ -40,14 +40,18 @@ function Router() {
             <Route path="/trade/:id" component={TradeWorkspace} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
-            {/* Redirects from legacy paths */}
-            <Route path="/compliance-proofs">
-              <Redirect to="/compliance" />
+            {/* Canonical compliance route */}
+            <Route path="/compliance-proofs" component={CompliancePage} />
+            {/* Legacy redirect - preserve query params using wouter */}
+            <Route path="/compliance">
+              {() => {
+                const search = window.location.search;
+                return <Redirect to={`/compliance-proofs${search}`} />;
+              }}
             </Route>
             <Route path="/trade-passport">
-              <Redirect to="/compliance?tab=passport" />
+              <Redirect to="/compliance-proofs?tab=passport" />
             </Route>
-            <Route path="/compliance" component={CompliancePage} />
             <Route path="/risk-assessment" component={RiskAssessment} />
             
             {/* Financier Routes */}
