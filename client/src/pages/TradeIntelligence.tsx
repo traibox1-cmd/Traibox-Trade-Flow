@@ -79,8 +79,20 @@ export default function TradeIntelligence() {
   const watchdogIdRef = useRef<NodeJS.Timeout | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const [thinkingTime, setThinkingTime] = useState(0);
+  const [aiMode, setAiMode] = useState<"live" | "demo">("demo");
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus, fetchTradesFromAPI } = useAppStore();
+
+  // Fetch AI status on mount
+  useEffect(() => {
+    fetch("/api/ai/status")
+      .then(res => res.json())
+      .then(data => {
+        setAiMode(data.mode || "demo");
+        setAIStatus(data.mode === "live" ? "connected" : "demo");
+      })
+      .catch(() => setAiMode("demo"));
+  }, [setAIStatus]);
 
   // Fetch trades from API on mount
   useEffect(() => {
@@ -885,6 +897,16 @@ export default function TradeIntelligence() {
                 </div>
                 <div className="px-2.5 py-1 text-[11px] rounded-full bg-muted text-muted-foreground border border-border" data-testid="pill-agent">
                   Agent: {selectedAgent === "auto" ? "Auto" : selectedAgent === "compliance" ? "Compliance Officer" : selectedAgent === "logistics" ? "Logistics Coordinator" : selectedAgent === "finance" ? "Trade Finance Desk" : selectedAgent === "legal" ? "Legal" : "Sustainability"}
+                </div>
+                <div 
+                  className={`px-2.5 py-1 text-[11px] rounded-full border ${
+                    aiMode === "live" 
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" 
+                      : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                  }`}
+                  data-testid="pill-ai-status"
+                >
+                  AI: {aiMode === "live" ? "Live" : "Demo"}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">

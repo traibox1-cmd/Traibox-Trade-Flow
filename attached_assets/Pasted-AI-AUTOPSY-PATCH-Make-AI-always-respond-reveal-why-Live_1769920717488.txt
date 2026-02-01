@@ -1,0 +1,60 @@
+AI AUTOPSY PATCH — Make AI always respond + reveal why Live fails
+
+Goal: Trade Intelligence must always produce an answer within 15 seconds. If OpenAI fails, app must fallback to demo response and show why (no infinite “Thinking…”).
+
+1) Backend: add hard diagnostic endpoints
+
+Add GET /api/ai/status returning:
+
+{ "hasKey": boolean, "mode": "live"|"demo", "model": string, "lastError": string|null, "lastErrorAt": number|null }
+
+
+Add POST /api/ai/test that tries ONE simple OpenAI call:
+
+input: { "prompt": "ping" }
+
+output (success): { ok:true, text:"pong", mode:"live" }
+
+output (fail): { ok:false, error:"...", mode:"demo" }
+
+Store lastError/lastErrorAt in memory on failures.
+
+IMPORTANT: Never log the key. Only log hasKey and error summaries.
+
+2) Backend: create ONE canonical AI chat endpoint (non-stream)
+
+Create POST /api/ai/chat input:
+{ mode:"explore"|"trade", tradeId?:string, agent?:string, messages:[{role,content}], attachments?:[{docId,filename,mime}] }
+
+Output ALWAYS:
+{ assistant_text:string, actions?:[], meta:{ aiMode:"live"|"demo", mode, tradeId, agent } }
+
+Add a server timeout (10–15s). On timeout/error/429/401: return a DEMO fallback response (still assistant_text).
+
+3) Frontend: force Trade Intelligence to use POST /api/ai/chat (not old endpoints)
+
+Replace any calls to /api/chat, /api/chat/stream, or other endpoints with /api/ai/chat.
+
+Implement client timeout with AbortController (15s).
+
+Ensure “Thinking…” ALWAYS clears on success/error/timeout.
+
+On error, show assistant bubble: “AI temporarily unavailable (Live). Using Demo mode.” + a Retry button.
+
+4) Show AI status in UI (tiny)
+
+Add a small pill near mode toggle: “AI: Live” or “AI: Demo”
+
+Populate from /api/ai/status.
+
+5) Acceptance tests (must pass)
+
+Open /api/ai/status → returns JSON with hasKey/mode.
+
+Call /api/ai/test → returns ok true if key works; otherwise ok false with error string.
+
+In Trade Intelligence Explore Mode: ask anything → you always receive assistant_text within 15s (Live or Demo).
+
+No infinite “Thinking…” under any failure mode.
+
+Keep UI style minimal. Do not redesign.

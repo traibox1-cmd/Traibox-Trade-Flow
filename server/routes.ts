@@ -62,9 +62,44 @@ export async function registerRoutes(
       hasKey: hasValidApiKey,
       mode: mode, // canonical field for acceptance tests
       aiMode: mode, // alias for backward compatibility
+      model: "gpt-4o-mini",
       lastError: lastAIError,
-      lastErrorAt: lastAIErrorAt?.toISOString() || null,
+      lastErrorAt: lastAIErrorAt ? new Date(lastAIErrorAt).getTime() : null,
     });
+  });
+
+  // Test endpoint to verify OpenAI connection
+  app.post("/api/ai/test", async (req, res) => {
+    if (!hasValidApiKey) {
+      return res.json({
+        ok: false,
+        error: "No valid API key configured",
+        mode: "demo",
+      });
+    }
+
+    try {
+      const { OpenAI } = await import("openai");
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const response = await openai.chat.completions.create(
+        {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 10,
+        },
+        { timeout: 5000 }
+      );
+
+      const text = response.choices[0]?.message?.content || "pong";
+      res.json({ ok: true, text, mode: "live" });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      lastAIError = errorMsg;
+      lastAIErrorAt = new Date();
+      console.error("[AI Test] Error:", errorMsg);
+      res.json({ ok: false, error: errorMsg, mode: "demo" });
+    }
   });
 
   // Canonical AI chat endpoint (non-streaming, guaranteed response)
