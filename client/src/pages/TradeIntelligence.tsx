@@ -77,11 +77,12 @@ export default function TradeIntelligence() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const [thinkingTime, setThinkingTime] = useState(0);
   
   const { trades, addTrade, updateTrade, addFundingRequest, addComplianceRun, addProofPack, addPayment, aiStatus, setAIStatus } = useAppStore();
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
-  const AI_TIMEOUT_MS = 12000; // 12 second timeout
+  const AI_TIMEOUT_MS = 45000; // 45 second timeout to allow OpenAI to respond
 
   // Show prompt immediately when Trade Mode selected without trade
   useEffect(() => {
@@ -117,6 +118,22 @@ export default function TradeIntelligence() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Track thinking time for visual feedback
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (loading || streaming) {
+      setThinkingTime(0);
+      interval = setInterval(() => {
+        setThinkingTime(t => t + 1);
+      }, 1000);
+    } else {
+      setThinkingTime(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading, streaming]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -761,7 +778,7 @@ export default function TradeIntelligence() {
                     {msg.role === "assistant" && (msg.content === "" || msg.content === "...") ? (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Thinking...
+                        <span>Thinking{thinkingTime > 2 ? ` (${thinkingTime}s)` : "..."}</span>
                       </div>
                     ) : msg.role === "assistant" ? (
                       renderStructuredResponse(msg)
