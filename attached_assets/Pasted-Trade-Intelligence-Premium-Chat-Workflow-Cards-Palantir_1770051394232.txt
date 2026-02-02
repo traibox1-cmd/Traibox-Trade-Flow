@@ -1,0 +1,148 @@
+Trade Intelligence “Premium Chat + Workflow Cards” (Palantir/Apple-inspired, still minimal)
+
+Goal: Make Trade Intelligence feel like a modern “AI command center”: conversational first, cards second. Keep it clean and light, but more intuitive.
+Do NOT change dark/light toggle behavior or role toggle behavior.
+Do NOT implement real multimodal yet—just ensure UI affordances exist + don’t disappear.
+
+A) Fix the “Thinking…” bug (critical)
+
+In the Trade Intelligence chat rendering (where you show Thinking…), update the condition:
+
+Current buggy behavior: shows “Thinking…” when msg.content === "" even if msg.structured exists.
+
+Fix: Only show “Thinking…” when message is empty and has no structured response:
+
+Condition should be like:
+
+msg.role === "assistant" && (msg.content === "" || msg.content === "...") && !msg.structured
+
+Acceptance: structured responses render instead of staying stuck on “Thinking…”.
+
+B) Make Explore Mode actually conversational (not “dead”)
+
+Right now Explore feels like a label but doesn’t behave like chat.
+
+Implement:
+
+Explore Mode = conversational answer:
+
+When user sends a message in Explore Mode, always render an assistant response bubble with plain natural language (even if there is also structured output).
+
+If backend returns structured (JSON), show:
+
+A short conversational summary at the top (2–5 lines)
+
+Then the cards below.
+
+Add a subtle hint under the mode toggle:
+
+Explore: “Ask anything. Get insights + recommendations.”
+
+Trade: “Execute workflows for a selected trade.”
+
+Acceptance: Explore produces a normal assistant reply (like ChatGPT), not just cards.
+
+C) Clarify Trade Mode (and remove confusion)
+
+Trade Mode currently looks clickable but “does nothing” unless trade selected.
+
+Make it feel intentional:
+
+If no trade selected and user is in Trade Mode:
+
+Show a compact inline banner above the composer:
+
+“Trade Mode needs a trade context.”
+
+Buttons: Create Trade + Select Trade
+
+If a trade is selected:
+
+Replace “No trade selected” dropdown label with the selected trade name and a small status pill (e.g., Draft / Active)
+
+Acceptance: Trade Mode feels guided and never “broken”.
+
+D) Restore and lock the composer affordances (paperclip/voice/camera) — UI only
+
+In the chat composer row:
+
+Ensure paperclip (upload) is always visible.
+
+Ensure mic and camera icons are visible (even if disabled).
+
+If mic/camera not implemented, clicking them should open a small tooltip/toast:
+
+“Voice coming soon” / “Camera coming soon”
+
+Upload (paperclip) must open file picker and attach file(s) into the message UI as “pending attachments” chips.
+
+Acceptance: icons never disappear. Upload is functional at UI level.
+
+E) “Agent Mode” selector — visible and simple (UI only)
+
+Add a small selector next to mode toggles:
+
+Label: Agent
+
+Default: Auto
+
+Options (static for now):
+
+Auto
+
+Logistics
+
+Compliance
+
+Finance
+
+Legal
+
+This should only change a small tag in the outgoing request payload (e.g., agent: "logistics"), but if backend doesn’t use it yet, that’s fine.
+
+Acceptance: users can see and change Agent clearly.
+
+F) Workflow cards (Apple-like, Netflix browsing hint without overdoing it)
+
+Action cards should be:
+
+consistent spacing
+
+premium card style (uses Card component from Prompt 2)
+
+clear CTA button aligned right, with compact secondary text left
+
+For “suggested actions” row:
+
+Make it horizontally scrollable like Netflix only if more than 4 items.
+
+Keep it subtle: no huge posters, just compact action chips/cards.
+
+Acceptance: cards feel intentional, not random UI blocks.
+
+G) Small UX polish: keyboard + empty states
+
+Enter sends message, Shift+Enter new line.
+
+If AI endpoint errors, show a friendly inline error card:
+
+“AI service unavailable. Retry” + “Use demo mode”
+
+If demo mode triggers, make it explicit: “Demo response” badge.
+
+Acceptance: no silent failures.
+
+After implementing, verify:
+
+Explore Mode gives conversational replies.
+
+Trade Mode guides trade selection.
+
+Upload icon works + mic/camera visible.
+
+Agent selector visible and changes tag.
+
+“Thinking…” bug fixed (no more stuck UI).
+
+Implement in the existing Trade Intelligence page/component (where chat + modes live).
+Do not add new pages.
