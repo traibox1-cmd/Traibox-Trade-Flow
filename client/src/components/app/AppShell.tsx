@@ -377,11 +377,22 @@ function NavRail() {
                   )}
                   data-testid={item.testId}
                 >
-                  <NavIcon
-                    icon={Icon}
-                    active={active}
-                    notificationCount={notificationCount}
-                  />
+                  <span
+                    className={cn(
+                      "inline-flex h-10 w-10 items-center justify-center rounded-xl border bg-background/50 transition-all flex-shrink-0 relative",
+                      active
+                        ? "border-primary/30 bg-primary/10 text-primary shadow-sm"
+                        : "border-border/50 text-muted-foreground group-hover:text-foreground group-hover:border-primary/20",
+                    )}
+                    aria-hidden="true"
+                  >
+                    <Icon className="h-[18px] w-[18px] stroke-[2]" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </span>
+                    )}
+                  </span>
                   <AnimatePresence mode="wait">
                     {isExpanded && (
                       <motion.div
