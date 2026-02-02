@@ -630,9 +630,10 @@ export default function TradeIntelligence() {
         </div>
 
         {actions && actions.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-border/50">
-            <div className="text-xs text-muted-foreground font-medium">Actions</div>
-            {actions.slice(0, 3).map((action, idx) => {
+          <div className="pt-3 border-t border-border/50">
+            <div className="text-xs text-muted-foreground font-medium mb-2">Suggested Actions</div>
+            <div className={actions.length > 3 ? "flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" : "space-y-2"}>
+            {actions.slice(0, 5).map((action, idx) => {
               const getDeepLink = () => {
                 if (selectedTradeId) {
                   if (action.type === "compliance") return `/trade/${selectedTradeId}#compliance`;
@@ -647,38 +648,30 @@ export default function TradeIntelligence() {
               const deepLink = getDeepLink();
 
               return (
-                <div key={idx} className="rounded-xl border bg-card/50 p-3 flex items-start gap-3">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{action.label}</div>
-                    <div className="text-xs text-muted-foreground">{action.description}</div>
+                <div 
+                  key={idx} 
+                  className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-md transition-shadow flex items-start gap-3 min-w-[260px] flex-shrink-0"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{action.label}</div>
+                    <div className="text-xs text-muted-foreground line-clamp-2">{action.description}</div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <Button
-                      variant="secondary"
+                      variant="default"
                       size="sm"
                       onClick={() => handleActionClick(action)}
-                      className="rounded-xl shadow-sm"
+                      className="rounded-xl"
                       data-testid={`action-${action.type}`}
                     >
-                      <Sparkles className="w-3 h-3 mr-1" />
                       {action.label}
+                      <ArrowRight className="w-3 h-3 ml-1" />
                     </Button>
-                    {deepLink && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setLocation(deepLink)}
-                        className="text-xs px-2"
-                        data-testid={`action-open-${action.type}`}
-                      >
-                        Open
-                        <ArrowRight className="w-3 h-3 ml-1" />
-                      </Button>
-                    )}
                   </div>
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
@@ -708,19 +701,32 @@ export default function TradeIntelligence() {
         </div>
         
         <div className="flex items-center gap-2">
-          <select
-            value={selectedTradeId || ''}
-            onChange={(e) => setSelectedTradeId(e.target.value || null)}
-            className="text-sm bg-card border border-border rounded-lg px-3 py-1.5 text-foreground"
-            data-testid="select-trade-context"
-          >
-            <option value="">No trade selected</option>
-            {trades.map((trade) => (
-              <option key={trade.id} value={trade.id}>
-                {trade.title} ({trade.id})
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedTradeId || ''}
+              onChange={(e) => setSelectedTradeId(e.target.value || null)}
+              className="text-sm bg-card border border-border rounded-lg px-3 py-1.5 text-foreground min-w-[180px]"
+              data-testid="select-trade-context"
+            >
+              <option value="">Select trade...</option>
+              {trades.map((trade) => (
+                <option key={trade.id} value={trade.id}>
+                  {trade.title}
+                </option>
+              ))}
+            </select>
+            {selectedTrade && (
+              <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
+                selectedTrade.status === 'active' 
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                  : selectedTrade.status === 'draft' 
+                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                    : 'bg-muted text-muted-foreground border-border'
+              }`} data-testid="pill-trade-status">
+                {selectedTrade.status?.charAt(0).toUpperCase() + selectedTrade.status?.slice(1) || 'Draft'}
+              </span>
+            )}
+          </div>
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -914,8 +920,8 @@ export default function TradeIntelligence() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {chatMode === "explore" 
-                  ? "Explore Mode: Insights, best practices, partners, routes" 
-                  : "Trade Mode: Create & execute a trade workflow"}
+                  ? "Ask anything. Get insights + recommendations." 
+                  : "Execute workflows for a selected trade."}
               </p>
             </div>
 
@@ -933,6 +939,34 @@ export default function TradeIntelligence() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Trade Mode banner when no trade selected */}
+            {chatMode === "trade" && !selectedTradeId && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 mb-2" data-testid="banner-no-trade">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Trade Mode needs a trade context.</span>
+                <div className="flex gap-2 ml-auto">
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => {
+                    setMessages(prev => [...prev, { role: "user", content: "Create a new trade" }]);
+                    handleSend("Create a new trade");
+                  }} data-testid="button-create-trade-banner">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Create Trade
+                  </Button>
+                  <select
+                    value=""
+                    onChange={(e) => e.target.value && setSelectedTradeId(e.target.value)}
+                    className="h-7 text-xs bg-background border border-border rounded px-2"
+                    data-testid="select-trade-banner"
+                  >
+                    <option value="">Select Trade</option>
+                    {trades.map(t => (
+                      <option key={t.id} value={t.id}>{t.title}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -1012,13 +1046,13 @@ export default function TradeIntelligence() {
                 <TooltipContent>Camera capture - Coming soon</TooltipContent>
               </Tooltip>
 
-              <input
-                type="text"
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Describe your trade or ask about compliance, funding, payments..."
-                className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[44px] max-h-32"
+                rows={1}
                 data-testid="input-chat"
               />
               <Button
