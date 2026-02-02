@@ -36,6 +36,13 @@ type NavItem = {
 
 const OPERATOR_NAV: NavItem[] = [
   {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    testId: "nav-dashboard",
+    subtitle: "Overview & widgets",
+  },
+  {
     href: "/space",
     label: "My Space",
     icon: Briefcase,
