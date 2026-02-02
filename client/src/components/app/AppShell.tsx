@@ -91,7 +91,7 @@ const OPERATOR_NAV: NavItem[] = [
     ],
   },
   {
-    href: "/risk",
+    href: "/compliance?tab=risk",
     label: "Risk",
     icon: AlertTriangle,
     testId: "nav-risk",

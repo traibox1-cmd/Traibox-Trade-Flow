@@ -196,7 +196,7 @@ export default function TradeWorkspace() {
               : 'On track'}
           </button>
           <button
-            onClick={() => navigate("/compliance-proofs?tab=passport")}
+            onClick={() => navigate("/compliance?tab=passport")}
             className="px-3 py-1 rounded-full bg-background border border-border text-xs hover:bg-accent transition-colors"
             data-testid="chip-quick-passport"
           >

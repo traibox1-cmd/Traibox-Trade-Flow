@@ -138,7 +138,7 @@ export default function CapitalConsole() {
             </div>
             <div className="text-lg font-bold">{formatAmount(kpis.approvedAmount)}</div>
           </div>
-          <div className="rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => window.location.href = '/compliance-proofs?tab=passport'} data-testid="card-trade-passport-financier">
+          <div className="rounded-xl border bg-card p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => window.location.href = '/compliance?tab=passport'} data-testid="card-trade-passport-financier">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <FileText className="h-3 w-3" />
               <span className="text-xs font-medium">Trade Passport</span>

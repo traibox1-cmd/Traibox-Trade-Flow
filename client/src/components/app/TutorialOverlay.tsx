@@ -46,7 +46,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Compliance & Proofs",
     description: "Run KYC/AML checks, generate proof packs, and maintain your Trade Passport for identity verification.",
     icon: <ShieldCheck className="w-6 h-6" />,
-    targetRoute: "/compliance-proofs",
+    targetRoute: "/compliance",
     targetSelector: "[data-testid='nav-compliance']",
     position: "bottom-right",
   },

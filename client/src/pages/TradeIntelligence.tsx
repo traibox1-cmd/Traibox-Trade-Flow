@@ -639,7 +639,7 @@ export default function TradeIntelligence() {
                   if (action.type === "compliance") return `/trade/${selectedTradeId}#compliance`;
                   if (action.type === "funding") return `/finance?tab=funding`;
                   if (action.type === "payment") return `/finance?tab=payments`;
-                  if (action.type === "proof-pack") return `/compliance-proofs?tab=proof-packs`;
+                  if (action.type === "proof-pack") return `/compliance?tab=proof-packs`;
                   if (action.type === "invite-partner") return `/network?tab=invites`;
                 }
                 return null;
