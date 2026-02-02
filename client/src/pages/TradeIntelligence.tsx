@@ -719,11 +719,13 @@ export default function TradeIntelligence() {
               <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
                 selectedTrade.status === 'active' 
                   ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
-                  : selectedTrade.status === 'draft' 
+                  : selectedTrade.status === 'planning' 
                     ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                    : 'bg-muted text-muted-foreground border-border'
+                    : selectedTrade.status === 'completed'
+                      ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                      : 'bg-muted text-muted-foreground border-border'
               }`} data-testid="pill-trade-status">
-                {selectedTrade.status?.charAt(0).toUpperCase() + selectedTrade.status?.slice(1) || 'Draft'}
+                {selectedTrade.status?.charAt(0).toUpperCase() + selectedTrade.status?.slice(1) || 'Planning'}
               </span>
             )}
           </div>
@@ -949,8 +951,7 @@ export default function TradeIntelligence() {
                 <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Trade Mode needs a trade context.</span>
                 <div className="flex gap-2 ml-auto">
                   <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => {
-                    setMessages(prev => [...prev, { role: "user", content: "Create a new trade" }]);
-                    handleSend("Create a new trade");
+                    handleActionClick({ type: "create-trade", label: "Create Trade", description: "Create a new trade" });
                   }} data-testid="button-create-trade-banner">
                     <Plus className="w-3 h-3 mr-1" />
                     Create Trade
