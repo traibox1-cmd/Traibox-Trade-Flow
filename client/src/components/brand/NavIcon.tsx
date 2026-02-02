@@ -12,10 +12,10 @@ export function NavIcon({ icon: Icon, active = false, notificationCount, classNa
   return (
     <span
       className={cn(
-        "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ease-out",
+        "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ease-out pointer-events-none flex-shrink-0",
         active
           ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
-          : "border-border/50 bg-background/40 text-muted-foreground hover:bg-accent/40 hover:text-foreground hover:border-border",
+          : "border-border/50 bg-background/40 text-muted-foreground group-hover:bg-accent/40 group-hover:text-foreground group-hover:border-border",
         className
       )}
       aria-hidden="true"
