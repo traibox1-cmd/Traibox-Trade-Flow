@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { NavIcon } from "@/components/brand/NavIcon";
 import { useRole } from "@/components/app/role";
 import { useAppStore } from "@/lib/store";
 import {
@@ -368,42 +369,31 @@ function NavRail() {
                   type="button"
                   onClick={() => handleItemClick(item)}
                   className={cn(
-                    "group flex items-center rounded-xl text-left text-sm transition-all focus-ring w-full relative",
-                    isExpanded ? "gap-3 px-2 py-2" : "justify-center px-2 py-2",
+                    "group flex items-center rounded-xl text-left text-sm transition-all duration-200 ease-out focus-ring w-full relative",
+                    isExpanded ? "gap-3 px-2 py-1.5" : "justify-center px-2 py-1.5",
                     active
-                      ? "bg-primary/8 text-foreground ring-1 ring-primary/20"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                      ? "bg-primary/5 text-foreground"
+                      : "text-muted-foreground hover:bg-accent/30 hover:text-foreground",
                   )}
                   data-testid={item.testId}
                 >
-                  <span
-                    className={cn(
-                      "inline-flex h-10 w-10 items-center justify-center rounded-xl border bg-background/50 transition-all flex-shrink-0 relative",
-                      active
-                        ? "border-primary/30 bg-primary/10 text-primary shadow-sm"
-                        : "border-border/50 text-muted-foreground group-hover:text-foreground group-hover:border-primary/20",
-                    )}
-                    aria-hidden="true"
-                  >
-                    <Icon className="h-[18px] w-[18px] stroke-[2]" />
-                    {notificationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
-                        {notificationCount > 9 ? '9+' : notificationCount}
-                      </span>
-                    )}
-                  </span>
-                  <AnimatePresence>
+                  <NavIcon
+                    icon={Icon}
+                    active={active}
+                    notificationCount={notificationCount}
+                  />
+                  <AnimatePresence mode="wait">
                     {isExpanded && (
                       <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="min-w-0 flex-1 overflow-hidden"
                       >
                         <div className="font-medium text-[13px] truncate">{item.label}</div>
                         {item.subtitle && (
-                          <div className="text-[11px] text-muted-foreground/70 truncate">
+                          <div className="text-[11px] text-muted-foreground/60 truncate">
                             {item.subtitle}
                           </div>
                         )}
@@ -411,12 +401,18 @@ function NavRail() {
                     )}
                   </AnimatePresence>
                   {hasSubmenu && isExpanded && (
-                    <ChevronRight
-                      className={cn(
-                        "w-4 h-4 flex-shrink-0 transition-transform text-muted-foreground",
-                        submenuExpanded && "rotate-90"
-                      )}
-                    />
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "w-4 h-4 flex-shrink-0 transition-transform duration-200 text-muted-foreground",
+                          submenuExpanded && "rotate-90"
+                        )}
+                      />
+                    </motion.div>
                   )}
                 </button>
               );
@@ -474,29 +470,24 @@ function NavRail() {
           <Tooltip>
             <TooltipTrigger asChild>
               <div className={cn(
-                "rounded-xl border bg-card/60 transition-all",
-                isExpanded ? "p-3" : "p-2"
+                "rounded-xl border border-border/50 bg-card/40 transition-all duration-200 ease-out",
+                isExpanded ? "p-3" : "p-2 flex justify-center"
               )} data-testid="nav-safety">
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "inline-flex items-center justify-center rounded-lg bg-primary/10 border border-primary/20 flex-shrink-0",
-                    isExpanded ? "h-8 w-8" : "h-10 w-10"
-                  )}>
-                    <ShieldCheck className={cn("text-primary", isExpanded ? "h-4 w-4" : "h-[18px] w-[18px]")} />
-                  </div>
-                  <AnimatePresence>
+                  <NavIcon icon={ShieldCheck} active className="h-9 w-9" />
+                  <AnimatePresence mode="wait">
                     {isExpanded && (
                       <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="min-w-0 overflow-hidden"
                       >
                         <div className="text-[12px] font-medium whitespace-nowrap" data-testid="text-safety-title">
                           Trust posture
                         </div>
-                        <div className="text-[10px] text-muted-foreground/70 whitespace-nowrap" data-testid="text-safety-subtitle">
+                        <div className="text-[10px] text-muted-foreground/60 whitespace-nowrap" data-testid="text-safety-subtitle">
                           Private · Evidence-linked
                         </div>
                       </motion.div>

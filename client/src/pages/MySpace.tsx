@@ -43,7 +43,7 @@ export default function MySpace() {
         <p className="text-sm text-muted-foreground mt-1">Trade workspace overview and active operations</p>
       </div>
       
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-8 mx-auto max-w-7xl w-full">
         {showHint && trades.length === 0 && (
           <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl p-4">
             <div className="flex items-start justify-between gap-3">
