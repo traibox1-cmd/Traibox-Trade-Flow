@@ -44,19 +44,23 @@ function Router() {
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
             {/* Canonical compliance route */}
-            <Route path="/compliance-proofs" component={CompliancePage} />
-            {/* Legacy redirect - preserve query params using wouter */}
-            <Route path="/compliance">
+            <Route path="/compliance" component={CompliancePage} />
+            {/* Legacy redirect - preserve query params */}
+            <Route path="/compliance-proofs">
               {() => {
                 const search = window.location.search;
-                return <Redirect to={`/compliance-proofs${search}`} />;
+                return <Redirect to={`/compliance${search}`} />;
               }}
             </Route>
             <Route path="/trade-passport">
-              <Redirect to="/compliance-proofs?tab=passport" />
+              <Redirect to="/compliance?tab=passport" />
+            </Route>
+            {/* Risk Assessment standalone route */}
+            <Route path="/risk">
+              <Redirect to="/compliance?tab=risk" />
             </Route>
             <Route path="/risk-assessment">
-              <Redirect to="/compliance-proofs?tab=risk" />
+              <Redirect to="/compliance?tab=risk" />
             </Route>
             <Route path="/trends" component={TradeTrends} />
             

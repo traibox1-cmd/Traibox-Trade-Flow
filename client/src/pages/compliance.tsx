@@ -76,7 +76,7 @@ export default function CompliancePage() {
   const handleTabChange = useCallback((newTab: string) => {
     setActiveTab(newTab);
     // Update URL without full navigation (keeps scroll position)
-    const newUrl = newTab === "checks" ? "/compliance-proofs" : `/compliance-proofs?tab=${newTab}`;
+    const newUrl = newTab === "checks" ? "/compliance" : `/compliance?tab=${newTab}`;
     window.history.replaceState(null, "", newUrl);
   }, []);
 

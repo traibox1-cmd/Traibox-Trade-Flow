@@ -1,0 +1,149 @@
+Navigation & Sidebar “Premium + Collapsible” (Nothing OS vibe, Porsche-level clarity)
+
+Goal: Make TRAIBOX navigation feel sleek, intuitive, and consistent across the app.
+Do NOT change dark/light toggle behavior or role toggle behavior.
+Do NOT redesign entire pages—this is a refinement + consistency pass.
+
+A) Collapsible left sidebar (default collapsed)
+
+Implement a collapsed-by-default sidebar:
+
+Behavior
+
+Default state: collapsed (icons only).
+
+Add a small toggle button at the top-right of the sidebar area (inside sidebar header region) to expand/collapse.
+
+Collapsed: show only icons + tooltips on hover.
+
+Expanded: show icons + labels (module names).
+
+Preserve existing minimal style; keep padding generous and elegant.
+
+UX details
+
+Active item: subtle pill/halo background + clearer icon contrast.
+
+Hover: soft highlight + cursor pointer.
+
+Tooltips in collapsed mode must show the module name.
+
+Acceptance: Sidebar is collapsed on load, can expand, and feels premium.
+
+B) Icon style upgrade (Nothing OS inspiration, within what we have)
+
+We’re not importing a new icon library right now. Instead:
+
+Standardize all sidebar icons to a “Nothing OS-ish” feel:
+
+consistent stroke width
+
+rounded line caps/joins
+
+consistent size
+
+Ensure every icon uses the same size + alignment grid.
+
+Avoid “random” icons per page; make them represent modules clearly.
+
+Acceptance: Icon system feels consistent and modern without heavy changes.
+
+C) Fix navigation route inconsistencies + stop 404s
+
+Right now, some pages and tabs open the wrong screen or hit missing routes.
+
+Canonical routes
+
+Make these canonical routes and ensure they exist in the router:
+
+/space → My Space
+
+/intelligence → Trade Intelligence
+
+/network → My Network
+
+/compliance → Compliance & Proofs (with tabs via querystring)
+
+/risk (or /risk-assessment) → Risk Assessment (choose one canonical and redirect the other)
+
+/finance → Finance (Operator)
+
+/funding-desk → Funding Desk (Financier)
+
+/payments → Payments
+
+/docs → Docs
+
+Compliance tabs must be query-based
+
+Compliance must use a single page + query tab:
+
+/compliance?tab=checks | reports | proof | verification | passport | track
+
+Do not create separate pages like /compliance-proofs that diverge visually. If they exist, redirect them to /compliance?tab=....
+
+Fix the Trade Passport “deep link” bug
+
+My Space “Trade Passport” card must link to:
+
+/compliance?tab=passport
+
+It must NOT open some other compliance UI or a different page.
+
+Ensure tab=passport never triggers a 404.
+
+Acceptance: Clicking Trade Passport anywhere always lands on the same passport tab.
+
+D) Unify Compliance UI (single visual system)
+
+There are currently “two compliance UIs”. Unify into one:
+
+Keep the best/newer compliance layout and make it the canonical /compliance.
+
+Ensure the tab row includes:
+
+Checks & Findings
+
+Reports
+
+Proof Packs
+
+Verification & Anchoring
+
+Trade Passport
+
+Track & Trace
+
+Remove or redirect the older compliance UI routes to the canonical one.
+
+Acceptance: One compliance page. One tab system. No duplicates.
+
+E) Add “Risk Assessment” to navigation (placement)
+
+Risk Assessment should be accessible but not clutter.
+
+Recommendation:
+
+Put Risk Assessment under the shield/warning icon section (near compliance), as its own nav item:
+
+Label: “Risk”
+
+Route: pick one canonical route: /risk
+
+Acceptance: Risk is visible in sidebar and works.
+
+After implementing, verify quickly:
+
+Sidebar collapses/expands; tooltips work.
+
+No 404 when opening:
+
+/compliance?tab=passport
+
+/compliance?tab=track
+
+My Space → Trade Passport card opens the passport tab.
+
+Compliance tabs are present and consistent.
+
+Risk page accessible from sidebar.
