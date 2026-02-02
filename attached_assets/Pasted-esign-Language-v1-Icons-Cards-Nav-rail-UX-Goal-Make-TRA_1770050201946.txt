@@ -1,0 +1,103 @@
+esign Language v1 (Icons + Cards + Nav rail UX)
+
+Goal: Make TRAIBOX feel more trendy, elegant, sleek, and premium while staying minimal. Inspired by Nothing OS (icon feel) + Porsche Design / Palantir (clean trust) + macOS Tahoe (soft depth).
+Hard constraints: Do NOT change dark/light toggle behavior, role toggle behavior (Operator/Financier), or overall layout architecture. Only refine visual language + nav rail behavior.
+
+A) Nav rail (left sidebar): collapsed-by-default + explicit toggle (no hover-expand)
+
+In client/src/components/app/AppShell.tsx:
+
+Remove “expand on hover” behavior.
+
+Sidebar should be collapsed by default (icons only).
+
+Add a small toggle button at the top-right corner of the sidebar rail area (inside the rail header region) to expand/collapse.
+
+When collapsed: show only icons, labels hidden.
+
+When expanded: show icons + labels.
+
+Persist the expanded/collapsed state to localStorage (e.g., key: traibox.navExpanded).
+
+Keep tooltips on icons when collapsed.
+
+Make transitions smoother:
+
+Add transition-all duration-200 ease-out to rail width + label opacity.
+
+When expanding, labels should fade/slide in subtly (opacity + translate).
+
+B) “Nothing OS-like” icon treatment (still using lucide, but with a premium container)
+
+Create a small component (new file):
+client/src/components/brand/NavIcon.tsx
+
+Props: { icon: LucideIcon, active?: boolean }
+
+Render a consistent icon container (square/squircle feel):
+
+size ~ 36px–40px
+
+rounded ~ rounded-xl
+
+thin border ~ border border-border/60
+
+subtle background ~ bg-background/40 (or bg-card/30)
+
+subtle hover ~ hover:bg-accent/40
+
+subtle active state ~ slightly stronger border/bg
+
+Icon style:
+
+size={18-20}
+
+consistent strokeWidth={2} (not 2.5+)
+
+color inherits current theme
+
+Replace sidebar icon rendering with <NavIcon /> so the entire rail becomes consistent and more “designed”.
+
+C) Card system polish (global, minimal, Apple-like depth)
+
+Update client/src/components/ui/card.tsx default Card class:
+
+Replace heavy shadow with a lighter premium style:
+
+rounded-2xl
+
+border border-border/60
+
+shadow-sm
+
+transition-shadow duration-200
+
+hover:shadow-md (subtle)
+
+Keep bg-card text-card-foreground intact (do NOT break theme tokens).
+
+If safe: add backdrop-blur-[2px] only when the app background is not pure white (but be conservative—don’t make it look “glassy” everywhere).
+
+D) Spacing + responsiveness micro-fixes (no layout redesign)
+
+Ensure the main content area doesn’t feel “lost on wide screens”:
+
+Add a gentle max width wrapper where appropriate in pages that look too empty (e.g., Trade Intelligence): max-w-6xl with centered container + comfortable padding.
+
+Make buttons and interactive chips feel more “macOS-like”:
+
+Don’t change variants; just ensure transition-colors / active:scale-[0.99] on clickable UI elements where missing.
+
+Acceptance checks
+
+Sidebar starts collapsed, expands only via explicit toggle.
+
+Collapsed sidebar shows tooltips on hover.
+
+Icons look consistent and premium (container + stroke width unified).
+
+Cards across the app feel cleaner and more “designed” without breaking dark/light mode.
+
+No regression in role toggle and dark/light toggle.
+
+After implementing: run the app and sanity-check navigation + a couple pages (Trade Intelligence, My Space, Compliance).
