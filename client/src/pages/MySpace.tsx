@@ -29,11 +29,12 @@ import {
   AlertCircle,
   Clock,
   ChevronRight,
-  Settings2,
+  Pencil,
   RotateCcw,
   Check,
-  X,
-  ArrowRight
+  ArrowRight,
+  TrendingUp,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,13 +53,13 @@ const defaultWidgets: WidgetConfig[] = [
 ];
 
 const availableWidgets: { type: string; title: string; defaultSize: WidgetSize }[] = [
-  { type: "chart-trades", title: "Trade Volume Chart", defaultSize: "medium" },
+  { type: "chart-trades", title: "Trade Volume", defaultSize: "medium" },
   { type: "activity", title: "Activity Feed", defaultSize: "medium" },
   { type: "chart-funding", title: "Funding Status", defaultSize: "medium" },
-  { type: "stats-compliance", title: "Compliance Summary", defaultSize: "small" },
-  { type: "stats-network", title: "Network Stats", defaultSize: "small" },
-  { type: "chart-payments", title: "Payments Chart", defaultSize: "medium" },
-  { type: "list-partners", title: "Top Partners", defaultSize: "small" },
+  { type: "stats-compliance", title: "Compliance", defaultSize: "small" },
+  { type: "stats-network", title: "Network", defaultSize: "small" },
+  { type: "chart-payments", title: "Payments", defaultSize: "medium" },
+  { type: "list-partners", title: "Partners", defaultSize: "small" },
 ];
 
 type NextAction = {
@@ -86,7 +87,6 @@ export default function MySpace() {
   } = useAppStore();
   
   const [, setLocation] = useLocation();
-  const [showWidgets, setShowWidgets] = useState(false);
   const [isEditingWidgets, setIsEditingWidgets] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [config, setConfig] = useState<DashboardConfig>(() => {
@@ -139,7 +139,6 @@ export default function MySpace() {
   const nextActions = useMemo<NextAction[]>(() => {
     const actions: NextAction[] = [];
 
-    // Info requests needing response
     infoRequests.filter(r => r.status === 'pending').slice(0, 2).forEach(req => {
       const trade = trades.find(t => t.id === req.tradeId);
       actions.push({
@@ -152,7 +151,6 @@ export default function MySpace() {
       });
     });
 
-    // Funding offers to review
     fundingRequests.filter(r => r.status === 'offered').slice(0, 2).forEach(req => {
       const trade = trades.find(t => t.id === req.tradeId);
       actions.push({
@@ -164,7 +162,6 @@ export default function MySpace() {
       });
     });
 
-    // Compliance runs needing review
     complianceRuns.filter(r => r.status === 'failed').slice(0, 2).forEach(run => {
       const trade = trades.find(t => t.id === run.tradeId);
       actions.push({
@@ -177,7 +174,6 @@ export default function MySpace() {
       });
     });
 
-    // Draft proof packs to complete
     proofPacks.filter(p => p.status === 'draft').slice(0, 2).forEach(pack => {
       const trade = trades.find(t => t.id === pack.tradeId);
       actions.push({
@@ -189,38 +185,18 @@ export default function MySpace() {
       });
     });
 
-    // If no real actions, show demo items
     if (actions.length === 0) {
       return [
-        {
-          id: 'demo-1',
-          type: 'compliance',
-          title: 'Run first compliance check',
-          subtitle: 'Get started with KYC/AML',
-          href: '/compliance?tab=checks'
-        },
-        {
-          id: 'demo-2',
-          type: 'funding',
-          title: 'Explore funding options',
-          subtitle: 'LC, factoring, supply-chain finance',
-          href: '/finance?tab=funding'
-        },
-        {
-          id: 'demo-3',
-          type: 'proof-pack',
-          title: 'Create a proof pack',
-          subtitle: 'Bundle trade documents',
-          href: '/compliance?tab=proof-packs'
-        }
+        { id: 'demo-1', type: 'compliance', title: 'Run first compliance check', subtitle: 'Get started with KYC/AML', href: '/compliance?tab=checks' },
+        { id: 'demo-2', type: 'funding', title: 'Explore funding options', subtitle: 'LC, factoring, supply-chain finance', href: '/finance?tab=funding' },
+        { id: 'demo-3', type: 'proof-pack', title: 'Create a proof pack', subtitle: 'Bundle trade documents', href: '/compliance?tab=proof-packs' }
       ];
     }
 
-    return actions.slice(0, 7);
+    return actions.slice(0, 5);
   }, [trades, fundingRequests, complianceRuns, proofPacks, infoRequests]);
 
-  // Recent trades for Continue section
-  const recentTrades = trades.slice(0, 5);
+  const recentTrades = trades.slice(0, 4);
 
   // Widget handlers
   const handleDragEnd = (event: DragEndEvent) => {
@@ -327,20 +303,20 @@ export default function MySpace() {
   const renderWidgetContent = (widget: WidgetConfig) => {
     switch (widget.type) {
       case "chart-trades":
-        return <ChartWidget type="area" data={tradeVolumeData} dataKey="volume" height={180} />;
+        return <ChartWidget type="area" data={tradeVolumeData} dataKey="volume" height={160} />;
       case "activity":
-        return <ActivityWidget activities={recentActivity} maxItems={5} />;
+        return <ActivityWidget activities={recentActivity} maxItems={4} />;
       case "chart-funding":
-        return <ChartWidget type="pie" data={fundingData} dataKey="value" height={180} />;
+        return <ChartWidget type="pie" data={fundingData} dataKey="value" height={160} />;
       case "stats-compliance":
         const passedRuns = complianceRuns.filter((r) => r.status === "passed").length;
         return (
           <StatsWidget
             columns={2}
             stats={[
-              { label: "Checks Run", value: complianceRuns.length },
+              { label: "Checks", value: complianceRuns.length },
               { label: "Passed", value: passedRuns },
-              { label: "Proof Packs", value: proofPacks.length },
+              { label: "Packs", value: proofPacks.length },
               { label: "Ready", value: proofPacks.filter((p) => p.status === "ready").length },
             ]}
           />
@@ -356,11 +332,11 @@ export default function MySpace() {
           />
         );
       case "chart-payments":
-        return <ChartWidget type="bar" data={paymentData} dataKey="amount" height={180} />;
+        return <ChartWidget type="bar" data={paymentData} dataKey="amount" height={160} />;
       case "list-partners":
         return (
           <ListWidget
-            items={partners.slice(0, 4).map((partner) => ({
+            items={partners.slice(0, 3).map((partner) => ({
               id: partner.id,
               title: partner.name,
               subtitle: partner.canActAs.join(", ") || partner.region,
@@ -370,7 +346,7 @@ export default function MySpace() {
           />
         );
       default:
-        return <div className="text-muted-foreground text-sm">Unknown widget type</div>;
+        return <div className="text-muted-foreground text-sm">Unknown widget</div>;
     }
   };
 
@@ -383,297 +359,366 @@ export default function MySpace() {
     }
   };
 
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-8 py-6 border-b border-border">
-        <h1 className="text-2xl font-semibold tracking-tight">My Space</h1>
-        <p className="text-sm text-muted-foreground mt-1">Your trade workspace home</p>
-      </div>
-      
-      <div className="flex-1 overflow-auto p-8 mx-auto max-w-7xl w-full space-y-8">
-        {/* Hero CTAs */}
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Premium Header */}
+      <div className="px-8 py-6 border-b border-border/50">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h1 className="text-2xl font-light tracking-tight">
+              {getTimeGreeting()}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Welcome to your trade command center</p>
+          </div>
           <Button
             size="lg"
             onClick={() => setLocation('/intelligence')}
-            className="gap-2 px-6"
+            className="gap-2 px-6 shadow-lg hover:shadow-xl transition-shadow"
             data-testid="button-new-trade"
           >
             <Plus className="w-5 h-5" />
             New Trade
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setLocation('/compliance?tab=checks')}
-            className="gap-2"
-            data-testid="button-run-compliance"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Run Compliance
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setLocation('/finance?tab=funding')}
-            className="gap-2"
-            data-testid="button-request-funding"
-          >
-            <Banknote className="w-4 h-4" />
-            Request Funding
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setLocation('/compliance?tab=proof-packs')}
-            className="gap-2"
-            data-testid="button-generate-proof"
-          >
-            <FileCheck className="w-4 h-4" />
-            Generate Proof Pack
-          </Button>
         </div>
-
-        {/* KPI Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm" data-testid="kpi-active-trades">
-            <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Active Trades</div>
-            <div className="text-3xl font-semibold" data-testid="value-active-trades">{activeTrades}</div>
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm" data-testid="kpi-pending-actions">
-            <div className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Pending Actions</div>
-            <div className="text-3xl font-semibold" data-testid="value-pending-actions">{pendingActions}</div>
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm" data-testid="kpi-alerts">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider mb-2">
-              <span>Alerts</span>
-              {alerts > 0 && <span className="w-2 h-2 rounded-full bg-red-500" />}
-            </div>
-            <div className={cn("text-3xl font-semibold", alerts > 0 && "text-red-600")} data-testid="value-alerts">{alerts}</div>
-          </div>
-          <div 
-            className="bg-card border border-border rounded-2xl p-5 shadow-sm cursor-pointer hover:border-primary/30 transition-colors"
-            onClick={() => setLocation('/compliance?tab=passport')}
-            data-testid="card-trade-passport"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <div className="text-muted-foreground text-xs uppercase tracking-wider">Passport Readiness</div>
-            </div>
-            <div className={cn(
-              "text-3xl font-semibold",
-              passportReadiness >= 80 ? "text-emerald-600" : passportReadiness >= 50 ? "text-amber-600" : "text-red-600"
-            )} data-testid="value-passport-readiness">
-              {passportReadiness}%
-            </div>
-          </div>
-        </div>
-
-        {/* Two-column layout for Next Actions and Continue */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Next Actions */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Clock className="w-5 h-5 text-muted-foreground" />
-                Next Actions
-              </h2>
-              <span className="text-xs text-muted-foreground">{nextActions.length} items</span>
-            </div>
-            <div className="space-y-2">
-              {nextActions.map((action) => (
-                <button
-                  key={action.id}
-                  onClick={() => setLocation(action.href)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl border bg-card text-left transition-colors hover:bg-accent",
-                    action.urgent && "border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/10"
-                  )}
-                  data-testid={`action-${action.id}`}
-                >
-                  <div className={cn(
-                    "p-2 rounded-lg",
-                    action.urgent ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-muted text-muted-foreground"
-                  )}>
-                    {getActionIcon(action.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{action.title}</div>
-                    <div className="text-xs text-muted-foreground truncate">{action.subtitle}</div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Continue Section */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                Continue
-              </h2>
-              {recentTrades.length > 0 && (
-                <button 
-                  onClick={() => setLocation('/intelligence')}
-                  className="text-xs text-primary hover:underline"
-                >
-                  View all
-                </button>
-              )}
-            </div>
-            {recentTrades.length === 0 ? (
-              <div className="bg-card border border-border rounded-2xl p-6 text-center">
-                <Sparkles className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <h3 className="font-semibold mb-1">No trades yet</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create your first trade to get started
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button onClick={() => setLocation('/intelligence')} data-testid="button-create-first-trade">
-                    Create Trade
-                  </Button>
-                  <Button onClick={() => setLocation('/settings')} variant="outline" data-testid="button-load-demo-myspace">
-                    Load Demo Data
-                  </Button>
-                </div>
+      </div>
+      
+      <div className="flex-1 overflow-auto">
+        <div className="px-8 py-6 mx-auto max-w-7xl space-y-6">
+          
+          {/* KPI Cards - Glassmorphism style */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0 }}
+              className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-5 hover:border-primary/20 transition-all hover:shadow-lg"
+              data-testid="kpi-active-trades"
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/5 to-transparent rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium uppercase tracking-wider mb-3">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Active Trades
               </div>
-            ) : (
-              <div className="space-y-2">
-                {recentTrades.map((trade) => (
+              <div className="text-4xl font-light" data-testid="value-active-trades">{activeTrades}</div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-5 hover:border-primary/20 transition-all hover:shadow-lg"
+              data-testid="kpi-pending-actions"
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/5 to-transparent rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium uppercase tracking-wider mb-3">
+                <Clock className="w-3.5 h-3.5" />
+                Pending
+              </div>
+              <div className="text-4xl font-light" data-testid="value-pending-actions">{pendingActions}</div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-5 hover:border-primary/20 transition-all hover:shadow-lg"
+              data-testid="kpi-alerts"
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/5 to-transparent rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium uppercase tracking-wider mb-3">
+                <Zap className="w-3.5 h-3.5" />
+                Alerts
+                {alerts > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+              </div>
+              <div className={cn("text-4xl font-light", alerts > 0 && "text-red-500")} data-testid="value-alerts">{alerts}</div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-5 cursor-pointer hover:border-primary/30 transition-all hover:shadow-lg"
+              onClick={() => setLocation('/compliance?tab=passport')}
+              data-testid="card-trade-passport"
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-full -translate-y-10 translate-x-10" />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium uppercase tracking-wider mb-3">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Passport
+              </div>
+              <div className={cn(
+                "text-4xl font-light",
+                passportReadiness >= 80 ? "text-emerald-500" : passportReadiness >= 50 ? "text-amber-500" : "text-red-500"
+              )} data-testid="value-passport-readiness">
+                {passportReadiness}%
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Dashboard Widgets - Always Visible */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Dashboard</h2>
+              <div className="flex items-center gap-2">
+                {isEditingWidgets ? (
+                  <>
+                    <button
+                      onClick={handleResetLayout}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+                      data-testid="button-reset-widgets"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Reset
+                    </button>
+                    <button
+                      onClick={() => setShowAddWidget(!showAddWidget)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+                      data-testid="button-add-widget"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add
+                    </button>
+                    <button
+                      onClick={() => { setIsEditingWidgets(false); setShowAddWidget(false); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      data-testid="button-done-editing"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Done
+                    </button>
+                  </>
+                ) : (
                   <button
-                    key={trade.id}
-                    onClick={() => {
-                      // Navigate to Trade Intelligence with this trade selected
-                      setLocation(`/intelligence?trade=${trade.id}`);
-                    }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border bg-card text-left transition-colors hover:bg-accent"
-                    data-testid={`continue-trade-${trade.id}`}
+                    onClick={() => setIsEditingWidgets(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+                    data-testid="button-edit-widgets"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{trade.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">{trade.corridor}</div>
-                    </div>
-                    <div className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-medium",
-                      trade.status === 'active' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
-                      trade.status === 'planning' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                    )}>
-                      {trade.status}
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit
                   </button>
+                )}
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {showAddWidget && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap gap-2 p-4 rounded-xl border border-dashed border-border bg-muted/30">
+                    {availableWidgets.map((widget) => {
+                      const isVisible = config.widgets.some((w) => w.type === widget.type && w.visible);
+                      return (
+                        <button
+                          key={widget.type}
+                          onClick={() => handleAddWidget(widget.type)}
+                          disabled={isVisible}
+                          className={cn(
+                            "px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                            isVisible 
+                              ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50" 
+                              : "bg-background border border-border hover:border-primary/30 hover:shadow-sm"
+                          )}
+                          data-testid={`button-add-widget-${widget.type}`}
+                        >
+                          {widget.title}
+                          {isVisible && " ✓"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {visibleWidgets.length > 0 ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={visibleWidgets.map((w) => w.id)} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {visibleWidgets.map((widget, index) => (
+                      <motion.div
+                        key={widget.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Widget
+                          id={widget.id}
+                          title={widget.title}
+                          size={widget.size}
+                          isEditing={isEditingWidgets}
+                          onRemove={() => handleRemoveWidget(widget.id)}
+                          onResize={(size) => handleResizeWidget(widget.id, size)}
+                        >
+                          {renderWidgetContent(widget)}
+                        </Widget>
+                      </motion.div>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <div className="text-center py-12 rounded-2xl border border-dashed border-border bg-muted/20">
+                <p className="text-sm text-muted-foreground mb-3">No widgets added</p>
+                <Button variant="outline" size="sm" onClick={() => { setIsEditingWidgets(true); setShowAddWidget(true); }} data-testid="button-add-widgets-empty">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Widgets
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions Bar */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation('/compliance?tab=checks')}
+              className="gap-2 rounded-full"
+              data-testid="button-run-compliance"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Run Compliance
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation('/finance?tab=funding')}
+              className="gap-2 rounded-full"
+              data-testid="button-request-funding"
+            >
+              <Banknote className="w-4 h-4" />
+              Request Funding
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation('/compliance?tab=proof-packs')}
+              className="gap-2 rounded-full"
+              data-testid="button-generate-proof"
+            >
+              <FileCheck className="w-4 h-4" />
+              Generate Proof Pack
+            </Button>
+          </div>
+
+          {/* Two-column: Next Actions + Continue */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Next Actions */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Next Actions
+                </h2>
+                <span className="text-xs text-muted-foreground/60">{nextActions.length}</span>
+              </div>
+              <div className="space-y-2">
+                {nextActions.map((action, index) => (
+                  <motion.button
+                    key={action.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => setLocation(action.href)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3.5 rounded-xl border bg-card/60 backdrop-blur-sm text-left transition-all hover:bg-accent hover:shadow-md group",
+                      action.urgent && "border-red-200/50 bg-red-50/30 dark:border-red-900/20 dark:bg-red-950/20"
+                    )}
+                    data-testid={`action-${action.id}`}
+                  >
+                    <div className={cn(
+                      "p-2 rounded-lg transition-colors",
+                      action.urgent 
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400" 
+                        : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                    )}>
+                      {getActionIcon(action.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{action.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">{action.subtitle}</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+                  </motion.button>
                 ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Customize Widgets Section */}
-        <div className="pt-4 border-t border-border">
-          <button
-            onClick={() => setShowWidgets(!showWidgets)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="button-customize-toggle"
-          >
-            <Settings2 className="w-4 h-4" />
-            {showWidgets ? 'Hide Widgets' : 'Customize Dashboard'}
-            <ChevronRight className={cn("w-4 h-4 transition-transform", showWidgets && "rotate-90")} />
-          </button>
-
-          <AnimatePresence>
-            {showWidgets && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    {isEditingWidgets ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={handleResetLayout} className="gap-2">
-                          <RotateCcw className="w-4 h-4" />
-                          Reset
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setShowAddWidget(!showAddWidget)} className="gap-2">
-                          <Plus className="w-4 h-4" />
-                          Add Widget
-                        </Button>
-                        <Button size="sm" onClick={() => setIsEditingWidgets(false)} className="gap-2">
-                          <Check className="w-4 h-4" />
-                          Done
-                        </Button>
-                      </>
-                    ) : (
-                      <Button variant="outline" size="sm" onClick={() => setIsEditingWidgets(true)} className="gap-2" data-testid="button-edit-widgets">
-                        <Settings2 className="w-4 h-4" />
-                        Edit Widgets
-                      </Button>
-                    )}
+            {/* Continue Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4" />
+                  Continue
+                </h2>
+                {recentTrades.length > 0 && (
+                  <button 
+                    onClick={() => setLocation('/intelligence')}
+                    className="text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+                    data-testid="link-view-all-trades"
+                  >
+                    View all
+                  </button>
+                )}
+              </div>
+              {recentTrades.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
+                  <Sparkles className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <h3 className="font-medium mb-1">No trades yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create your first trade to get started
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button onClick={() => setLocation('/intelligence')} size="sm" data-testid="button-create-first-trade">
+                      Create Trade
+                    </Button>
+                    <Button onClick={() => setLocation('/settings')} variant="outline" size="sm" data-testid="button-load-demo-myspace">
+                      Load Demo
+                    </Button>
                   </div>
-
-                  {showAddWidget && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-xl border bg-card/60"
-                    >
-                      <div className="text-sm font-medium mb-3">Add Widget</div>
-                      <div className="flex flex-wrap gap-2">
-                        {availableWidgets.map((widget) => {
-                          const isVisible = config.widgets.some((w) => w.type === widget.type && w.visible);
-                          return (
-                            <button
-                              key={widget.type}
-                              onClick={() => handleAddWidget(widget.type)}
-                              disabled={isVisible}
-                              className={cn(
-                                "px-3 py-2 rounded-lg text-sm transition-colors",
-                                isVisible ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-accent hover:bg-accent/80"
-                              )}
-                            >
-                              {widget.title}
-                              {isVisible && " ✓"}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={visibleWidgets.map((w) => w.id)} strategy={rectSortingStrategy}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {visibleWidgets.map((widget) => (
-                          <Widget
-                            key={widget.id}
-                            id={widget.id}
-                            title={widget.title}
-                            size={widget.size}
-                            isEditing={isEditingWidgets}
-                            onRemove={() => handleRemoveWidget(widget.id)}
-                            onResize={(size) => handleResizeWidget(widget.id, size)}
-                          >
-                            {renderWidgetContent(widget)}
-                          </Widget>
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-
-                  {visibleWidgets.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="mb-3">No widgets added</p>
-                      <Button onClick={() => { setIsEditingWidgets(true); setShowAddWidget(true); }}>
-                        Add Widgets
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ) : (
+                <div className="space-y-2">
+                  {recentTrades.map((trade, index) => (
+                    <motion.button
+                      key={trade.id}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => setLocation(`/intelligence?trade=${trade.id}`)}
+                      className="w-full flex items-center gap-3 p-3.5 rounded-xl border bg-card/60 backdrop-blur-sm text-left transition-all hover:bg-accent hover:shadow-md group"
+                      data-testid={`continue-trade-${trade.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{trade.title}</div>
+                        <div className="text-xs text-muted-foreground truncate">{trade.corridor}</div>
+                      </div>
+                      <div className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider",
+                        trade.status === 'active' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                        trade.status === 'planning' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                      )}>
+                        {trade.status}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
