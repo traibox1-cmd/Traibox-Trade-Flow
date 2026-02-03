@@ -101,6 +101,29 @@ export default function TradeIntelligence() {
   useEffect(() => {
     fetchTradesFromAPI();
   }, [fetchTradesFromAPI]);
+
+  // Handle ?trade= query parameter for deep linking from My Space
+  const [pendingTradeIdFromUrl, setPendingTradeIdFromUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('trade');
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (pendingTradeIdFromUrl && trades.length > 0) {
+      const trade = trades.find(t => t.id === pendingTradeIdFromUrl);
+      if (trade) {
+        setSelectedTradeId(pendingTradeIdFromUrl);
+        setChatMode("trade");
+        setPendingTradeIdFromUrl(null);
+        // Clean URL
+        window.history.replaceState(null, "", "/intelligence");
+      }
+    }
+  }, [trades, pendingTradeIdFromUrl]);
+
   const selectedTrade = trades.find(t => t.id === selectedTradeId);
 
   const AI_TIMEOUT_MS = 12000; // 12 second total timeout (server sends heartbeats every 2s)

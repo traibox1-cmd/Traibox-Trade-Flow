@@ -24,8 +24,6 @@ import Settlement from "@/pages/Settlement";
 import Evidence from "@/pages/Evidence";
 import TradeWorkspace from "@/pages/TradeWorkspace";
 import TradeTrends from "@/pages/TradeTrends";
-import Dashboard from "@/pages/Dashboard";
-
 function Router() {
   return (
     <Switch>
@@ -37,7 +35,9 @@ function Router() {
         <AppShell>
           <Switch>
             {/* Operator Routes */}
-            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/dashboard">
+              <Redirect to="/space" />
+            </Route>
             <Route path="/space" component={MySpace} />
             <Route path="/intelligence" component={TradeIntelligence} />
             <Route path="/trade/:id" component={TradeWorkspace} />
