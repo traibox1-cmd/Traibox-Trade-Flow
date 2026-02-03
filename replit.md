@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **AI Chat with Bulletproof Demo Fallback**: Multi-mode streaming chat with contextual responses. Automatically falls back to high-quality simulated responses with action card generation if OpenAI fails.
 - **Role-based UI**: Dual personas (Operator vs Financier) with distinct navigation, routes, and default landing pages.
+- **My Space (Single Home)**: Unified home page replacing separate Dashboard. Includes primary CTAs (New Trade, Load Demo Data), KPI cards (Active Trades, Pending Actions, Alerts, Passport readiness with status pill), Next Actions section with dynamic actionable items, Recent Trades list, and customizable Overview widgets with drag-and-drop. `/dashboard` redirects to `/space`.
 - **Trade Intelligence**: Streaming chat with "Thinking..." state, real-time action card generation, and intent detection. Supports multimodal inputs (documents) and distinct "Trade" and "Explore" modes.
 - **My Network**: 5-tab interface (Directory, Integrations, Invites, Matchmaking, Challenges) with network creation/joining, partner cards, and search.
 - **Finance Module**: Payments and Funding tabs with detailed views and configurations (funding types, payment terms).
