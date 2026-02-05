@@ -37,17 +37,15 @@ Preferred communication style: Simple, everyday language.
 - **Path Aliases**: `@/` for client, `@shared/` for shared modules
 
 ### Key Features
-- **AI Chat with Bulletproof Demo Fallback**: Multi-mode streaming chat with contextual responses. Automatically falls back to high-quality simulated responses with action card generation if OpenAI fails.
-- **Role-based UI**: Dual personas (Operator vs Financier) with distinct navigation, routes, and default landing pages.
-- **Trade Intelligence**: Streaming chat with "Thinking..." state, real-time action card generation, and intent detection. Supports multimodal inputs (documents) and distinct "Trade" and "Explore" modes.
-- **My Network**: 5-tab interface (Directory, Integrations, Invites, Matchmaking, Challenges) with network creation/joining, partner cards, and search.
-- **Finance Module**: Payments and Funding tabs with detailed views and configurations (funding types, payment terms).
-- **Compliance & Proofs**: Multi-tab interface (Checks, Reports, Proof Packs, Anchoring) including a new "Trade Passport" for identity/compliance verification and "Track & Trace" for logistics.
-- **Logistics Tracking**: Milestone stepper for shipment tracking with events and document integration.
-- **Multimodal & Document Upload**: Supports attaching documents to trades and chat, with drag-and-drop functionality and the ability to create trades from documents.
-- **Perplexity-like Sidebar**: Compact icon rail with expand/pin functionality and inline SVG logo.
-- **Design System**: Premium minimal design using theme-aware components, rounded elements, and consistent iconography.
-- **Trade Trends & Forecasting**: AI-driven market intelligence with commodity price trends, corridor analysis, key insights (trends, forecasts, alerts, opportunities), and market outlook. Accessible via `/trends` route with demo fallback for reliable responses.
+- **AI Chat with Bulletproof Demo Fallback**: Streaming chat with contextual responses. Falls back to demo responses if OpenAI fails.
+- **Role-based UI**: Dual personas (Operator vs Financier) with distinct navigation and default landing pages.
+- **Trade Intelligence**: Clean, focused AI chat interface with quick actions for trade planning, compliance checks, risk analysis, and market trends.
+- **Trade Workspace**: Consolidated view for managing trades with search, filters, and quick access to Finance and Compliance.
+- **My Network**: Partner directory with roles, trust levels, and service capabilities.
+- **Finance Module**: Payments and Funding tabs with request management.
+- **Compliance & Proofs**: Multi-tab interface (Checks, Reports, Proof Packs, Verification, Trade Passport, Track & Trace).
+- **Clean Navigation**: 5 main items (Home, Intelligence, Network, Trades, Settings) with no nested submenus.
+- **Design System**: Premium minimal design with consistent card patterns, rounded elements, and theme support.
 
 ## External Dependencies
 
