@@ -14,6 +14,7 @@ import MyNetwork from "@/pages/MyNetwork";
 import Finance from "@/pages/Finance";
 import CompliancePage from "@/pages/compliance";
 import Settings from "@/pages/Settings";
+import Trades from "@/pages/Trades";
 
 import CapitalConsole from "@/pages/CapitalConsole";
 import FundingDesk from "@/pages/FundingDesk";
@@ -23,7 +24,6 @@ import RiskPolicy from "@/pages/RiskPolicy";
 import Settlement from "@/pages/Settlement";
 import Evidence from "@/pages/Evidence";
 import TradeWorkspace from "@/pages/TradeWorkspace";
-import TradeTrends from "@/pages/TradeTrends";
 function Router() {
   return (
     <Switch>
@@ -40,44 +40,33 @@ function Router() {
             </Route>
             <Route path="/space" component={MySpace} />
             <Route path="/trade-intelligence" component={TradeIntelligence} />
-            {/* Legacy redirect for /intelligence */}
-            <Route path="/intelligence">
-              {() => {
-                const search = window.location.search;
-                return <Redirect to={`/trade-intelligence${search}`} />;
-              }}
-            </Route>
+            <Route path="/trades" component={Trades} />
             <Route path="/trade/:id" component={TradeWorkspace} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
-            {/* Canonical compliance route */}
             <Route path="/compliance" component={CompliancePage} />
-            {/* Legacy redirect - preserve query params */}
+            
+            {/* Legacy redirects */}
+            <Route path="/intelligence">
+              <Redirect to="/trade-intelligence" />
+            </Route>
             <Route path="/compliance-proofs">
-              {() => {
-                const search = window.location.search;
-                return <Redirect to={`/compliance${search}`} />;
-              }}
+              <Redirect to="/compliance" />
             </Route>
             <Route path="/trade-passport">
               <Redirect to="/compliance?tab=passport" />
             </Route>
-            {/* Risk Assessment routes - redirect to Trade Intelligence */}
             <Route path="/risk">
-              <Redirect to="/trade-intelligence?view=risk" />
+              <Redirect to="/trade-intelligence" />
             </Route>
             <Route path="/risk-assessment">
-              <Redirect to="/trade-intelligence?view=risk" />
+              <Redirect to="/trade-intelligence" />
             </Route>
-            {/* Trade Trends accessible via Trade Intelligence view */}
             <Route path="/trends">
-              <Redirect to="/trade-intelligence?view=trends" />
+              <Redirect to="/trade-intelligence" />
             </Route>
             <Route path="/trade-trends">
-              <Redirect to="/trade-intelligence?view=trends" />
-            </Route>
-            <Route path="/trade-trends-forecasts">
-              <Redirect to="/trade-intelligence?view=trends" />
+              <Redirect to="/trade-intelligence" />
             </Route>
             
             {/* Financier Routes */}
