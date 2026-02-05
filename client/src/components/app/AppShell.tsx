@@ -53,6 +53,7 @@ const OPERATOR_NAV: NavItem[] = [
       { label: "Chat", href: "/trade-intelligence", testId: "nav-ti-chat" },
       { label: "Risk Analysis", href: "/trade-intelligence?view=risk", testId: "nav-ti-risk" },
       { label: "Trade Trends", href: "/trade-intelligence?view=trends", testId: "nav-ti-trends" },
+      { label: "Scenario Builder", href: "/trade-intelligence?view=scenarios", testId: "nav-ti-scenarios" },
     ],
   },
   {

@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useLocation, useSearch } from "wouter";
-import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2, MessageSquare, TrendingUp, AlertTriangle } from "lucide-react";
+import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2, MessageSquare, TrendingUp, AlertTriangle, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore, type TradeDocument } from "@/lib/store";
 import { RiskAssessmentContent } from "./RiskAssessment";
 
-// Lazy load TradeTrends to avoid circular dependencies
+// Lazy load TradeTrends and ScenarioBuilder to avoid circular dependencies
 const TradeTrendsContent = lazy(() => import("./TradeTrends"));
+const ScenarioBuilderContent = lazy(() => import("./ScenarioBuilder"));
 
 type FileAttachment = {
   name: string;
@@ -61,7 +62,7 @@ const ACTION_CHIPS = [
   "Generate proof pack",
 ];
 
-type IntelligenceView = "chat" | "risk" | "trends";
+type IntelligenceView = "chat" | "risk" | "trends" | "scenarios";
 
 export default function TradeIntelligence() {
   const [, setLocation] = useLocation();
@@ -71,7 +72,7 @@ export default function TradeIntelligence() {
   const getViewFromSearch = (): IntelligenceView => {
     const params = new URLSearchParams(searchString);
     const view = params.get("view");
-    if (view === "risk" || view === "trends") return view;
+    if (view === "risk" || view === "trends" || view === "scenarios") return view;
     return "chat";
   };
   
@@ -761,6 +762,10 @@ export default function TradeIntelligence() {
                   <TrendingUp className="w-3.5 h-3.5" />
                   Trade Trends
                 </TabsTrigger>
+                <TabsTrigger value="scenarios" className="h-7 text-xs gap-1.5" data-testid="tab-ti-scenarios">
+                  <Calculator className="w-3.5 h-3.5" />
+                  Scenario Builder
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -821,6 +826,12 @@ export default function TradeIntelligence() {
         <div className="flex-1 overflow-y-auto">
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
             <TradeTrendsContent />
+          </Suspense>
+        </div>
+      ) : currentView === "scenarios" ? (
+        <div className="flex-1 overflow-y-auto">
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+            <ScenarioBuilderContent />
           </Suspense>
         </div>
       ) : (
