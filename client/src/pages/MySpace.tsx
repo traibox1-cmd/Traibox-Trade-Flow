@@ -379,7 +379,7 @@ export default function MySpace() {
           </div>
           <Button
             size="lg"
-            onClick={() => setLocation('/intelligence')}
+            onClick={() => setLocation('/trade-intelligence')}
             className="gap-2 px-6 shadow-lg hover:shadow-xl transition-shadow"
             data-testid="button-new-trade"
           >
@@ -664,7 +664,7 @@ export default function MySpace() {
                 </h2>
                 {recentTrades.length > 0 && (
                   <button 
-                    onClick={() => setLocation('/intelligence')}
+                    onClick={() => setLocation('/trade-intelligence')}
                     className="text-xs text-muted-foreground/60 hover:text-primary transition-colors"
                     data-testid="link-view-all-trades"
                   >
@@ -680,7 +680,7 @@ export default function MySpace() {
                     Create your first trade to get started
                   </p>
                   <div className="flex gap-3 justify-center">
-                    <Button onClick={() => setLocation('/intelligence')} size="sm" data-testid="button-create-first-trade">
+                    <Button onClick={() => setLocation('/trade-intelligence')} size="sm" data-testid="button-create-first-trade">
                       Create Trade
                     </Button>
                     <Button onClick={() => setLocation('/settings')} variant="outline" size="sm" data-testid="button-load-demo-myspace">
@@ -696,7 +696,7 @@ export default function MySpace() {
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => setLocation(`/intelligence?trade=${trade.id}`)}
+                      onClick={() => setLocation(`/trade-intelligence?trade=${trade.id}`)}
                       className="w-full flex items-center gap-3 p-3.5 rounded-xl border bg-card/60 backdrop-blur-sm text-left transition-all hover:bg-accent hover:shadow-md group"
                       data-testid={`continue-trade-${trade.id}`}
                     >

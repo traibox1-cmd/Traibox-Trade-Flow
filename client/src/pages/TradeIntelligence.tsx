@@ -1,9 +1,14 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
-import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { useLocation, useSearch } from "wouter";
+import { Send, Bot, User, AlertCircle, Loader2, Sparkles, ArrowRight, Paperclip, X, Mic, Camera, Upload, Plus, Users2, MessageSquare, TrendingUp, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore, type TradeDocument } from "@/lib/store";
+import { RiskAssessmentContent } from "./RiskAssessment";
+
+// Lazy load TradeTrends to avoid circular dependencies
+const TradeTrendsContent = lazy(() => import("./TradeTrends"));
 
 type FileAttachment = {
   name: string;
@@ -56,8 +61,36 @@ const ACTION_CHIPS = [
   "Generate proof pack",
 ];
 
+type IntelligenceView = "chat" | "risk" | "trends";
+
 export default function TradeIntelligence() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
+  
+  // Parse view from URL query params
+  const getViewFromSearch = (): IntelligenceView => {
+    const params = new URLSearchParams(searchString);
+    const view = params.get("view");
+    if (view === "risk" || view === "trends") return view;
+    return "chat";
+  };
+  
+  const [currentView, setCurrentView] = useState<IntelligenceView>(getViewFromSearch);
+  
+  // Update view when URL changes
+  useEffect(() => {
+    setCurrentView(getViewFromSearch());
+  }, [searchString]);
+  
+  const handleViewChange = (view: IntelligenceView) => {
+    setCurrentView(view);
+    if (view === "chat") {
+      setLocation("/trade-intelligence");
+    } else {
+      setLocation(`/trade-intelligence?view=${view}`);
+    }
+  };
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -119,7 +152,7 @@ export default function TradeIntelligence() {
         setChatMode("trade");
         setPendingTradeIdFromUrl(null);
         // Clean URL
-        window.history.replaceState(null, "", "/intelligence");
+        window.history.replaceState(null, "", "/trade-intelligence");
       }
     }
   }, [trades, pendingTradeIdFromUrl]);
@@ -707,19 +740,29 @@ export default function TradeIntelligence() {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Trade Intelligence</h1>
-            {aiStatus === 'demo' && (
+            {currentView === "chat" && aiStatus === 'demo' && (
               <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 rounded">
                 Demo Mode
               </span>
             )}
           </div>
           <div className="flex items-center gap-3 mt-1">
-            <p className="text-sm text-muted-foreground">AI-powered trade planning + execution</p>
-            {selectedTrade && (
-              <span className="text-xs text-muted-foreground">
-                • Context: <span className="font-medium text-primary">Trade {selectedTrade.id}</span>
-              </span>
-            )}
+            <Tabs value={currentView} onValueChange={(v) => handleViewChange(v as IntelligenceView)} className="h-8">
+              <TabsList className="h-8">
+                <TabsTrigger value="chat" className="h-7 text-xs gap-1.5" data-testid="tab-ti-chat">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger value="risk" className="h-7 text-xs gap-1.5" data-testid="tab-ti-risk">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Risk Analysis
+                </TabsTrigger>
+                <TabsTrigger value="trends" className="h-7 text-xs gap-1.5" data-testid="tab-ti-trends">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Trade Trends
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
         
@@ -769,6 +812,18 @@ export default function TradeIntelligence() {
         </div>
       </div>
 
+      {/* View-specific content */}
+      {currentView === "risk" ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <RiskAssessmentContent />
+        </div>
+      ) : currentView === "trends" ? (
+        <div className="flex-1 overflow-y-auto">
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+            <TradeTrendsContent />
+          </Suspense>
+        </div>
+      ) : (
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <div className="flex gap-2 flex-wrap">
@@ -1095,8 +1150,8 @@ export default function TradeIntelligence() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Agent Picker Modal */}
       {showAgentPicker && (
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"

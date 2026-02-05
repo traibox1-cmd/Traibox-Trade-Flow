@@ -86,7 +86,7 @@ export default function TradeWorkspace() {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8">
         <p className="text-muted-foreground mb-4">Trade not found</p>
-        <Button variant="secondary" onClick={() => navigate("/intelligence")}>
+        <Button variant="secondary" onClick={() => navigate("/trade-intelligence")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Trade Intelligence
         </Button>
@@ -161,7 +161,7 @@ export default function TradeWorkspace() {
     <div className="h-full flex flex-col">
       <div className="px-8 py-6 border-b border-border">
         <div className="flex items-center gap-3 mb-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/intelligence")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/trade-intelligence")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-2xl font-semibold tracking-tight" data-testid="text-trade-title">

@@ -39,7 +39,14 @@ function Router() {
               <Redirect to="/space" />
             </Route>
             <Route path="/space" component={MySpace} />
-            <Route path="/intelligence" component={TradeIntelligence} />
+            <Route path="/trade-intelligence" component={TradeIntelligence} />
+            {/* Legacy redirect for /intelligence */}
+            <Route path="/intelligence">
+              {() => {
+                const search = window.location.search;
+                return <Redirect to={`/trade-intelligence${search}`} />;
+              }}
+            </Route>
             <Route path="/trade/:id" component={TradeWorkspace} />
             <Route path="/network" component={MyNetwork} />
             <Route path="/finance" component={Finance} />
@@ -55,14 +62,23 @@ function Router() {
             <Route path="/trade-passport">
               <Redirect to="/compliance?tab=passport" />
             </Route>
-            {/* Risk Assessment standalone route */}
+            {/* Risk Assessment routes - redirect to Trade Intelligence */}
             <Route path="/risk">
-              <Redirect to="/compliance?tab=risk" />
+              <Redirect to="/trade-intelligence?view=risk" />
             </Route>
             <Route path="/risk-assessment">
-              <Redirect to="/compliance?tab=risk" />
+              <Redirect to="/trade-intelligence?view=risk" />
             </Route>
-            <Route path="/trends" component={TradeTrends} />
+            {/* Trade Trends accessible via Trade Intelligence view */}
+            <Route path="/trends">
+              <Redirect to="/trade-intelligence?view=trends" />
+            </Route>
+            <Route path="/trade-trends">
+              <Redirect to="/trade-intelligence?view=trends" />
+            </Route>
+            <Route path="/trade-trends-forecasts">
+              <Redirect to="/trade-intelligence?view=trends" />
+            </Route>
             
             {/* Financier Routes */}
             <Route path="/capital-console" component={CapitalConsole} />

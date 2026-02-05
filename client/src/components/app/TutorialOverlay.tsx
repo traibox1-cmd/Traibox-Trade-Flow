@@ -28,7 +28,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Trade Intelligence",
     description: "Chat with AI to plan trades, run compliance checks, and get insights. Use Explore Mode for general questions or Trade Mode to work on a specific trade.",
     icon: <MessageSquare className="w-6 h-6" />,
-    targetRoute: "/intelligence",
+    targetRoute: "/trade-intelligence",
     targetSelector: "[data-testid='nav-intelligence']",
     position: "bottom-right",
   },

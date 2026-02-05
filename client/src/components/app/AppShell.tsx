@@ -44,11 +44,16 @@ const OPERATOR_NAV: NavItem[] = [
     subtitle: "Home workspace",
   },
   {
-    href: "/intelligence",
+    href: "/trade-intelligence",
     label: "Trade Intelligence",
     icon: Sparkles,
     testId: "nav-intelligence",
     subtitle: "Chat + controllers",
+    submenu: [
+      { label: "Chat", href: "/trade-intelligence", testId: "nav-ti-chat" },
+      { label: "Risk Analysis", href: "/trade-intelligence?view=risk", testId: "nav-ti-risk" },
+      { label: "Trade Trends", href: "/trade-intelligence?view=trends", testId: "nav-ti-trends" },
+    ],
   },
   {
     href: "/network",
@@ -82,20 +87,6 @@ const OPERATOR_NAV: NavItem[] = [
       { label: "Trade Passport", href: "/compliance?tab=passport", testId: "nav-cp-passport" },
       { label: "Track & Trace", href: "/compliance?tab=track", testId: "nav-cp-track" },
     ],
-  },
-  {
-    href: "/compliance?tab=risk",
-    label: "Risk",
-    icon: AlertTriangle,
-    testId: "nav-risk",
-    subtitle: "AI risk analysis",
-  },
-  {
-    href: "/trends",
-    label: "Trade Trends",
-    icon: TrendingUp,
-    testId: "nav-trends",
-    subtitle: "AI forecasts",
   },
   {
     href: "/settings",
