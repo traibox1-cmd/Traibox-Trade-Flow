@@ -1,0 +1,45 @@
+You are working in the existing TRAIBOX Trade Flow repo.
+
+GOAL (Phase 1A): Fix module information architecture so navigation is canonical, consistent, and zero-404. Do NOT restyle UI yet.
+
+Canonical module routes (must exist):
+- My Space: /space
+- Trade Intelligence: /trade-intelligence
+- My Network: /network
+- Finance: /finance
+- Compliance & Proofs: /compliance   (THIS is canonical and contains tabs including Trade Passport + Track & Trace)
+- Settings: /settings
+
+Redirect/alias legacy routes (no 404s allowed):
+- /dashboard -> /space
+- /compliance-proofs -> /compliance
+- /trade-passport -> /compliance?tab=passport
+- /risk-assessment -> /trade-intelligence?view=risk
+- /trade-trends (or /trade-trends-forecasts) -> /trade-intelligence?view=trends
+
+Sidebar rules (Operator + Financier):
+- Top-level nav should be: My Space, Trade Intelligence, My Network, Finance, Compliance & Proofs, Settings.
+- Dashboard/Risk/Trade Trends must NOT be top-level modules anymore.
+  If they must remain accessible, they should be nested under Trade Intelligence (not separate left-nav items).
+
+Trade Passport rule (critical):
+- Any “Trade Passport” entry point (especially the KPI card in My Space) MUST open the canonical passport tab:
+  /compliance?tab=passport
+- Remove any alternate “Trade Passport” route usage by redirecting to the canonical one.
+
+CONSTRAINTS:
+- Minimal edits. No redesign. No copy changes. No new libraries.
+- Do not claim something is fixed unless you show the exact file + lines changed.
+
+PROCESS (mandatory, to avoid assumptions):
+1) First locate router + nav sources (likely client/src/App.tsx and client/src/components/app/AppShell.tsx, but search if different).
+2) Print a quick route table + nav item list you find (just names + paths).
+3) Implement only what’s missing to satisfy the canonical routes + redirects + sidebar rules above.
+4) Verify by running the app/build:
+   - Visiting each legacy URL above must not 404.
+   - Clicking My Space → Trade Passport must open Compliance & Proofs with the Passport tab active.
+
+DELIVERABLE:
+- List files changed + what changed in each.
+- Include diff snippets for: route redirects + nav updates + passport link fixes.
+Stop after Phase 1A is complete.
