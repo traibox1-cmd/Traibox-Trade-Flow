@@ -1,0 +1,199 @@
+You are an expert UI engineer + UI/UX architect. You are working inside an EXISTING Replit codebase for TRAIBOX (React + TS). Do NOT start a new project. Your job is to REORGANIZE, REBUILD, and STANDARDIZE the UI for ONLY two modules:
+(1) My Space and (2) Trade Intelligence,
+using a Perplexity-inspired navigation layout and the TRAIBOX blueprint rules (chat-first cards + right action drawer).
+
+GOAL
+- Keep what is useful, refactor what is messy, delete/replace what blocks progress.
+- Deliver a clean, consistent, buildable UI skeleton that FE/BE teams can extend.
+- Focus on responsiveness, smoothness, and a premium trust-tech aesthetic (minimalist, sleek, elegant).
+- Do NOT implement other modules now (only show them as disabled placeholders in nav).
+
+NON-NEGOTIABLES
+1) Do NOT re-create the project. Work within the existing repo.
+2) Keep dark/light mode behavior as-is (do not redesign it). Only ensure components respect it.
+3) Left rail MUST be collapsed by default, icons-only; it expands via a toggle button at the top-right of the rail.
+4) Global primary CTA “+ New Trade” must be visible even when the rail is collapsed.
+5) Implement these routes:
+   - "/" redirects to "/space"
+   - "/space" = My Space
+   - "/trade" = Trade Intelligence (no trade selected)
+   - "/trade/:tradeId" = Trade Intelligence with selected trade
+6) Desktop: Right Action Drawer is a right column.
+   Tablet: Drawer becomes bottom sheet.
+   Mobile: Drawer is bottom sheet and main canvas is single column.
+7) Cards: one primary CTA per card; status chips must include TEXT (not color-only); include overflow “•••” with traceId.
+8) Progressive disclosure: keep UI calm; complexity goes to the drawer and collapsibles.
+
+PHASE 0 — AUDIT & REORG (do this first)
+- Scan the repo structure. Identify current routes/pages/components.
+- Create (or refactor into) this target structure (move files accordingly):
+  /src
+    /app
+      AppShell.tsx
+      routes.tsx
+    /pages
+      MySpacePage.tsx
+      TradeIntelligencePage.tsx
+    /components
+      /shell
+        LeftRail.tsx
+        TopBar.tsx
+        ActionDrawer.tsx
+      /myspace
+        NewTradeComposerCard.tsx
+        KpiStrip.tsx
+        NextActionsList.tsx
+        RecentTradesRow.tsx
+        TradeTableLite.tsx
+        PassportReadinessCard.tsx
+      /trade
+        TradeContextBar.tsx
+        TradeChat.tsx
+        Composer.tsx
+        /cards
+          PlanCard.tsx
+          ErrorRetryCard.tsx
+          PlaceholderCard.tsx
+          CardFrame.tsx
+    /store
+      uiStore.ts
+      tradeStore.ts
+    /types
+      trade.ts
+      chat.ts
+    /lib
+      utils.ts
+- If the repo already has equivalents, REUSE and refactor rather than duplicate.
+- Ensure imports are fixed and there are no circular deps.
+
+TECH CONSTRAINTS (respect what already exists)
+- If Tailwind + shadcn/ui are already installed, use them.
+- If Zustand exists, keep using it. If another state manager exists, only add Zustand if necessary (minimal changes).
+- If React Router already exists, keep it.
+- If TanStack Query exists, keep it (setup ok; data can remain mocked).
+- Use lucide-react icons for now, but keep icon styling “Nothing OS-inspired” (outline, consistent stroke).
+
+PHASE 1 — IMPLEMENT GLOBAL APP SHELL (Perplexity-inspired)
+Create/Refactor AppShell.tsx:
+- Layout: LeftRail + TopBar + MainCanvas + RightActionDrawer
+- LeftRail collapsed by default, icons only with tooltips.
+- Expand toggle inside rail (top-right). Persist state in localStorage.
+- LeftRail modules (only first two enabled now):
+  1) My Space (enabled)
+  2) Trade Intelligence (enabled)
+  3) My Network (disabled)
+  4) Compliance (disabled)
+  5) Finance (disabled)
+  6) Payments (disabled)
+  7) Proofs (disabled)
+  8) Settings (disabled)
+- “+ New Trade” button near top, visible in collapsed mode.
+- TopBar: global search placeholder, notifications icon placeholder, profile placeholder.
+- RightActionDrawer:
+  - >=1280px: right column
+  - 1024–1279px: bottom sheet (shadcn Sheet)
+  - <=1023px: bottom sheet
+
+PHASE 2 — MY SPACE PAGE ("/space")
+Purpose: “What’s happening + what should I do next?”
+Build the page layout (desktop):
+A) Hero: NewTradeComposerCard (main CTA)
+- Big input (one line expands on focus)
+- Primary: Create Trade
+- Secondary: Upload docs (stub), From template (stub)
+- On Create: create a Trade in store, navigate to /trade/:tradeId
+
+B) KPI Row: Active Trades / Pending Actions / Alerts / Passport readiness
+- Clickable tiles that scroll/filter in-page.
+
+C) Work Board:
+Left: NextActionsList (max 7 visible)
+- Each row: action label, trade chip, subtle priority/due, CTA “Do it” → /trade/:tradeId
+Right: RecentTradesRow
+- 4–8 compact trade cards → /trade/:tradeId
+
+D) Tabs: Active / Pending
+- TradeTableLite minimal columns: Trade, Corridor, Stage, Next CTA, Updated
+- Each row has exactly ONE primary next-step CTA (based on stage; stub logic ok)
+
+E) PassportReadinessCard
+- Show readiness score + missing count (mock)
+- CTA “Open Trade Passport” -> stub (disabled/toast). Do NOT add extra route now.
+
+Responsiveness:
+- 1024–1279: stack sections; drawer becomes bottom sheet.
+- <=1023: KPI becomes swipeable chips; tables become cards.
+
+PHASE 3 — TRADE INTELLIGENCE ("/trade" and "/trade/:tradeId")
+Purpose: “Chat + execution (trade OS)”
+Layout:
+A) TradeContextBar
+- If trade selected: title, corridor chip, stage chip, updated time
+- If none: prompt “Create or select a trade” + button “New Trade” (go /space and focus composer or create immediately)
+
+B) TradeChat (message list)
+- Bubbles with clean spacing.
+- Assistant messages render action cards below text.
+
+C) Card Renderer & Cards (must exist)
+- Render actions[] into card components.
+- Implement at least:
+  1) PlanCard (summary + bullets + primary CTA “Confirm plan”)
+  2) ErrorRetryCard (error + primary CTA “Retry”)
+  3) PlaceholderCard (unknown action types)
+- CardFrame enforces:
+  - header + status chip (text)
+  - body
+  - optional collapsible “Why” (glass-box)
+  - footer CTA (ONLY 1 primary)
+  - overflow “•••” shows traceId
+
+D) Composer (bottom)
+- Input + attachment icon (stub)
+- Mode toggle: Explore / Execute
+- Agent selector: Auto / Finance / Compliance / Logistics (stub)
+- Send:
+  - append user message
+  - generate mock assistant response with:
+    - 1–2 line summary
+    - 3–6 bullets
+    - Next action buttons via PlanCard action
+  - NO walls of text.
+
+E) RightActionDrawer content (Steps timeline)
+- 5 steps: Plan / Verify / Finance / Pay / Prove
+- Highlight current by trade.stage
+- One CTA per step (stub):
+  - Plan: Generate plan
+  - Verify: Run checks
+  - Finance: Request offers
+  - Pay: Create payment
+  - Prove: Generate proof pack
+
+STATE MANAGEMENT (refactor existing state)
+- Create/Refactor store modules:
+  - uiStore: sidebarExpanded, drawerOpen
+  - tradeStore: trades[], selectedTradeId, messagesByTradeId
+- Provide a small mock dataset (5–8 trades, 5–10 next actions).
+
+A11Y + POLISH
+- Visible focus states
+- Keyboard navigation works
+- Skeletons for loading >300ms (use a simple utility)
+- Smooth transitions, subtle, not flashy
+- Keep styling consistent (radius, borders, spacing)
+
+DELIVERABLES / DONE
+- Existing repo reorganized into the target structure (or close equivalent).
+- App runs without errors.
+- Routes work: /space, /trade, /trade/:tradeId.
+- Left rail collapsed by default with toggle + persistence.
+- My Space is fully functional and creates a trade.
+- Trade Intelligence chat works with mock assistant + card rendering.
+- Right drawer behaves as right column on desktop and bottom sheet on smaller screens.
+- Other modules remain disabled placeholders in nav only.
+
+IMPORTANT
+- Work incrementally: commit small changes, keep the app running.
+- If you must remove old components, ensure references are cleaned up.
+- Do NOT implement backend calls now; use mocks.
