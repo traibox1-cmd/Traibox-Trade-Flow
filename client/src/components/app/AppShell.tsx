@@ -38,31 +38,56 @@ type NavItem = {
 const OPERATOR_NAV: NavItem[] = [
   {
     href: "/space",
-    label: "Home",
+    label: "My Space",
     icon: Briefcase,
     testId: "nav-space",
-    subtitle: "Dashboard",
+    subtitle: "Home workspace",
   },
   {
     href: "/trade-intelligence",
-    label: "Intelligence",
+    label: "Trade Intelligence",
     icon: Sparkles,
     testId: "nav-intelligence",
-    subtitle: "AI Assistant",
+    subtitle: "Chat + controllers",
+    submenu: [
+      { label: "Chat", href: "/trade-intelligence", testId: "nav-ti-chat" },
+      { label: "Risk Analysis", href: "/trade-intelligence?view=risk", testId: "nav-ti-risk" },
+      { label: "Trade Trends", href: "/trade-intelligence?view=trends", testId: "nav-ti-trends" },
+      { label: "Scenario Builder", href: "/trade-intelligence?view=scenarios", testId: "nav-ti-scenarios" },
+    ],
   },
   {
     href: "/network",
-    label: "Network",
+    label: "My Network",
     icon: Handshake,
     testId: "nav-network",
-    subtitle: "Partners",
+    subtitle: "Private graph",
   },
   {
-    href: "/trades",
-    label: "Trades",
-    icon: TrendingUp,
-    testId: "nav-trades",
-    subtitle: "Workspace",
+    href: "/finance",
+    label: "Finance",
+    icon: Banknote,
+    testId: "nav-finance",
+    subtitle: "Payments + funding",
+    submenu: [
+      { label: "Payments", href: "/finance?tab=payments", testId: "nav-finance-payments" },
+      { label: "Funding", href: "/finance?tab=funding", testId: "nav-finance-funding" },
+    ],
+  },
+  {
+    href: "/compliance",
+    label: "Compliance & Proofs",
+    icon: ShieldCheck,
+    testId: "nav-compliance",
+    subtitle: "Checks + reports",
+    submenu: [
+      { label: "Checks & Findings", href: "/compliance?tab=checks", testId: "nav-cp-checks" },
+      { label: "Reports", href: "/compliance?tab=reports", testId: "nav-cp-reports" },
+      { label: "Proof Packs", href: "/compliance?tab=proof-packs", testId: "nav-cp-proofs" },
+      { label: "Verification", href: "/compliance?tab=verification", testId: "nav-cp-anchoring" },
+      { label: "Trade Passport", href: "/compliance?tab=passport", testId: "nav-cp-passport" },
+      { label: "Track & Trace", href: "/compliance?tab=track", testId: "nav-cp-track" },
+    ],
   },
   {
     href: "/settings",
@@ -257,7 +282,15 @@ function NavRail() {
   };
 
   const handleItemClick = (item: NavItem) => {
-    setLocation(item.href);
+    if (item.submenu) {
+      if (isExpanded) {
+        setExpandedMenu(expandedMenu === item.href ? null : item.href);
+      } else {
+        setLocation(item.submenu[0].href);
+      }
+    } else {
+      setLocation(item.href);
+    }
   };
 
   const isActive = (href: string) => {
