@@ -2,3 +2,8 @@ export { StatsWidget } from "./StatsWidget";
 export { ActivityWidget } from "./ActivityWidget";
 export { ChartWidget } from "./ChartWidget";
 export { ListWidget } from "./ListWidget";
+export { RiskGaugeWidget } from "./RiskGaugeWidget";
+export { PassportWidget } from "./PassportWidget";
+export { MarketPulseWidget } from "./MarketPulseWidget";
+export { TradeFlowWidget } from "./TradeFlowWidget";
+export { CountdownWidget } from "./CountdownWidget";

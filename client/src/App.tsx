@@ -9,6 +9,7 @@ import { RoleProvider } from "@/components/app/role";
 
 import NotFound from "@/pages/not-found";
 import MySpacePage from "@/pages/MySpacePage";
+import Dashboard from "@/pages/Dashboard";
 import TradeIntelligencePage from "@/pages/TradeIntelligencePage";
 import Settings from "@/pages/Settings";
 import MyNetwork from "@/pages/MyNetwork";
@@ -49,6 +50,7 @@ function Router() {
             <Switch>
               {/* Operator Routes */}
               <Route path="/space" component={MySpacePage} />
+              <Route path="/dashboard" component={Dashboard} />
               <Route path="/trade" component={TradeIntelligencePage} />
               <Route path="/trade/:tradeId" component={TradeIntelligencePage} />
               <Route path="/network" component={MyNetwork} />
@@ -74,9 +76,6 @@ function Router() {
               <Route path="/settings" component={Settings} />
 
               {/* Legacy redirects */}
-              <Route path="/dashboard">
-                <Redirect to="/space" />
-              </Route>
               <Route path="/trade-intelligence">
                 <Redirect to="/trade" />
               </Route>

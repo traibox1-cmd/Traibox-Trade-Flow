@@ -44,8 +44,9 @@ Preferred communication style: Simple, everyday language.
 - **My Network**: Partner directory with roles, trust levels, and service capabilities.
 - **Finance Module**: Payments and Funding tabs with request management.
 - **Compliance & Proofs**: Multi-tab interface (Checks, Reports, Proof Packs, Verification, Trade Passport, Track & Trace).
-- **Clean Navigation**: 5 main items (Home, Intelligence, Network, Trades, Settings) with no nested submenus.
-- **Design System**: Premium minimal design with consistent card patterns, rounded elements, and theme support.
+- **Customizable Dashboard**: Drag-and-drop widget dashboard with 14 widget types (Portfolio Overview, Trade Volume, Market Pulse, Risk Score, Trade Passport, Trade Corridors, Deadlines, Activity Feed, etc.). Features widget gallery with category filters, real-time data updates (Market Pulse with live FX rates, Countdown timers), resize/reorder/remove widgets, localStorage persistence, edit mode.
+- **Clean Navigation**: Perplexity-inspired collapsed left rail (72px collapsed, 240px expanded) with role-aware navigation, submenus, notification badges.
+- **Design System**: Premium minimal design with consistent card patterns, rounded-2xl elements, shadow-xs, gradient accents, backdrop-blur effects, and theme support.
 
 ## External Dependencies
 

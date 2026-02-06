@@ -36,6 +36,7 @@ type NavItem = {
 
 const OPERATOR_NAV: NavItem[] = [
   { href: "/space", label: "My Space", icon: Briefcase, testId: "nav-space", subtitle: "Home workspace" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testId: "nav-dashboard", subtitle: "Custom widgets" },
   {
     href: "/trade",
     label: "Intelligence",
@@ -79,6 +80,7 @@ const OPERATOR_NAV: NavItem[] = [
 
 const FINANCIER_NAV: NavItem[] = [
   { href: "/capital-console", label: "Capital Console", icon: LayoutDashboard, testId: "nav-capital-console", subtitle: "Portfolio view" },
+  { href: "/dashboard", label: "Dashboard", icon: TrendingUp, testId: "nav-dashboard", subtitle: "Custom widgets" },
   { href: "/funding-desk", label: "Funding Desk", icon: Banknote, testId: "nav-funding-desk", subtitle: "Deal pipeline" },
   { href: "/deal-assistant", label: "Deal Assistant", icon: Sparkles, testId: "nav-deal-assistant", subtitle: "AI analysis" },
   { href: "/counterparties", label: "Counterparties", icon: Building2, testId: "nav-counterparties", subtitle: "Credit profiles" },
