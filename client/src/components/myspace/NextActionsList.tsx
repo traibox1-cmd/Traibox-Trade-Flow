@@ -21,10 +21,10 @@ const ICON_MAP = {
   logistics: Package,
 };
 
-const PRIORITY_COLORS = {
-  high: "bg-red-500/10 text-red-600 border-red-500/30",
-  medium: "bg-amber-500/10 text-amber-600 border-amber-500/30",
-  low: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+const PRIORITY_STYLES = {
+  high: "bg-red-500/8 text-red-600 dark:text-red-400",
+  medium: "bg-amber-500/8 text-amber-600 dark:text-amber-400",
+  low: "bg-blue-500/8 text-blue-600 dark:text-blue-400",
 };
 
 export function NextActionsList() {
@@ -40,36 +40,38 @@ export function NextActionsList() {
   ];
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <h3 className="font-semibold text-sm">Next Actions</h3>
+    <div className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-xs">
+      <div className="px-5 py-3.5 border-b border-border/30">
+        <h3 className="font-semibold text-[13px] tracking-tight">Next Actions</h3>
       </div>
-      <div className="divide-y divide-border">
-        {nextActions.slice(0, 7).map((action, index) => {
+      <div className="divide-y divide-border/20">
+        {nextActions.map((action, index) => {
           const Icon = ICON_MAP[action.type];
           return (
             <motion.div
               key={action.id}
-              initial={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors group"
+              transition={{ delay: index * 0.03, duration: 0.2 }}
+              className="flex items-center justify-between px-5 py-3 hover:bg-accent/30 transition-colors group"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-muted-foreground/70 stroke-[1.8]" />
+                </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{action.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{action.tradeTitle}</p>
+                  <p className="text-[13px] font-medium truncate">{action.label}</p>
+                  <p className="text-[11px] text-muted-foreground/50 truncate">{action.tradeTitle}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${PRIORITY_COLORS[action.priority]}`}>
+                <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${PRIORITY_STYLES[action.priority]}`}>
                   {action.priority}
                 </span>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity gap-1 h-7 text-xs rounded-lg"
                   onClick={() => setLocation(`/trade/${action.tradeId}`)}
                   data-testid={`action-do-${action.id}`}
                 >

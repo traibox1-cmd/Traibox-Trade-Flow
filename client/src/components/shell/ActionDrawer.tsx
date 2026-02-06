@@ -15,17 +15,17 @@ export function ActionDrawer({ children, title, open = true, onOpenChange }: Act
   const isDesktop = useMediaQuery("(min-width: 1280px)");
   const isTablet = useMediaQuery("(min-width: 1024px)");
 
-  // Desktop: Right column (always visible)
   if (isDesktop) {
     return (
       <motion.aside
-        initial={{ opacity: 0, x: 20 }}
+        initial={{ opacity: 0, x: 16 }}
         animate={{ opacity: 1, x: 0 }}
-        className="w-80 border-l border-border bg-sidebar/50 flex flex-col"
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="w-80 border-l border-border/40 bg-sidebar/40 backdrop-blur-sm flex flex-col"
       >
         {title && (
-          <div className="h-14 border-b border-border flex items-center px-4">
-            <h2 className="font-semibold text-sm">{title}</h2>
+          <div className="h-14 border-b border-border/30 flex items-center px-5">
+            <h2 className="font-semibold text-[13px] tracking-tight text-muted-foreground uppercase">{title}</h2>
           </div>
         )}
         <div className="flex-1 overflow-y-auto p-4">
@@ -35,11 +35,10 @@ export function ActionDrawer({ children, title, open = true, onOpenChange }: Act
     );
   }
 
-  // Tablet/Mobile: Bottom sheet
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
-        side="bottom" 
+      <SheetContent
+        side="bottom"
         className={cn(
           "rounded-t-2xl",
           isTablet ? "max-h-[60vh]" : "max-h-[80vh]"
@@ -47,7 +46,7 @@ export function ActionDrawer({ children, title, open = true, onOpenChange }: Act
       >
         {title && (
           <SheetHeader className="pb-4">
-            <SheetTitle>{title}</SheetTitle>
+            <SheetTitle className="text-[13px] uppercase tracking-tight text-muted-foreground">{title}</SheetTitle>
           </SheetHeader>
         )}
         <div className="overflow-y-auto">
