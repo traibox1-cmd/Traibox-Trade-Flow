@@ -147,6 +147,24 @@ export type PartnerInvite = {
   partnerName: string;
   email: string;
   status: 'sent' | 'accepted' | 'declined';
+  direction: 'sent' | 'received';
+  scope?: 'trade' | 'network';
+  tradeId?: string;
+  networkId?: string;
+  message?: string;
+  createdAt: Date;
+};
+
+export type NetworkGroup = {
+  id: string;
+  name: string;
+  theme: 'geography' | 'industry' | 'corridor' | 'custom';
+  description: string;
+  tags: string[];
+  memberCount: number;
+  visibility: 'private' | 'invite-only' | 'open';
+  isOwner: boolean;
+  isMember: boolean;
   createdAt: Date;
 };
 
@@ -179,11 +197,18 @@ export type Partner = {
   id: string;
   name: string;
   region: string;
+  country?: string;
   capabilities: string[]; // Services: Forwarding, Customs, Trade docs, etc.
   canActAs: PartnerRole[]; // Roles: Buyer, Supplier, Financier, Logistics, Customs, Insurance
   trust: 'verified' | 'partner' | 'new';
   visibility: 'private' | 'shared';
   connectionStatus: 'none' | 'pending' | 'connected';
+  type?: 'counterparty' | 'participant' | 'organization';
+  industry?: string;
+  website?: string;
+  tradePassportReady?: boolean;
+  activeTradeIds?: string[];
+  networkIds?: string[];
 };
 
 type AppStore = {
@@ -194,6 +219,7 @@ type AppStore = {
   partnerInvites: PartnerInvite[];
   payments: Payment[];
   partners: Partner[];
+  networkGroups: NetworkGroup[];
   offers: Offer[];
   infoRequests: InfoRequest[];
   notifications: Notification[];
@@ -221,6 +247,9 @@ type AppStore = {
   addProofPack: (pack: Omit<ProofPack, 'id' | 'createdAt'>) => string;
   updateProofPack: (id: string, updates: Partial<ProofPack>) => void;
   addPartnerInvite: (invite: Omit<PartnerInvite, 'id' | 'createdAt'>) => void;
+  addNetworkGroup: (group: Omit<NetworkGroup, 'id' | 'createdAt'>) => string;
+  updateNetworkGroup: (id: string, updates: Partial<NetworkGroup>) => void;
+  joinNetworkGroup: (id: string) => void;
   addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => string;
   updatePayment: (id: string, updates: Partial<Payment>) => void;
   updatePartner: (id: string, updates: Partial<Partner>) => void;
@@ -248,31 +277,148 @@ const initialPartners: Partner[] = [
     id: "p1",
     name: "NordWerk Logistics",
     region: "EU",
+    country: "Germany",
     capabilities: ["Forwarding", "Customs", "Trade docs"],
     canActAs: ["Logistics", "Customs"],
     trust: "verified",
     visibility: "private",
     connectionStatus: "connected",
+    type: "participant",
+    industry: "Logistics & Freight",
+    tradePassportReady: true,
+    activeTradeIds: [],
+    networkIds: ["ng1"],
   },
   {
     id: "p2",
     name: "Aster Mills",
     region: "SEA",
+    country: "Vietnam",
     capabilities: ["Manufacturing", "QA", "Insurance"],
     canActAs: ["Supplier"],
     trust: "partner",
     visibility: "shared",
     connectionStatus: "connected",
+    type: "counterparty",
+    industry: "Textiles & Apparel",
+    tradePassportReady: true,
+    activeTradeIds: [],
+    networkIds: ["ng2"],
   },
   {
     id: "p3",
     name: "Kijani Cooperative",
     region: "Africa",
+    country: "Kenya",
     capabilities: ["Aggregation", "Fulfillment", "Local compliance"],
     canActAs: ["Supplier", "Buyer"],
     trust: "new",
     visibility: "private",
     connectionStatus: "none",
+    type: "counterparty",
+    industry: "Agriculture & Commodities",
+    tradePassportReady: false,
+    activeTradeIds: [],
+    networkIds: [],
+  },
+  {
+    id: "p4",
+    name: "Meridian Trade Finance",
+    region: "EU",
+    country: "Switzerland",
+    capabilities: ["LC issuance", "Invoice factoring", "Trade guarantees"],
+    canActAs: ["Financier"],
+    trust: "verified",
+    visibility: "shared",
+    connectionStatus: "connected",
+    type: "participant",
+    industry: "Trade Finance",
+    tradePassportReady: true,
+    activeTradeIds: [],
+    networkIds: ["ng1"],
+  },
+  {
+    id: "p5",
+    name: "Solano Energy Group",
+    region: "LATAM",
+    country: "Brazil",
+    capabilities: ["Energy supply", "Local compliance", "Aggregation"],
+    canActAs: ["Supplier", "Buyer"],
+    trust: "partner",
+    visibility: "private",
+    connectionStatus: "pending",
+    type: "counterparty",
+    industry: "Energy",
+    tradePassportReady: false,
+    activeTradeIds: [],
+    networkIds: ["ng3"],
+  },
+  {
+    id: "p6",
+    name: "Pacific Risk Brokers",
+    region: "APAC",
+    country: "Singapore",
+    capabilities: ["Cargo insurance", "Risk assessment", "Policy docs"],
+    canActAs: ["Insurance", "Broker"],
+    trust: "verified",
+    visibility: "shared",
+    connectionStatus: "connected",
+    type: "participant",
+    industry: "Insurance & Risk",
+    tradePassportReady: true,
+    activeTradeIds: [],
+    networkIds: ["ng2"],
+  },
+];
+
+const initialNetworkGroups: NetworkGroup[] = [
+  {
+    id: "ng1",
+    name: "EU–Africa Trade Corridor",
+    theme: "corridor",
+    description: "Structured network for EU exporters and African importers. Focused on agri, textiles, and industrial goods.",
+    tags: ["EU", "Africa", "Agri", "Textiles"],
+    memberCount: 34,
+    visibility: "invite-only",
+    isOwner: true,
+    isMember: true,
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "ng2",
+    name: "SEA Sourcing Network",
+    theme: "geography",
+    description: "Vetted manufacturers, logistics, and compliance partners across Southeast Asia.",
+    tags: ["SEA", "Manufacturing", "Sourcing", "Vietnam", "Thailand"],
+    memberCount: 61,
+    visibility: "invite-only",
+    isOwner: false,
+    isMember: true,
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "ng3",
+    name: "Low-Emission Materials Network",
+    theme: "industry",
+    description: "Connecting buyers and producers of certified low-carbon materials globally.",
+    tags: ["ESG", "Low-carbon", "Materials", "Sustainability"],
+    memberCount: 22,
+    visibility: "open",
+    isOwner: false,
+    isMember: false,
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "ng4",
+    name: "LATAM Market-Entry Network",
+    theme: "geography",
+    description: "Helping international companies establish trade operations in Latin America through local partners.",
+    tags: ["LATAM", "Brazil", "Mexico", "Market entry"],
+    memberCount: 18,
+    visibility: "invite-only",
+    isOwner: false,
+    isMember: false,
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
   },
 ];
 
@@ -281,9 +427,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
   fundingRequests: [],
   complianceRuns: [],
   proofPacks: [],
-  partnerInvites: [],
+  partnerInvites: [
+    {
+      id: "invite-demo-1",
+      partnerName: "Solano Energy Group",
+      email: "trade@solano.com.br",
+      status: "sent",
+      direction: "sent",
+      scope: "network",
+      networkId: "ng3",
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    },
+    {
+      id: "invite-demo-2",
+      partnerName: "Vortex Commodities AG",
+      email: "ops@vortexcommodities.ch",
+      status: "sent",
+      direction: "received",
+      scope: "trade",
+      message: "We'd like to connect on the Kenya coffee corridor. Our team specializes in East African supply chains.",
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    },
+  ],
   payments: [],
   partners: initialPartners,
+  networkGroups: initialNetworkGroups,
   offers: [],
   infoRequests: [],
   notifications: [],
@@ -422,6 +590,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ...state.partnerInvites,
         { ...invite, id: `invite-${Date.now()}`, createdAt: new Date() },
       ],
+    })),
+
+  addNetworkGroup: (group) => {
+    const id = `ng-${Date.now()}`;
+    set((state) => ({
+      networkGroups: [
+        ...state.networkGroups,
+        { ...group, id, createdAt: new Date() },
+      ],
+    }));
+    return id;
+  },
+
+  updateNetworkGroup: (id, updates) =>
+    set((state) => ({
+      networkGroups: state.networkGroups.map((ng) =>
+        ng.id === id ? { ...ng, ...updates } : ng
+      ),
+    })),
+
+  joinNetworkGroup: (id) =>
+    set((state) => ({
+      networkGroups: state.networkGroups.map((ng) =>
+        ng.id === id ? { ...ng, isMember: true, memberCount: ng.memberCount + 1 } : ng
+      ),
     })),
 
   addPayment: (payment) => {
@@ -666,6 +859,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           partnerName: "Global Trade Finance Ltd",
           email: "partnerships@gtf-trade.example",
           status: "sent",
+          direction: "sent",
+          scope: "trade",
           createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
         },
         {
@@ -673,7 +868,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
           partnerName: "Singapore Freight Services",
           email: "ops@sgfreight.example",
           status: "accepted",
+          direction: "sent",
+          scope: "network",
           createdAt: new Date(now - 10 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: `invite-demo-3-${now}`,
+          partnerName: "Vortex Commodities AG",
+          email: "ops@vortexcommodities.ch",
+          status: "sent",
+          direction: "received",
+          scope: "trade",
+          message: "We'd like to connect on the Kenya coffee corridor.",
+          createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
         }
       ],
       timelineEvents: [
@@ -731,6 +938,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       infoRequests: [],
       notifications: [],
       timelineEvents: [],
+      networkGroups: initialNetworkGroups,
     });
   },
 
