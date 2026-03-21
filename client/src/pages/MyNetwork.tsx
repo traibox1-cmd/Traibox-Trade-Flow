@@ -490,6 +490,7 @@ export default function MyNetwork() {
   const [requestedMatches, setRequestedMatches] = useState<Set<string>>(new Set());
   const [acceptedInvites, setAcceptedInvites] = useState<Set<string>>(new Set());
   const [declinedInvites, setDeclinedInvites] = useState<Set<string>>(new Set());
+  const [openNetworkId, setOpenNetworkId] = useState<string | null>(null);
 
   const { partners, partnerInvites, networkGroups, updatePartner, addPartnerInvite, addNetworkGroup, joinNetworkGroup } = useAppStore();
 
@@ -501,7 +502,7 @@ export default function MyNetwork() {
   const handleOpenCapabilityEdit = (partner: Partner) => {
     setEditingPartner(partner);
     setEditCapabilities([...partner.capabilities]);
-    setEditCanActAs([...(partner.canActAs ?? [])]);
+    setEditCanActAs([...partner.canActAs]);
   };
 
   const handleToggleCapability = (cap: string) =>
@@ -841,7 +842,19 @@ export default function MyNetwork() {
               <div className="mb-5">
                 <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">My Networks</div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {myNetworks.map((ng) => <NetworkGroupCard key={ng.id} ng={ng} onJoin={joinNetworkGroup} onOpen={() => {}} />)}
+                  {myNetworks.map((ng) => (
+                    <div key={ng.id}>
+                      <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
+                      {openNetworkId === ng.id && (
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
+                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
+                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
+                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
+                          <p>{ng.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -849,7 +862,19 @@ export default function MyNetwork() {
               <div>
                 <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">Discover</div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {discoverNetworks.map((ng) => <NetworkGroupCard key={ng.id} ng={ng} onJoin={joinNetworkGroup} onOpen={() => {}} />)}
+                  {discoverNetworks.map((ng) => (
+                    <div key={ng.id}>
+                      <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
+                      {openNetworkId === ng.id && (
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
+                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
+                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
+                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
+                          <p>{ng.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -877,7 +902,7 @@ export default function MyNetwork() {
                   {["SEA corridor", "LC-based funding", "Agri commodities", "Verified only", "Fast onboarding"].map((c) => (
                     <span key={c} className="rounded-full border bg-primary/8 border-primary/15 text-primary px-2.5 py-1 text-[11px] font-medium">{c}</span>
                   ))}
-                  <span className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground cursor-pointer hover:bg-background transition-colors">+ Edit criteria</span>
+                  <button className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-background transition-colors">+ Edit criteria</button>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
