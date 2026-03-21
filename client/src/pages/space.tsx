@@ -142,7 +142,7 @@ export default function SpacePage() {
                   className="font-serif text-2xl tracking-tight md:text-3xl"
                   data-testid="text-title-space"
                 >
-                  {role === "financier" ? "Capital Console" : "My Space"}
+                  {role === "financier" ? "Capital Console" : "Trade Console"}
                 </h1>
               </div>
               <p
