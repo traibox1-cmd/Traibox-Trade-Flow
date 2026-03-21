@@ -23,7 +23,7 @@ export function AddWidgetModal({ open, onClose, activeWidgets, onToggleWidget }:
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md" data-testid="add-widget-modal">
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold">Customize My Space</DialogTitle>
+          <DialogTitle className="text-base font-semibold">Customize Trade Console</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground/70">
             Add or remove widgets to personalize your workspace. Drag widgets to reorder them.
           </DialogDescription>

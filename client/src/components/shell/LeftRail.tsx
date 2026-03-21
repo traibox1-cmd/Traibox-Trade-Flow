@@ -35,7 +35,7 @@ type NavItem = {
 };
 
 const OPERATOR_NAV: NavItem[] = [
-  { href: "/space", label: "My Space", icon: Briefcase, testId: "nav-space", subtitle: "Home workspace" },
+  { href: "/space", label: "Trade Console", icon: Briefcase, testId: "nav-space", subtitle: "Home workspace" },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testId: "nav-dashboard", subtitle: "Custom widgets" },
   {
     href: "/trade",

@@ -83,9 +83,9 @@ export default function MySpacePage() {
           {/* Fixed: New Trade composer always at top */}
           <NewTradeComposer />
 
-          {/* My Space section header with customize button */}
+          {/* Trade Console section header with customize button */}
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-muted-foreground">My Space</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">Trade Console</h2>
             <Button
               variant="outline"
               size="sm"

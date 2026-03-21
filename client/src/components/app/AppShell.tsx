@@ -38,7 +38,7 @@ type NavItem = {
 const OPERATOR_NAV: NavItem[] = [
   {
     href: "/space",
-    label: "My Space",
+    label: "Trade Console",
     icon: Briefcase,
     testId: "nav-space",
     subtitle: "Home workspace",
