@@ -1,7 +1,46 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+server/public/
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Vite
+vite.config.ts.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archives
+*.tar.gz
+*.zip
+
+# Drizzle
+drizzle/meta/
+
+# Uploads (user content)
+uploads/*
+!uploads/.gitkeep
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.cache/
+.tmp/
