@@ -183,7 +183,7 @@ export default function MySpace() {
               <StatCard
                 label="Compliance Checks"
                 value={complianceRuns.length}
-                subValue={`${complianceRuns.filter(c => c.status === 'passed').length} passed`}
+                subValue={`${complianceRuns.filter(c => c.overall === 'passed').length} clear`}
                 icon={ShieldCheck}
                 onClick={() => setLocation("/compliance")}
               />

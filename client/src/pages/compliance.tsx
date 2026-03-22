@@ -14,41 +14,69 @@ import {
   Sparkles,
   Package,
   Download,
+  Leaf,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import type { ComplianceCheckType, ComplianceCheckStatus } from "@/lib/store";
 import { RiskAssessmentContent } from "./RiskAssessment";
 
 type Check = {
   id: string;
   name: string;
-  status: "passed" | "needs_review" | "blocked";
+  type: ComplianceCheckType;
+  status: ComplianceCheckStatus;
   note: string;
 };
 
 const checks: Check[] = [
   {
     id: "c1",
-    name: "Sanctions screening",
-    status: "passed",
-    note: "No matches for parties and vessels in the trade scope.",
+    name: "KYB / KYC",
+    type: "KYB",
+    status: "pass",
+    note: "Entity identity and directors verified.",
   },
   {
     id: "c2",
-    name: "KYC completeness",
-    status: "needs_review",
-    note: "Missing shipper UBO declaration and proof of address.",
+    name: "Sanctions & Watchlists",
+    type: "SANCTIONS",
+    status: "pass",
+    note: "No matches for parties and vessels in the trade scope.",
   },
   {
     id: "c3",
-    name: "Restricted goods policy",
-    status: "passed",
-    note: "HS codes classified as low risk for corridor.",
+    name: "PEP / Adverse Media",
+    type: "PEP",
+    status: "pass",
+    note: "No material hits in configured sources.",
   },
   {
     id: "c4",
-    name: "PEP / adverse media",
-    status: "passed",
-    note: "No material hits in configured sources.",
+    name: "Export Controls",
+    type: "EXPORT",
+    status: "warn",
+    note: "HS code flagged for dual-use; confirm end-use/end-user.",
+  },
+  {
+    id: "c5",
+    name: "ESG Screening",
+    type: "ESG",
+    status: "pass",
+    note: "No ESG flags identified for this corridor.",
+  },
+  {
+    id: "c6",
+    name: "CBAM",
+    type: "CBAM",
+    status: "warn",
+    note: "Corridor to EU; product may fall under CBAM reporting.",
+  },
+  {
+    id: "c7",
+    name: "Incoterms Compliance",
+    type: "INCOTERMS",
+    status: "pass",
+    note: "Documentary requirements met for selected Incoterm.",
   },
 ];
 
@@ -56,7 +84,7 @@ export default function CompliancePage() {
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
   
-  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track", "risk"];
+  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track", "risk", "sustainability"];
   
   // Read tab from browser URL (wouter's useLocation doesn't include query string)
   const getTabFromUrl = useCallback(() => {
@@ -94,10 +122,10 @@ export default function CompliancePage() {
   }, [getTabFromUrl]);
 
   const summary = useMemo(() => {
-    const passed = checks.filter((c) => c.status === "passed").length;
-    const needs = checks.filter((c) => c.status === "needs_review").length;
-    const blocked = checks.filter((c) => c.status === "blocked").length;
-    return { passed, needs, blocked };
+    const clear = checks.filter((c) => c.status === "pass").length;
+    const warning = checks.filter((c) => c.status === "warn").length;
+    const blocked = checks.filter((c) => c.status === "fail").length;
+    return { clear, warning, blocked };
   }, []);
 
   const handleRunChecks = () => {
@@ -109,15 +137,25 @@ export default function CompliancePage() {
     
     setRun("running");
     setTimeout(() => {
+      const now = new Date().toISOString();
       addComplianceRun({
         tradeId: defaultTrade.id,
-        targetEntity: "Trade Counterparty",
-        checks: ["sanctions", "kyc", "restricted-goods", "pep"],
-        status: "passed",
-        findings: [
-          { type: "pass", message: "No sanctions matches found" },
-          { type: "pass", message: "KYC documentation verified" },
+        targetEntity: defaultTrade.parties[0]?.name || "Trade Counterparty",
+        checks: [
+          { type: "KYB", status: "pass", reasons: [], provider: "provA", updated_at: now },
+          { type: "SANCTIONS", status: "pass", reasons: [], provider: "provA", updated_at: now },
+          { type: "PEP", status: "pass", reasons: [], provider: "provA", updated_at: now },
+          { type: "EXPORT", status: "warn", reasons: ["HS code flagged; confirm end-use/end-user"], provider: "provB", updated_at: now },
+          { type: "ESG", status: "pass", reasons: [], updated_at: now },
+          { type: "CBAM", status: "warn", reasons: ["Corridor to EU; product may fall under CBAM reporting"], updated_at: now },
         ],
+        overall: "warnings",
+        operational_status: "warning",
+        risk_level: "medium",
+        next_actions: ["Collect end-use statement", "Attach ESG evidence for STF"],
+        requirements_pending: 2,
+        report_url: `/reports/compliance/${defaultTrade.id}.pdf`,
+        trace_id: `trc_cmp_${Date.now()}`,
       });
       setRun("done");
     }, 900);
@@ -177,17 +215,24 @@ export default function CompliancePage() {
         <TBCard
           title="Status"
           subtitle="Trade scope"
-          state={summary.needs ? "warn" : "ready"}
+          state={summary.warning ? "warn" : "ready"}
           icon={<ClipboardList className="h-4 w-4" />}
           dataTestId="card-compliance-status"
         >
           <div className="flex items-center gap-2">
             <TBChip tone="success" dataTestId="chip-passed">
-              {summary.passed} passed
+              {summary.clear} clear
             </TBChip>
-            <TBChip tone="warn" dataTestId="chip-needs">
-              {summary.needs} needs review
-            </TBChip>
+            {summary.warning > 0 && (
+              <TBChip tone="warn" dataTestId="chip-needs">
+                {summary.warning} warning
+              </TBChip>
+            )}
+            {summary.blocked > 0 && (
+              <TBChip tone="error" dataTestId="chip-blocked">
+                {summary.blocked} blocked
+              </TBChip>
+            )}
           </div>
           <div className="mt-2 text-sm text-muted-foreground" data-testid="text-run-state">
             {run === "idle"
@@ -201,12 +246,12 @@ export default function CompliancePage() {
         <TBCard
           title="Findings"
           subtitle="Actionable signals"
-          state={summary.needs ? "warn" : "ready"}
+          state={summary.warning ? "warn" : "ready"}
           icon={<AlertTriangle className="h-4 w-4" />}
           dataTestId="card-findings"
         >
           <div className="text-sm" data-testid="text-findings">
-            {summary.needs ? "1 item requires verification." : "No findings."}
+            {summary.warning > 0 ? `${summary.warning} item(s) require attention.` : "No findings."}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
             Default posture is conservative: stop, explain, and collect evidence.
@@ -249,6 +294,9 @@ export default function CompliancePage() {
             <TabsTrigger value="passport" data-testid="tab-passport">
               Trade Passport
             </TabsTrigger>
+            <TabsTrigger value="sustainability" data-testid="tab-sustainability">
+              Sustainability
+            </TabsTrigger>
             <TabsTrigger value="track" data-testid="tab-track">
               Track & Trace
             </TabsTrigger>
@@ -261,18 +309,24 @@ export default function CompliancePage() {
             <TBCard
               title="Checks"
               subtitle="What ran and why"
-              state={run === "running" ? "loading" : summary.needs ? "warn" : "ready"}
+              state={run === "running" ? "loading" : summary.warning ? "warn" : "ready"}
               icon={<ShieldCheck className="h-4 w-4" />}
               dataTestId="card-checks"
             >
               <div className="grid gap-3">
                 {checks.map((c) => {
                   const tone =
-                    c.status === "passed"
+                    c.status === "pass"
                       ? "success"
-                      : c.status === "needs_review"
+                      : c.status === "warn"
                         ? "warn"
                         : "error";
+                  const label =
+                    c.status === "pass"
+                      ? "Clear"
+                      : c.status === "warn"
+                        ? "Warning"
+                        : "Blocked";
                   return (
                     <motion.div
                       key={c.id}
@@ -295,11 +349,7 @@ export default function CompliancePage() {
                           </div>
                         </div>
                         <TBChip tone={tone as any} dataTestId={`chip-check-status-${c.id}`}>
-                          {c.status === "passed"
-                            ? "Passed"
-                            : c.status === "needs_review"
-                              ? "Needs review"
-                              : "Blocked"}
+                          {label}
                         </TBChip>
                       </div>
                     </motion.div>
@@ -414,10 +464,11 @@ export default function CompliancePage() {
               ) : (
                 <div className="space-y-3" data-testid="reports-list">
                   {complianceRuns.map((run) => {
-                    const passedCount = run.findings.filter(f => f.type === 'pass').length;
-                    const warnCount = run.findings.filter(f => f.type === 'warn').length;
-                    const failCount = run.findings.filter(f => f.type === 'fail').length;
+                    const clearCount = run.checks.filter(c => c.status === 'pass').length;
+                    const warnCount = run.checks.filter(c => c.status === 'warn').length;
+                    const failCount = run.checks.filter(c => c.status === 'fail').length;
                     const trade = trades.find(t => t.id === run.tradeId);
+                    const overallLabel = run.overall === 'passed' ? 'Clear' : run.overall === 'warnings' ? 'Warning' : 'Blocked';
                     
                     return (
                       <div
@@ -433,50 +484,63 @@ export default function CompliancePage() {
                             </div>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            run.status === 'passed' 
+                            run.overall === 'passed' 
                               ? 'bg-green-500/20 text-green-600' 
-                              : run.status === 'failed'
+                              : run.overall === 'failed'
                               ? 'bg-red-500/20 text-red-600'
                               : 'bg-yellow-500/20 text-yellow-600'
                           }`}>
-                            {run.status === 'passed' ? 'Passed' : run.status === 'failed' ? 'Failed' : 'Pending'}
+                            {overallLabel}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-3 mb-3 text-xs">
                           <span className="flex items-center gap-1">
                             <BadgeCheck className="w-3 h-3 text-green-600" />
-                            {passedCount} passed
+                            {clearCount} clear
                           </span>
                           {warnCount > 0 && (
                             <span className="flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-yellow-600" />
-                              {warnCount} warnings
+                              {warnCount} warning
                             </span>
                           )}
                           {failCount > 0 && (
                             <span className="flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-red-600" />
-                              {failCount} failed
+                              {failCount} blocked
                             </span>
                           )}
                         </div>
                         
                         <div className="space-y-1">
-                          {run.findings.slice(0, 4).map((finding, idx) => (
+                          {run.checks.slice(0, 4).map((check, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
-                              {finding.type === 'pass' && <BadgeCheck className="w-3 h-3 text-green-600" />}
-                              {finding.type === 'warn' && <AlertTriangle className="w-3 h-3 text-yellow-600" />}
-                              {finding.type === 'fail' && <AlertTriangle className="w-3 h-3 text-red-600" />}
-                              <span className="text-muted-foreground">{finding.message}</span>
+                              {check.status === 'pass' && <BadgeCheck className="w-3 h-3 text-green-600" />}
+                              {check.status === 'warn' && <AlertTriangle className="w-3 h-3 text-yellow-600" />}
+                              {check.status === 'fail' && <AlertTriangle className="w-3 h-3 text-red-600" />}
+                              <span className="text-muted-foreground">
+                                {check.type}{check.reasons.length > 0 ? `: ${check.reasons[0]}` : ''}
+                              </span>
                             </div>
                           ))}
-                          {run.findings.length > 4 && (
+                          {run.checks.length > 4 && (
                             <div className="text-xs text-muted-foreground pl-5">
-                              +{run.findings.length - 4} more findings
+                              +{run.checks.length - 4} more checks
                             </div>
                           )}
                         </div>
+
+                        {run.next_actions.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <div className="text-xs font-medium mb-1">Next actions</div>
+                            <div className="space-y-1">
+                              {run.next_actions.map((action, idx) => (
+                                <div key={idx} className="text-xs text-muted-foreground">• {action}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -547,6 +611,106 @@ export default function CompliancePage() {
                 </div>
               </div>
             </TBCard>
+          </TabsContent>
+
+          <TabsContent value="sustainability" className="mt-4" data-testid="panel-sustainability">
+            <div className="space-y-4">
+              <TBCard
+                title="Sustainability & CBAM"
+                subtitle="ESG screening, GHG Scope 3 context, and CBAM calculator"
+                state="idle"
+                icon={<Leaf className="h-4 w-4" />}
+                dataTestId="card-sustainability"
+              >
+                <div className="space-y-4">
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <div className="text-sm font-medium mb-3">ESG Screening</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Environmental</span>
+                        <TBChip tone="success" dataTestId="chip-esg-env">Low risk</TBChip>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Social</span>
+                        <TBChip tone="success" dataTestId="chip-esg-social">Low risk</TBChip>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Governance</span>
+                        <TBChip tone="success" dataTestId="chip-esg-gov">Low risk</TBChip>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Overall ESG</span>
+                        <TBChip tone="success" dataTestId="chip-esg-overall">Clear</TBChip>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <div className="text-sm font-medium mb-3">GHG Scope 3 Context</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Applicable</span>
+                        <TBChip tone="neutral" dataTestId="chip-ghg-applicable">Yes</TBChip>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Estimated tCO₂</span>
+                        <span className="text-sm font-medium">12.5</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">Confidence</span>
+                        <TBChip tone="warn" dataTestId="chip-ghg-confidence">Medium</TBChip>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Estimated based on corridor and commodity defaults (GHG Protocol Scope 3).
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <div className="text-sm font-medium mb-3">CBAM Calculator</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">CBAM Scope</span>
+                        <TBChip tone="neutral" dataTestId="chip-cbam-scope">Not in scope</TBChip>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm">EU ETS Price Reference</span>
+                        <span className="text-sm font-medium">€85.00/tCO₂</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      CBAM applies to iron, steel, aluminium, cement, fertilisers, electricity, and hydrogen imported into the EU.
+                      Check if your goods are in scope using the scope check.
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button variant="secondary" size="sm" className="h-8" data-testid="button-cbam-scope-check">
+                        Run Scope Check
+                      </Button>
+                      <Button variant="secondary" size="sm" className="h-8" data-testid="button-cbam-calculate">
+                        Calculate Obligations
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <div className="text-sm font-medium mb-3">Sustainability Reports</div>
+                    <div className="text-sm text-muted-foreground mb-3">
+                      Generate per-operation, monthly, quarterly, or yearly sustainability reports.
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" size="sm" className="h-8" data-testid="button-generate-sus-report">
+                        <FileText className="w-3 h-3 mr-2" />
+                        Generate Report
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8" data-testid="button-download-sus-report">
+                        <Download className="w-3 h-3 mr-2" />
+                        Download PDF
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </TBCard>
+            </div>
           </TabsContent>
 
           <TabsContent value="track" className="mt-4" data-testid="panel-track">

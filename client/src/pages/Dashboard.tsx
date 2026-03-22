@@ -287,7 +287,7 @@ export default function Dashboard() {
       case "chart-funding":
         return <ChartWidget type="pie" data={fundingData} dataKey="value" height={180} />;
       case "stats-compliance": {
-        const passedRuns = complianceRuns.filter((r) => r.status === "passed").length;
+        const passedRuns = complianceRuns.filter((r) => r.overall === "passed").length;
         return (
           <StatsWidget
             columns={2}

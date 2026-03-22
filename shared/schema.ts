@@ -139,3 +139,60 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+// ── Compliance v5.0 Tables ──────────────────────────────────────────
+
+export const complianceChecks = pgTable("compliance_checks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // KYC, KYB, SANCTIONS, PEP, ADVERSE_MEDIA, EXPORT, JURISDICTION, ESG, CBAM, AML, INCOTERMS
+  status: text("status").notNull(), // pass, warn, fail
+  score: numeric("score"),
+  reasonsJson: jsonb("reasons_json").default([]),
+  provider: text("provider"),
+  providerRef: text("provider_ref"),
+  policyId: text("policy_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const complianceReports = pgTable("compliance_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  policyId: text("policy_id"),
+  overall: text("overall").notNull(), // passed, warnings, failed
+  riskLevel: text("risk_level").notNull(), // low, medium, high
+  jsonBlob: jsonb("json_blob"),
+  pdfUrl: text("pdf_url"),
+  hash: text("hash"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const sanctionsCache = pgTable("sanctions_cache", {
+  key: varchar("key").primaryKey(),
+  valueJson: jsonb("value_json"),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const exportFlags = pgTable("export_flags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  hsCode: text("hs_code").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditEvents = pgTable("audit_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  payloadJson: jsonb("payload_json"),
+  hash: text("hash"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type ComplianceCheckRecord = typeof complianceChecks.$inferSelect;
+export type ComplianceReport = typeof complianceReports.$inferSelect;
+export type ExportFlag = typeof exportFlags.$inferSelect;
+export type AuditEventRecord = typeof auditEvents.$inferSelect;
