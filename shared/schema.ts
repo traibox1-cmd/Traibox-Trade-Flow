@@ -139,3 +139,77 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+// ─── CBAM Schemas ────────────────────────────────────────────────────────────
+
+export const cbamScopeCheckRequestSchema = z.object({
+  items: z.array(
+    z.object({
+      hs_code: z.string().min(1),
+      description: z.string().optional(),
+    })
+  ).min(1),
+  corridor: z.string().optional(),
+});
+
+export const cbamScopeItemResultSchema = z.object({
+  hs_code: z.string(),
+  in_scope: z.boolean(),
+  category: z.string().nullable(),
+  cn_code: z.string().nullable(),
+  notes: z.string(),
+});
+
+export const cbamScopeResultSchema = z.object({
+  in_scope: z.boolean(),
+  items: z.array(cbamScopeItemResultSchema),
+});
+
+export const cbamRequestItemSchema = z.object({
+  hs_code: z.string().min(1),
+  quantity_tonnes: z.number().positive(),
+  origin_country: z.string().min(1),
+  embedded_emissions_tco2: z.number().nullable().optional(),
+  default_values: z.boolean().default(true),
+});
+
+export const cbamCalculateRequestSchema = z.object({
+  trade_id: z.string().min(1),
+  items: z.array(cbamRequestItemSchema).min(1),
+  reporting_quarter: z.string().optional(),
+});
+
+export const cbamCalculationItemSchema = z.object({
+  hs_code: z.string(),
+  category: z.string(),
+  quantity_tonnes: z.number(),
+  embedded_emissions_tco2: z.number(),
+  emission_source: z.enum(["actual", "default", "mixed"]),
+  cbam_certificates_required: z.number().nullable(),
+  estimated_cost_eur: z.number().nullable(),
+});
+
+export const cbamCalculationSchema = z.object({
+  trade_id: z.string(),
+  in_scope: z.boolean(),
+  items: z.array(cbamCalculationItemSchema),
+  totals: z.object({
+    total_emissions_tco2: z.number(),
+    total_certificates: z.number().nullable(),
+    estimated_total_cost_eur: z.number().nullable(),
+  }),
+  carbon_price_reference: z.object({
+    ets_price_eur_per_tco2: z.number(),
+    as_of: z.string(),
+  }),
+  reporting_obligations: z.array(z.string()),
+  glass_box: z.object({
+    reasons: z.array(z.string()),
+  }),
+  trace_id: z.string(),
+});
+
+export type CBAMScopeCheckRequest = z.infer<typeof cbamScopeCheckRequestSchema>;
+export type CBAMScopeResult = z.infer<typeof cbamScopeResultSchema>;
+export type CBAMCalculateRequest = z.infer<typeof cbamCalculateRequestSchema>;
+export type CBAMCalculation = z.infer<typeof cbamCalculationSchema>;

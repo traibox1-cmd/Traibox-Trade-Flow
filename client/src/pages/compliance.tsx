@@ -14,9 +14,502 @@ import {
   Sparkles,
   Package,
   Download,
+  Leaf,
+  Calculator,
+  Info,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { RiskAssessmentContent } from "./RiskAssessment";
+
+// ─── CBAM Panel ──────────────────────────────────────────────────────────────
+
+type CBAMScopeItem = {
+  hs_code: string;
+  in_scope: boolean;
+  category: string | null;
+  cn_code: string | null;
+  notes: string;
+};
+
+type CBAMCalcItem = {
+  hs_code: string;
+  category: string;
+  quantity_tonnes: number;
+  embedded_emissions_tco2: number;
+  emission_source: "actual" | "default" | "mixed";
+  cbam_certificates_required: number | null;
+  estimated_cost_eur: number | null;
+};
+
+type CBAMCalculation = {
+  trade_id: string;
+  in_scope: boolean;
+  items: CBAMCalcItem[];
+  totals: {
+    total_emissions_tco2: number;
+    total_certificates: number | null;
+    estimated_total_cost_eur: number | null;
+  };
+  carbon_price_reference: { ets_price_eur_per_tco2: number; as_of: string };
+  reporting_obligations: string[];
+  glass_box: { reasons: string[] };
+  trace_id: string;
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  cement: "Cement",
+  iron_steel: "Iron & Steel",
+  aluminium: "Aluminium",
+  fertilisers: "Fertilisers",
+  electricity: "Electricity",
+  hydrogen: "Hydrogen",
+};
+
+function CBAMPanel() {
+  const { trades } = useAppStore();
+
+  // Scope check state
+  const [hsInput, setHsInput] = useState("7208, 7601, 2523");
+  const [corridorInput, setCorridorInput] = useState("CN → EU");
+  const [scopeResult, setScopeResult] = useState<{ in_scope: boolean; items: CBAMScopeItem[] } | null>(null);
+  const [scopeLoading, setScopeLoading] = useState(false);
+  const [scopeError, setScopeError] = useState<string | null>(null);
+
+  // Calculation state
+  const [calcTradeId, setCalcTradeId] = useState(trades[0]?.id ?? "");
+  const [calcItems, setCalcItems] = useState(
+    `[{"hs_code":"7208","quantity_tonnes":500,"origin_country":"CN"},{"hs_code":"7601","quantity_tonnes":200,"origin_country":"CN"}]`
+  );
+  const [calcResult, setCalcResult] = useState<CBAMCalculation | null>(null);
+  const [calcLoading, setCalcLoading] = useState(false);
+  const [calcError, setCalcError] = useState<string | null>(null);
+
+  // Report state
+  const [reportTradeId, setReportTradeId] = useState(trades[0]?.id ?? "");
+  const [reportResult, setReportResult] = useState<Record<string, unknown> | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+
+  const handleScopeCheck = async () => {
+    setScopeLoading(true);
+    setScopeError(null);
+    setScopeResult(null);
+    try {
+      const codes = hsInput
+        .split(/[,\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((hs_code) => ({ hs_code }));
+
+      const res = await fetch("/api/cbam/scope-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: codes, corridor: corridorInput || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scope check failed");
+      setScopeResult(data);
+    } catch (err) {
+      setScopeError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setScopeLoading(false);
+    }
+  };
+
+  const handleCalculate = async () => {
+    setCalcLoading(true);
+    setCalcError(null);
+    setCalcResult(null);
+    try {
+      let items;
+      try {
+        items = JSON.parse(calcItems);
+      } catch {
+        throw new Error("Invalid JSON in items field");
+      }
+      const res = await fetch("/api/cbam/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trade_id: calcTradeId || "demo", items }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Calculation failed");
+      setCalcResult(data);
+    } catch (err) {
+      setCalcError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
+  const handleReport = async () => {
+    setReportLoading(true);
+    setReportError(null);
+    setReportResult(null);
+    try {
+      const id = reportTradeId || trades[0]?.id;
+      if (!id) throw new Error("No trade selected");
+      const res = await fetch(`/api/cbam/report/${id}?format=json`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Report generation failed");
+      setReportResult(data);
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4" data-testid="cbam-panel">
+      {/* Header card */}
+      <TBCard
+        title="Sustainability & CBAM"
+        subtitle="Carbon Border Adjustment Mechanism — EU Regulation 2023/956"
+        state="idle"
+        icon={<Leaf className="h-4 w-4" />}
+        dataTestId="card-cbam-header"
+      >
+        <div className="text-sm text-muted-foreground space-y-1">
+          <p>
+            CBAM places a carbon price on imports of certain goods from outside the EU to prevent
+            carbon leakage. In-scope goods: <strong>cement, iron/steel, aluminium, fertilisers,
+            electricity, hydrogen</strong>.
+          </p>
+          <p className="text-xs">
+            Transitional period: Oct 2023 – Dec 2025 (reporting only). Full obligations from 1 Jan 2026.
+          </p>
+        </div>
+      </TBCard>
+
+      {/* Scope Check */}
+      <TBCard
+        title="HS Code Scope Check"
+        subtitle="Check whether your goods fall within CBAM scope"
+        state={scopeLoading ? "loading" : scopeResult ? (scopeResult.in_scope ? "warn" : "ready") : "idle"}
+        icon={<ShieldCheck className="h-4 w-4" />}
+        dataTestId="card-cbam-scope"
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">HS Codes (comma-separated)</label>
+            <input
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={hsInput}
+              onChange={(e) => setHsInput(e.target.value)}
+              placeholder="e.g. 7208, 7601, 2523"
+              data-testid="input-cbam-hs-codes"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Trade corridor (optional)</label>
+            <input
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={corridorInput}
+              onChange={(e) => setCorridorInput(e.target.value)}
+              placeholder="e.g. CN → EU"
+              data-testid="input-cbam-corridor"
+            />
+          </div>
+          <Button
+            className="h-8"
+            onClick={handleScopeCheck}
+            disabled={scopeLoading}
+            data-testid="button-cbam-scope-check"
+          >
+            {scopeLoading ? "Checking…" : "Check Scope"}
+          </Button>
+
+          {scopeError && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600" data-testid="cbam-scope-error">
+              {scopeError}
+            </div>
+          )}
+
+          {scopeResult && (
+            <div className="space-y-2" data-testid="cbam-scope-result">
+              <div className="flex items-center gap-2">
+                <TBChip tone={scopeResult.in_scope ? "warn" : "success"} dataTestId="chip-cbam-in-scope">
+                  {scopeResult.in_scope ? "In CBAM scope" : "Out of scope"}
+                </TBChip>
+              </div>
+              <div className="grid gap-2">
+                {scopeResult.items.map((item) => (
+                  <div
+                    key={item.hs_code}
+                    className="rounded-xl border bg-background/60 p-3"
+                    data-testid={`cbam-scope-item-${item.hs_code}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-medium">HS {item.hs_code}</div>
+                        {item.category && (
+                          <div className="text-xs text-muted-foreground">
+                            {CATEGORY_LABELS[item.category] ?? item.category}
+                            {item.cn_code && ` · CN ${item.cn_code}`}
+                          </div>
+                        )}
+                        <div className="mt-1 text-xs text-muted-foreground">{item.notes}</div>
+                      </div>
+                      <TBChip
+                        tone={item.in_scope ? "warn" : "neutral"}
+                        dataTestId={`chip-scope-${item.hs_code}`}
+                      >
+                        {item.in_scope ? "In scope" : "Out of scope"}
+                      </TBChip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </TBCard>
+
+      {/* CBAM Calculate */}
+      <TBCard
+        title="CBAM Obligation Calculator"
+        subtitle="Calculate embedded emissions and certificate requirements"
+        state={calcLoading ? "loading" : calcResult ? "ready" : "idle"}
+        icon={<Calculator className="h-4 w-4" />}
+        dataTestId="card-cbam-calculate"
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Trade ID</label>
+            <select
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={calcTradeId}
+              onChange={(e) => setCalcTradeId(e.target.value)}
+              data-testid="select-cbam-trade"
+            >
+              <option value="">— no trade (demo) —</option>
+              {trades.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Items (JSON array)</label>
+            <textarea
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+              rows={4}
+              value={calcItems}
+              onChange={(e) => setCalcItems(e.target.value)}
+              data-testid="textarea-cbam-items"
+            />
+            <div className="mt-1 text-xs text-muted-foreground">
+              Fields: hs_code, quantity_tonnes, origin_country (ISO 2), embedded_emissions_tco2 (optional)
+            </div>
+          </div>
+          <Button
+            className="h-8"
+            onClick={handleCalculate}
+            disabled={calcLoading}
+            data-testid="button-cbam-calculate"
+          >
+            {calcLoading ? "Calculating…" : "Calculate CBAM"}
+          </Button>
+
+          {calcError && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600" data-testid="cbam-calc-error">
+              {calcError}
+            </div>
+          )}
+
+          {calcResult && (
+            <div className="space-y-4" data-testid="cbam-calc-result">
+              <Separator />
+
+              {/* Totals */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border bg-background/60 p-3 text-center">
+                  <div className="text-xs text-muted-foreground">Total Emissions</div>
+                  <div className="mt-1 text-lg font-semibold" data-testid="cbam-total-emissions">
+                    {calcResult.totals.total_emissions_tco2.toFixed(2)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">tCO₂e</div>
+                </div>
+                <div className="rounded-xl border bg-background/60 p-3 text-center">
+                  <div className="text-xs text-muted-foreground">Certificates Required</div>
+                  <div className="mt-1 text-lg font-semibold" data-testid="cbam-total-certs">
+                    {calcResult.totals.total_certificates != null
+                      ? calcResult.totals.total_certificates.toFixed(2)
+                      : "—"}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">tCO₂e equiv.</div>
+                </div>
+                <div className="rounded-xl border bg-background/60 p-3 text-center">
+                  <div className="text-xs text-muted-foreground">Est. Cost</div>
+                  <div className="mt-1 text-lg font-semibold" data-testid="cbam-total-cost">
+                    {calcResult.totals.estimated_total_cost_eur != null
+                      ? `€${calcResult.totals.estimated_total_cost_eur.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      : "—"}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">EUR (indicative)</div>
+                </div>
+              </div>
+
+              {/* Items */}
+              {calcResult.items.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">Item breakdown</div>
+                  {calcResult.items.map((item, idx) => (
+                    <div key={idx} className="rounded-xl border bg-background/60 p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-sm font-medium">HS {item.hs_code}</div>
+                        <TBChip
+                          tone={item.emission_source === "actual" ? "success" : "neutral"}
+                          dataTestId={`chip-emission-source-${idx}`}
+                        >
+                          {item.emission_source === "actual" ? "Actual data" : "EU default"}
+                        </TBChip>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 text-xs text-muted-foreground">
+                        <div>Category: <span className="text-foreground">{CATEGORY_LABELS[item.category] ?? item.category}</span></div>
+                        <div>Quantity: <span className="text-foreground">{item.quantity_tonnes.toLocaleString()} t</span></div>
+                        <div>Embedded emissions: <span className="text-foreground">{item.embedded_emissions_tco2.toFixed(4)} tCO₂e</span></div>
+                        <div>Certs required: <span className="text-foreground">{item.cbam_certificates_required?.toFixed(4) ?? "—"}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Carbon price */}
+              <div className="rounded-xl border bg-muted/30 p-3">
+                <div className="text-xs font-medium mb-1">Carbon price reference</div>
+                <div className="text-xs text-muted-foreground">
+                  EU ETS: <strong>€{calcResult.carbon_price_reference.ets_price_eur_per_tco2}/tCO₂e</strong>
+                  {" · "}as of {calcResult.carbon_price_reference.as_of}
+                </div>
+              </div>
+
+              {/* Reporting obligations */}
+              {calcResult.reporting_obligations.length > 0 && (
+                <div className="rounded-xl border bg-background/60 p-3">
+                  <div className="text-xs font-medium mb-2">Reporting obligations</div>
+                  <ul className="space-y-1">
+                    {calcResult.reporting_obligations.map((o, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-muted-foreground">
+                        <span className="mt-0.5 shrink-0">•</span>
+                        <span>{o}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Glass box */}
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <div className="text-xs font-medium text-blue-700">Glass-box explanation</div>
+                </div>
+                <ul className="space-y-1">
+                  {calcResult.glass_box.reasons.map((r, i) => (
+                    <li key={i} className="text-xs text-muted-foreground">{r}</li>
+                  ))}
+                </ul>
+                <div className="mt-2 text-[10px] text-muted-foreground">trace_id: {calcResult.trace_id}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </TBCard>
+
+      {/* Quarterly Report */}
+      <TBCard
+        title="Quarterly Report"
+        subtitle="Download CBAM quarterly contribution for EU Registry submission"
+        state={reportLoading ? "loading" : reportResult ? "ready" : "idle"}
+        icon={<FileText className="h-4 w-4" />}
+        dataTestId="card-cbam-report"
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Trade</label>
+            <select
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={reportTradeId}
+              onChange={(e) => setReportTradeId(e.target.value)}
+              data-testid="select-cbam-report-trade"
+            >
+              <option value="">— select a trade —</option>
+              {trades.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              className="h-8"
+              onClick={handleReport}
+              disabled={reportLoading || !reportTradeId}
+              data-testid="button-cbam-report"
+            >
+              {reportLoading ? "Generating…" : "Generate Report"}
+            </Button>
+            {reportResult && (
+              <Button
+                variant="secondary"
+                className="h-8"
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(reportResult, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `cbam-report-${reportTradeId}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                data-testid="button-cbam-report-download"
+              >
+                <Download className="mr-2 h-3.5 w-3.5" />
+                Download JSON
+              </Button>
+            )}
+          </div>
+
+          {reportError && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600" data-testid="cbam-report-error">
+              {reportError}
+            </div>
+          )}
+
+          {reportResult && (
+            <div className="rounded-xl border bg-background/60 p-3 space-y-2" data-testid="cbam-report-result">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">{String(reportResult.trade_title)}</div>
+                <TBChip tone="neutral" dataTestId="chip-report-status">
+                  {String(reportResult.status)}
+                </TBChip>
+              </div>
+              <div className="text-xs text-muted-foreground">Quarter: {String(reportResult.reporting_quarter)}</div>
+              <div className="text-xs text-muted-foreground">{String(reportResult.note)}</div>
+              {Array.isArray(reportResult.instructions) && (
+                <ul className="space-y-1 pt-1 border-t border-border">
+                  {(reportResult.instructions as string[]).map((inst, i) => (
+                    <li key={i} className="text-xs text-muted-foreground flex gap-2">
+                      <span className="shrink-0">•</span>
+                      <span>{inst}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </TBCard>
+    </div>
+  );
+}
+
+// ─── End CBAM Panel ───────────────────────────────────────────────────────────
 
 type Check = {
   id: string;
@@ -56,7 +549,7 @@ export default function CompliancePage() {
   const [run, setRun] = useState<"idle" | "running" | "done">("idle");
   const { complianceRuns, proofPacks, trades, addComplianceRun, addProofPack } = useAppStore();
   
-  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track", "risk"];
+  const validTabs = ["checks", "reports", "proof-packs", "verification", "passport", "track", "risk", "sustainability"];
   
   // Read tab from browser URL (wouter's useLocation doesn't include query string)
   const getTabFromUrl = useCallback(() => {
@@ -254,6 +747,9 @@ export default function CompliancePage() {
             </TabsTrigger>
             <TabsTrigger value="risk" data-testid="tab-risk">
               Risk Assessment
+            </TabsTrigger>
+            <TabsTrigger value="sustainability" data-testid="tab-sustainability">
+              Sustainability & CBAM
             </TabsTrigger>
           </TabsList>
 
@@ -716,6 +1212,10 @@ export default function CompliancePage() {
 
           <TabsContent value="risk" className="mt-4" data-testid="panel-risk">
             <RiskAssessmentContent />
+          </TabsContent>
+
+          <TabsContent value="sustainability" className="mt-4" data-testid="panel-sustainability">
+            <CBAMPanel />
           </TabsContent>
         </Tabs>
       </div>
