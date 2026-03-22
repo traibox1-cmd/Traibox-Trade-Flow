@@ -26,6 +26,12 @@ import RiskPolicy from "@/pages/RiskPolicy";
 import Settlement from "@/pages/Settlement";
 import Evidence from "@/pages/Evidence";
 
+// Auth Pages
+import LoginPage from "@/pages/Auth/Login";
+import SignupPage from "@/pages/Auth/Signup";
+import ForgotPasswordPage from "@/pages/Auth/ForgotPassword";
+import ResetPasswordPage from "@/pages/Auth/ResetPassword";
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-full">
@@ -37,6 +43,12 @@ function PageLoader() {
 export function ClientRouter() {
   return (
     <Switch>
+      {/* Rutas Públicas (Auth) */}
+      <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
+
       <Route path="/">
         <Redirect to="/space" />
       </Route>

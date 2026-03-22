@@ -26,6 +26,10 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   onboardingStatus: text("onboarding_status").notNull().default("quick_complete"),
   lastLoginAt: timestamp("last_login_at"),
+  twoFactorSecret: text("two_factor_secret"),
+  isTwoFactorEnabled: boolean("is_two_factor_enabled").notNull().default(false),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [uniqueIndex("users_org_email_idx").on(table.orgId, table.email)]);

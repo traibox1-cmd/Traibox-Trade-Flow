@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SI 2FA ESTA HABILITADO, BLOQUEAR ACCESO DIRECTO Y REQUERIR OTP
+    if (user.isTwoFactorEnabled && user.twoFactorSecret) {
+      return NextResponse.json(
+        { requires2FA: true, message: "Please enter your 2FA code" },
+        { status: 403 }
+      );
+    }
+
     const org = await storage.getOrg(user.orgId);
     if (!org) {
       return NextResponse.json(

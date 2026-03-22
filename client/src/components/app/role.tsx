@@ -13,23 +13,35 @@ type RoleCtx = {
 const Ctx = createContext<RoleCtx | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = useState<TBRole>(() => {
-    const stored = localStorage.getItem("tb-role");
-    return (stored === "operator" || stored === "financier") ? stored : "operator";
-  });
-  const [theme, setTheme] = useState<TBTheme>(() => {
-    const stored = localStorage.getItem("tb-theme");
-    return (stored === "light" || stored === "dark") ? stored : "light";
-  });
+  const [role, setRole] = useState<TBRole>("operator");
+  const [theme, setTheme] = useState<TBTheme>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Load from localStorage only after client mount
+    const storedRole = localStorage.getItem("tb-role");
+    if (storedRole === "operator" || storedRole === "financier") {
+      setRole(storedRole);
+    }
+    
+    const storedTheme = localStorage.getItem("tb-theme");
+    if (storedTheme === "light" || storedTheme === "dark") {
+      setTheme(storedTheme);
+    }
+    
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("tb-theme", theme);
-  }, [theme]);
+  }, [theme, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     localStorage.setItem("tb-role", role);
-  }, [role]);
+  }, [role, mounted]);
 
   const value = useMemo(() => ({ role, setRole, theme, setTheme }), [role, theme]);
 
