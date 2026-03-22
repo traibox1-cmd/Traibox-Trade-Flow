@@ -472,7 +472,17 @@ function AddPartyModal({ onAdd, onClose }: { onAdd: (name: string, region: strin
 
 // --- Create Network Modal ---
 
-function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, theme: NetworkGroup["theme"], description: string, tags: string[], purpose: string, regionScope: string, governanceMode: NetworkGroup["governanceMode"]) => void; onClose: () => void; }) {
+type CreateNetworkOptions = {
+  name: string;
+  theme: NetworkGroup["theme"];
+  description: string;
+  tags: string[];
+  purpose: string;
+  regionScope: string;
+  governanceMode: NetworkGroup["governanceMode"];
+};
+
+function CreateNetworkModal({ onCreate, onClose }: { onCreate: (options: CreateNetworkOptions) => void; onClose: () => void; }) {
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<NetworkGroup["theme"]>("geography");
   const [description, setDescription] = useState("");
@@ -553,7 +563,7 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
           <Button className="h-9" disabled={!name.trim()}
-            onClick={() => { if (name.trim()) { onCreate(name.trim(), theme, description.trim(), tags, purpose.trim(), regionScope.trim(), governanceMode); onClose(); } }}
+            onClick={() => { if (name.trim()) { onCreate({ name: name.trim(), theme, description: description.trim(), tags, purpose: purpose.trim(), regionScope: regionScope.trim(), governanceMode }); onClose(); } }}
             data-testid="button-confirm-create-network">
             <Network className="mr-2 h-4 w-4" />Create Network
           </Button>
@@ -565,7 +575,15 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
 
 // --- Invite Modal ---
 
-function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string, message: string, scope: 'platform' | 'trade' | 'network', role?: PartnerRole) => void; onClose: () => void; }) {
+type SendInviteOptions = {
+  name: string;
+  email: string;
+  message: string;
+  scope: 'platform' | 'trade' | 'network';
+  role?: PartnerRole;
+};
+
+function InviteModal({ onSend, onClose }: { onSend: (options: SendInviteOptions) => void; onClose: () => void; }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -621,7 +639,7 @@ function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
           <Button className="h-9" disabled={!name.trim() || !email.trim()}
-            onClick={() => { if (name.trim() && email.trim()) { onSend(name.trim(), email.trim(), message.trim(), scope, selectedRole); onClose(); } }}
+            onClick={() => { if (name.trim() && email.trim()) { onSend({ name: name.trim(), email: email.trim(), message: message.trim(), scope, role: selectedRole }); onClose(); } }}
             data-testid="button-confirm-invite">
             <Send className="mr-2 h-4 w-4" />Send invitation
           </Button>
@@ -684,11 +702,11 @@ export default function MyNetwork() {
     }));
   };
 
-  const handleSendInvite = (name: string, email: string, message: string, scope: 'platform' | 'trade' | 'network', role?: PartnerRole) => {
+  const handleSendInvite = ({ name, email, message, scope, role }: SendInviteOptions) => {
     addPartnerInvite({ partnerName: name, email, status: "sent", direction: "sent", scope, assignedRole: role, message: message || undefined });
   };
 
-  const handleCreateNetwork = (name: string, theme: NetworkGroup["theme"], description: string, tags: string[], purpose: string, regionScope: string, governanceMode: NetworkGroup["governanceMode"]) => {
+  const handleCreateNetwork = ({ name, theme, description, tags, purpose, regionScope, governanceMode }: CreateNetworkOptions) => {
     addNetworkGroup({ name, theme, description, purpose: purpose || undefined, regionScope: regionScope || undefined, tags, memberCount: 1, visibility: governanceMode === "private" ? "private" : governanceMode === "selectively-open" ? "open" : "invite-only", governanceMode, isOwner: true, isMember: true });
   };
 
