@@ -19,11 +19,11 @@ export default function TradePassport() {
   const { proofPacks } = useAppStore();
   const [shareLevel, setShareLevel] = useState<"internal" | "parties" | "financier">("internal");
 
-  const kybStatus: "complete" | "pending" = "complete";
-  const uboStatus: "complete" | "pending" = "pending";
-  const kycStatus: "complete" | "pending" = "complete";
-  const amlStatus: "complete" | "pending" = "complete";
-  const esgStatus: "complete" | "pending" = "pending";
+  const kybStatus = "complete" as "complete" | "pending";
+  const uboStatus = "pending" as "complete" | "pending";
+  const kycStatus = "complete" as "complete" | "pending";
+  const amlStatus = "complete" as "complete" | "pending";
+  const esgStatus = "pending" as "complete" | "pending";
 
   const missingItems = [
     uboStatus === "pending" && "Beneficial ownership declaration",
