@@ -27,7 +27,7 @@ export function AppShell({ children }: AppShellProps) {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="h-full"
+            className="h-full overflow-y-auto"
           >
             {children}
           </motion.div>
