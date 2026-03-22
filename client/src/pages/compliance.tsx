@@ -502,7 +502,7 @@ export default function CompliancePage() {
                           {warnCount > 0 && (
                             <span className="flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-yellow-600" />
-                              {warnCount} warning
+                              {warnCount} warning{warnCount > 1 ? 's' : ''}
                             </span>
                           )}
                           {failCount > 0 && (

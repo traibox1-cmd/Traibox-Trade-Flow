@@ -941,7 +941,7 @@ export async function registerRoutes(
         glass_box: {
           reasons: [
             "Calculation based on EU ETS price reference",
-            items ? "Items checked against CBAM commodity scope" : "No items provided — defaults used",
+            items && items.length > 0 ? "Items checked against CBAM commodity scope" : "No items provided — defaults used",
           ],
         },
         trace_id: `trc_cbam_${Date.now()}`,
