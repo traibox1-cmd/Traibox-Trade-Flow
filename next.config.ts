@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
     "connect-pg-simple",
     "memorystore",
     "ws",
+    "bcryptjs",
   ],
 
   // Turbopack config for path aliases (Next.js 16 default bundler)
