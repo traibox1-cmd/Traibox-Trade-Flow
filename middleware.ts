@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "traibox-dev-secret-change-in-production"
-);
-const COOKIE_NAME = "tb-session";
+import { JWT_SECRET, COOKIE_NAME } from "@server/auth/config";
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ["/dashboard", "/space", "/trade", "/network", "/finance", "/compliance", "/settings", "/capital-console", "/funding-desk", "/deal-assistant", "/counterparties", "/risk-policy", "/settlement", "/evidence", "/assurance", "/risk-assessment", "/trade-passport", "/trade-trends", "/trade-workspace", "/trades", "/proofs", "/payments"];
+const PROTECTED_PREFIXES = [
+  "/dashboard", "/space", "/trade", "/network", "/finance",
+  "/compliance", "/settings", "/capital-console", "/funding-desk",
+  "/deal-assistant", "/counterparties", "/risk-policy", "/settlement",
+  "/evidence", "/assurance", "/risk-assessment", "/trade-passport",
+  "/trade-trends", "/trade-workspace", "/trades", "/proofs", "/payments",
+];
 
 // Routes that should NOT be protected (auth pages, API, static)
 const PUBLIC_PREFIXES = ["/api/", "/onboarding", "/_next", "/favicon", "/opengraph"];

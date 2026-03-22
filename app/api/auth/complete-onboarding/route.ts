@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
     await storage.updateOrg(session.orgId, {
       legalName: data.legalName,
       country: data.country,
-      taxId: data.taxId || null,
-      addressJson: data.address || null,
+      taxId: data.taxId ?? null,
+      addressJson: data.address ?? null,
       onboardingStatus: "full_complete",
     });
 

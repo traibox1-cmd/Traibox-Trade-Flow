@@ -1,11 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "traibox-dev-secret-change-in-production"
-);
-const COOKIE_NAME = "tb-session";
-const TOKEN_EXPIRY = "7d";
+import { JWT_SECRET, COOKIE_NAME, TOKEN_EXPIRY, COOKIE_MAX_AGE } from "./config";
 
 export interface SessionPayload extends JWTPayload {
   userId: string;
@@ -40,7 +35,7 @@ export async function setSessionCookie(token: string): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: COOKIE_MAX_AGE,
   });
 }
 
