@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,38 +10,85 @@ import {
   Globe,
   Handshake,
   Lock,
-  Puzzle,
   Sparkles,
-  Swords,
   UserPlus,
   Plus,
   Mail,
   CheckCircle2,
   X,
   Check,
+  Building2,
+  Users,
+  Network,
+  Search,
+  MapPin,
+  ArrowRight,
+  Layers,
+  Zap,
+  Shield,
+  Link2,
+  ExternalLink,
+  Star,
+  Clock,
+  Send,
+  Inbox,
+  Factory,
+  Briefcase,
+  Truck,
+  CreditCard,
+  Upload,
 } from "lucide-react";
-import { useAppStore, type Partner, type PartnerRole, ALL_PARTNER_ROLES } from "@/lib/store";
+import { useAppStore, type Partner, type PartnerRole, ALL_PARTNER_ROLES, type NetworkGroup } from "@/lib/store";
 
-const CAN_ACT_AS_ROLES: PartnerRole[] = ALL_PARTNER_ROLES;
+// --- Helpers ---
 
-const SERVICE_CAPABILITIES = [
-  "Forwarding",
-  "Manufacturing",
-  "QA",
-  "Trade docs",
-  "Aggregation",
-  "Fulfillment",
-  "Local compliance",
-];
+function trustTone(trust: Partner["trust"]): "success" | "neutral" | "warn" {
+  return trust === "verified" ? "success" : trust === "partner" ? "neutral" : "warn";
+}
 
-function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConnect: (id: string) => void; onEditCapabilities: (p: Partner) => void }) {
-  const tone =
-    p.trust === "verified"
-      ? "success"
-      : p.trust === "partner"
-        ? "neutral"
-        : "warn";
+function trustLabel(trust: Partner["trust"]) {
+  return trust === "verified" ? "Verified" : trust === "partner" ? "Partner" : "New";
+}
 
+function typeIcon(type?: Partner["type"]) {
+  if (type === "counterparty") return <Handshake className="h-3.5 w-3.5" />;
+  if (type === "participant") return <Briefcase className="h-3.5 w-3.5" />;
+  return <Building2 className="h-3.5 w-3.5" />;
+}
+
+function themeIcon(theme: NetworkGroup["theme"]) {
+  if (theme === "geography") return <Globe className="h-4 w-4" />;
+  if (theme === "industry") return <Factory className="h-4 w-4" />;
+  if (theme === "corridor") return <Truck className="h-4 w-4" />;
+  return <Layers className="h-4 w-4" />;
+}
+
+function roleIcon(role: PartnerRole) {
+  const map: Record<PartnerRole, React.ReactNode> = {
+    Buyer: <Briefcase className="h-3 w-3" />,
+    Supplier: <Factory className="h-3 w-3" />,
+    Financier: <CreditCard className="h-3 w-3" />,
+    Logistics: <Truck className="h-3 w-3" />,
+    Customs: <Shield className="h-3 w-3" />,
+    Insurance: <Shield className="h-3 w-3" />,
+    Broker: <Link2 className="h-3 w-3" />,
+    "Auditor/Certifier": <BadgeCheck className="h-3 w-3" />,
+  };
+  return map[role] ?? null;
+}
+
+// --- Party Card ---
+
+function PartyCard({
+  p,
+  onConnect,
+  onEditCapabilities,
+}: {
+  p: Partner;
+  onConnect: (id: string) => void;
+  onEditCapabilities: (p: Partner) => void;
+}) {
+  const tone = trustTone(p.trust);
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -51,92 +98,63 @@ function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConne
       data-testid={`card-partner-${p.id}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div
-              className="font-medium truncate"
-              data-testid={`text-partner-name-${p.id}`}
-            >
-              {p.name}
-            </div>
-            <TBChip tone={tone as any} dataTestId={`chip-partner-trust-${p.id}`}>
-              {p.trust === "verified"
-                ? "Verified"
-                : p.trust === "partner"
-                  ? "Partner"
-                  : "New"}
-            </TBChip>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium truncate" data-testid={`text-partner-name-${p.id}`}>{p.name}</span>
+            <TBChip tone={tone} dataTestId={`chip-partner-trust-${p.id}`}>{trustLabel(p.trust)}</TBChip>
+            {p.tradePassportReady && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400" data-testid={`chip-passport-${p.id}`}>
+                <BadgeCheck className="h-3 w-3" />
+                Passport ready
+              </span>
+            )}
           </div>
-          <div
-            className="mt-1 text-xs text-muted-foreground"
-            data-testid={`text-partner-region-${p.id}`}
-          >
-            {p.region}
+          <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1" data-testid={`text-partner-region-${p.id}`}>
+              <MapPin className="h-3 w-3" />
+              {p.country ?? p.region}
+            </span>
+            {p.industry && (
+              <span className="inline-flex items-center gap-1">
+                {typeIcon(p.type)}
+                {p.industry}
+              </span>
+            )}
           </div>
           {p.canActAs && p.canActAs.length > 0 && (
-            <div className="mt-2" data-testid={`list-partner-roles-${p.id}`}>
-              <div className="text-[10px] text-muted-foreground mb-1">Can act as</div>
+            <div className="mt-2.5" data-testid={`list-partner-roles-${p.id}`}>
+              <div className="text-[10px] text-muted-foreground mb-1.5">Can act as</div>
               <div className="flex flex-wrap gap-1.5">
                 {p.canActAs.map((role) => (
-                  <div
-                    key={role}
-                    className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium"
-                    data-testid={`chip-role-${p.id}-${role}`}
-                  >
-                    {role}
-                  </div>
+                  <span key={role} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium" data-testid={`chip-role-${p.id}-${role}`}>
+                    {roleIcon(role)}{role}
+                  </span>
                 ))}
               </div>
             </div>
           )}
           {p.capabilities.length > 0 && (
             <div className="mt-2" data-testid={`list-partner-caps-${p.id}`}>
-              <div className="text-[10px] text-muted-foreground mb-1">Services</div>
+              <div className="text-[10px] text-muted-foreground mb-1.5">Services</div>
               <div className="flex flex-wrap gap-1.5">
                 {p.capabilities.map((c) => (
-                  <div
-                    key={c}
-                    className="rounded-full border bg-background/70 px-2 py-0.5 text-[10px]"
-                  >
-                    {c}
-                  </div>
+                  <span key={c} className="rounded-full border bg-background/70 px-2 py-0.5 text-[10px]">{c}</span>
                 ))}
               </div>
             </div>
           )}
         </div>
-
-        <div className="flex flex-col items-end gap-2">
-          <div
-            className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-            data-testid={`text-partner-visibility-${p.id}`}
-          >
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" data-testid={`text-partner-visibility-${p.id}`}>
             <Lock className="h-3.5 w-3.5" />
             {p.visibility === "private" ? "Private" : "Shared"}
-          </div>
+          </span>
           <div className="flex gap-2">
-            <Button 
-              variant="ghost"
-              size="sm" 
-              className="h-8 text-xs px-2" 
-              onClick={() => onEditCapabilities(p)}
-              data-testid={`button-edit-capabilities-${p.id}`}
-            >
+            <Button variant="ghost" size="sm" className="h-8 text-xs px-2" onClick={() => onEditCapabilities(p)} data-testid={`button-edit-capabilities-${p.id}`}>
               Edit
             </Button>
-            <Button 
-              size="sm" 
-              className="h-8" 
-              onClick={() => onConnect(p.id)}
-              disabled={p.connectionStatus === "connected"}
-              data-testid={`button-connect-${p.id}`}
-            >
-              {p.connectionStatus === "connected" ? (
-                <>
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Connected
-                </>
-              ) : p.connectionStatus === "pending" ? "Pending" : "Connect"}
+            <Button size="sm" className="h-8" onClick={() => onConnect(p.id)} disabled={p.connectionStatus === "connected"} data-testid={`button-connect-${p.id}`}>
+              {p.connectionStatus === "connected" ? (<><CheckCircle2 className="w-3 h-3 mr-1" />Connected</>) : p.connectionStatus === "pending" ? "Pending…" : "Connect"}
             </Button>
           </div>
         </div>
@@ -145,39 +163,353 @@ function PartnerCard({ p, onConnect, onEditCapabilities }: { p: Partner; onConne
   );
 }
 
+// --- Network Group Card ---
+
+function NetworkGroupCard({ ng, onJoin, onOpen }: { ng: NetworkGroup; onJoin: (id: string) => void; onOpen: (ng: NetworkGroup) => void; }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+      className="rounded-2xl border bg-card/60 p-4 hover:bg-card transition-colors" data-testid={`card-network-${ng.id}`}>
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
+          {themeIcon(ng.theme)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium" data-testid={`text-network-name-${ng.id}`}>{ng.name}</span>
+            {ng.isOwner && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[10px] font-medium">
+                <Star className="h-3 w-3" />Owner
+              </span>
+            )}
+            {ng.isMember && !ng.isOwner && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/8 border border-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[10px] font-medium">
+                <Check className="h-3 w-3" />Member
+              </span>
+            )}
+            <span className="rounded-full border bg-background/60 px-2 py-0.5 text-[10px] capitalize">{ng.theme}</span>
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{ng.description}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {ng.tags.map((tag) => <span key={tag} className="rounded-full border bg-background/60 px-2 py-0.5 text-[10px]">{tag}</span>)}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Users className="h-3 w-3" />{ng.memberCount} members
+            </span>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => onOpen(ng)} data-testid={`button-open-network-${ng.id}`}>
+                Open<ExternalLink className="ml-1 h-3 w-3" />
+              </Button>
+              {!ng.isMember && (
+                <Button size="sm" className="h-8" onClick={() => onJoin(ng.id)} data-testid={`button-join-network-${ng.id}`}>Join</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// --- Match Suggestions ---
+
+const MATCH_SUGGESTIONS = [
+  { id: "m1", name: "Forwarder in Vietnam", reason: "Matched to your SEA corridor requirements", fit: "98%", tags: ["SEA", "Verified", "Fast onboarding"], role: "Logistics" as PartnerRole },
+  { id: "m2", name: "LC Advising Bank – Singapore", reason: "Matches your funding structure (LC) and corridor", fit: "95%", tags: ["Finance", "SG-based", "Rapid issuance"], role: "Financier" as PartnerRole },
+  { id: "m3", name: "Cargo Insurer – Lloyd's Syndicate", reason: "Evidence-first policy aligned with your compliance stance", fit: "91%", tags: ["Insurance", "Evidence-ready", "EU corridors"], role: "Insurance" as PartnerRole },
+  { id: "m4", name: "East Africa Customs Broker", reason: "Specialist in Kenya import clearance", fit: "89%", tags: ["Africa", "Customs", "Trade docs"], role: "Customs" as PartnerRole },
+  { id: "m5", name: "Commodity Aggregator – West Africa", reason: "Operates in your target sourcing corridor", fit: "84%", tags: ["Africa", "Agri", "Aggregation"], role: "Supplier" as PartnerRole },
+  { id: "m6", name: "Invoice Factoring Desk – LATAM", reason: "Available for LATAM receivables on short-cycle trades", fit: "80%", tags: ["Finance", "LATAM", "Factoring"], role: "Financier" as PartnerRole },
+];
+
+function MatchCard({ match, onRequest, requested }: { match: (typeof MATCH_SUGGESTIONS)[0]; onRequest: (id: string) => void; requested: boolean; }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+      className="rounded-2xl border bg-card/60 p-4 hover:bg-card transition-colors" data-testid={`card-match-${match.id}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium">{match.name}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/15 text-primary px-2 py-0.5 text-[10px] font-medium">
+              <Zap className="h-2.5 w-2.5" />{match.fit} fit
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{match.reason}</p>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {match.tags.map((tag) => <span key={tag} className="rounded-full border bg-background/60 px-2 py-0.5 text-[10px]">{tag}</span>)}
+          </div>
+        </div>
+        {requested ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 shrink-0">
+            <CheckCircle2 className="h-3.5 w-3.5" />Requested
+          </span>
+        ) : (
+          <Button size="sm" className="h-8 shrink-0" onClick={() => onRequest(match.id)} data-testid={`button-request-${match.id}`}>
+            Request<ArrowRight className="ml-1 h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// --- Capability Edit Modal ---
+
+const SERVICE_CAPABILITIES = [
+  "Forwarding", "Manufacturing", "QA", "Trade docs", "Aggregation",
+  "Fulfillment", "Local compliance", "Customs", "LC issuance",
+  "Invoice factoring", "Cargo insurance", "Risk assessment",
+];
+
+function CapabilityEditModal({ partner, capabilities, canActAs, onToggleCapability, onToggleRole, onSave, onClose }: {
+  partner: Partner; capabilities: string[]; canActAs: PartnerRole[];
+  onToggleCapability: (cap: string) => void; onToggleRole: (role: PartnerRole) => void;
+  onSave: () => void; onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-edit-capabilities">
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div>
+            <h3 className="font-semibold">Edit {partner.name}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Roles and service capabilities</p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} data-testid="button-close-modal"><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="space-y-5">
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-2.5">Can act as</div>
+            <div className="flex flex-wrap gap-2">
+              {ALL_PARTNER_ROLES.map((role) => (
+                <button key={role} onClick={() => onToggleRole(role)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors ${canActAs.includes(role) ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`toggle-role-${role}`}>
+                  {roleIcon(role)}{role}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-2.5">Services</div>
+            <div className="flex flex-wrap gap-2">
+              {SERVICE_CAPABILITIES.map((cap) => (
+                <button key={cap} onClick={() => onToggleCapability(cap)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${capabilities.includes(cap) ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`toggle-cap-${cap}`}>
+                  {cap}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
+          <Button className="h-9" onClick={onSave} data-testid="button-save-capabilities">
+            <Check className="mr-2 h-4 w-4" />Save changes
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// --- Add Party Modal ---
+
+function AddPartyModal({ onAdd, onClose }: { onAdd: (name: string, region: string, type: Partner["type"]) => void; onClose: () => void; }) {
+  const [name, setName] = useState("");
+  const [region, setRegion] = useState("");
+  const [type, setType] = useState<Partner["type"]>("counterparty");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-add-party">
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div><h3 className="font-semibold">Add party</h3><p className="text-xs text-muted-foreground mt-0.5">Manually add a counterparty, participant, or organization</p></div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Organization name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meridian Trade Finance" data-testid="input-add-party-name" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Region / Country</label>
+            <Input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="e.g. Singapore, SEA" data-testid="input-add-party-region" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Party type</label>
+            <div className="flex gap-2">
+              {(["counterparty", "participant", "organization"] as Partner["type"][]).map((t) => (
+                <button key={t} onClick={() => setType(t)}
+                  className={`flex-1 rounded-xl border py-2 text-[11px] capitalize transition-colors ${type === t ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`button-type-${t}`}>{t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
+          <Button className="h-9" disabled={!name.trim() || !region.trim()}
+            onClick={() => { if (name.trim() && region.trim()) { onAdd(name.trim(), region.trim(), type); onClose(); } }}
+            data-testid="button-confirm-add-party">
+            <Plus className="mr-2 h-4 w-4" />Add party
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// --- Create Network Modal ---
+
+function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, theme: NetworkGroup["theme"], description: string, tags: string[]) => void; onClose: () => void; }) {
+  const [name, setName] = useState("");
+  const [theme, setTheme] = useState<NetworkGroup["theme"]>("geography");
+  const [description, setDescription] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const addTag = () => { const t = tagInput.trim(); if (t && !tags.includes(t)) { setTags([...tags, t]); setTagInput(""); } };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-create-network">
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div><h3 className="font-semibold">Create Network</h3><p className="text-xs text-muted-foreground mt-0.5">Build a curated, ownable mini-marketplace</p></div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Network name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. US Wine Market Network" data-testid="input-network-name" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Theme</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["geography", "industry", "corridor", "custom"] as NetworkGroup["theme"][]).map((t) => (
+                <button key={t} onClick={() => setTheme(t)}
+                  className={`flex items-center gap-2 rounded-xl border p-2.5 text-[11px] capitalize transition-colors ${theme === t ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`button-theme-${t}`}>
+                  {themeIcon(t)}{t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this Network for?"
+              className="w-full rounded-xl border bg-background/60 px-3 py-2 text-sm resize-none h-20 outline-none focus:ring-1 focus:ring-primary/30"
+              data-testid="input-network-description" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Tags</label>
+            <div className="flex gap-2">
+              <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTag()} placeholder="Add a tag, press Enter" className="flex-1" data-testid="input-network-tag" />
+              <Button variant="secondary" size="sm" className="h-9" onClick={addTag}>Add</Button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 rounded-full border bg-background/60 px-2 py-0.5 text-[10px]">
+                    {tag}<button onClick={() => setTags(tags.filter((t) => t !== tag))}><X className="h-2.5 w-2.5" /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
+          <Button className="h-9" disabled={!name.trim()}
+            onClick={() => { if (name.trim()) { onCreate(name.trim(), theme, description.trim(), tags); onClose(); } }}
+            data-testid="button-confirm-create-network">
+            <Network className="mr-2 h-4 w-4" />Create Network
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// --- Invite Modal ---
+
+function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string, message: string) => void; onClose: () => void; }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-invite">
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div><h3 className="font-semibold">Send invitation</h3><p className="text-xs text-muted-foreground mt-0.5">Invite a party into TRAIBOX</p></div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Organization / contact name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Vortex Commodities AG" data-testid="input-invite-name" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Email address</label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ops@example.com" data-testid="input-invite-email" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Optional message</label>
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Why are you inviting them?"
+              className="w-full rounded-xl border bg-background/60 px-3 py-2 text-sm resize-none h-20 outline-none focus:ring-1 focus:ring-primary/30"
+              data-testid="input-invite-message" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
+          <Button className="h-9" disabled={!name.trim() || !email.trim()}
+            onClick={() => { if (name.trim() && email.trim()) { onSend(name.trim(), email.trim(), message.trim()); onClose(); } }}
+            data-testid="button-confirm-invite">
+            <Send className="mr-2 h-4 w-4" />Send invitation
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// --- Main Component ---
+
 export default function MyNetwork() {
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<PartnerRole | "all">("all");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
+  const [typeFilter, setTypeFilter] = useState<Partner["type"] | "all">("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showCreateNetworkModal, setShowCreateNetworkModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editCapabilities, setEditCapabilities] = useState<string[]>([]);
   const [editCanActAs, setEditCanActAs] = useState<PartnerRole[]>([]);
-  const { partners, partnerInvites, updatePartner, addPartnerInvite } = useAppStore();
+  const [requestedMatches, setRequestedMatches] = useState<Set<string>>(new Set());
+  const [acceptedInvites, setAcceptedInvites] = useState<Set<string>>(new Set());
+  const [declinedInvites, setDeclinedInvites] = useState<Set<string>>(new Set());
+  const [openNetworkId, setOpenNetworkId] = useState<string | null>(null);
+
+  const { partners, partnerInvites, networkGroups, updatePartner, addPartnerInvite, addNetworkGroup, joinNetworkGroup } = useAppStore();
+
+  const handleConnect = (id: string) => {
+    updatePartner(id, { connectionStatus: "pending" });
+    setTimeout(() => updatePartner(id, { connectionStatus: "connected" }), 1500);
+  };
 
   const handleOpenCapabilityEdit = (partner: Partner) => {
     setEditingPartner(partner);
     setEditCapabilities([...partner.capabilities]);
-    setEditCanActAs([...(partner.canActAs || [])]);
+    setEditCanActAs([...partner.canActAs]);
   };
 
-  const handleToggleCapability = (cap: string) => {
-    setEditCapabilities(prev => 
-      prev.includes(cap) 
-        ? prev.filter(c => c !== cap) 
-        : [...prev, cap]
-    );
-  };
+  const handleToggleCapability = (cap: string) =>
+    setEditCapabilities((prev) => prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]);
 
-  const handleToggleCanActAs = (role: PartnerRole) => {
-    setEditCanActAs(prev => 
-      prev.includes(role) 
-        ? prev.filter(r => r !== role) 
-        : [...prev, role]
-    );
-  };
+  const handleToggleCanActAs = (role: PartnerRole) =>
+    setEditCanActAs((prev) => prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]);
 
   const handleSaveCapabilities = () => {
     if (editingPartner) {
@@ -186,559 +518,425 @@ export default function MyNetwork() {
     }
   };
 
-  const filtered = useMemo(() => {
+  const handleAddParty = (name: string, region: string, type: Partner["type"]) => {
+    useAppStore.setState((state) => ({
+      partners: [...state.partners, {
+        id: `p-${Date.now()}`, name, region, country: region, capabilities: [], canActAs: [],
+        trust: "new" as const, visibility: "private" as const, connectionStatus: "none" as const,
+        type, tradePassportReady: false, activeTradeIds: [], networkIds: [],
+      }],
+    }));
+  };
+
+  const handleSendInvite = (name: string, email: string, message: string) => {
+    addPartnerInvite({ partnerName: name, email, status: "sent", direction: "sent", scope: "network", message: message || undefined });
+  };
+
+  const handleCreateNetwork = (name: string, theme: NetworkGroup["theme"], description: string, tags: string[]) => {
+    addNetworkGroup({ name, theme, description, tags, memberCount: 1, visibility: "invite-only", isOwner: true, isMember: true });
+  };
+
+  const filteredAll = useMemo(() => {
     let result = partners;
-    
     const q = query.trim().toLowerCase();
-    if (q) {
-      result = result.filter((p) => p.name.toLowerCase().includes(q));
-    }
-    
-    if (roleFilter !== "all") {
-      result = result.filter((p) => p.canActAs && p.canActAs.includes(roleFilter));
-    }
-    
+    if (q) result = result.filter((p) => p.name.toLowerCase().includes(q));
+    if (roleFilter !== "all") result = result.filter((p) => p.canActAs?.includes(roleFilter));
+    if (typeFilter !== "all") result = result.filter((p) => (p.type ?? "counterparty") === typeFilter);
     return result;
-  }, [query, partners, roleFilter]);
+  }, [query, partners, roleFilter, typeFilter]);
 
-  const handleConnect = (id: string) => {
-    updatePartner(id, { connectionStatus: "pending" });
-    setTimeout(() => {
-      updatePartner(id, { connectionStatus: "connected" });
-    }, 1500);
-  };
-
-  const handleSendInvite = () => {
-    if (inviteEmail && inviteName) {
-      addPartnerInvite({
-        partnerName: inviteName,
-        email: inviteEmail,
-        status: "sent",
-      });
-      setInviteEmail("");
-      setInviteName("");
-    }
-  };
+  const counterparties = useMemo(() => partners.filter((p) => p.type === "counterparty"), [partners]);
+  const participants = useMemo(() => partners.filter((p) => p.type === "participant"), [partners]);
+  const sentInvites = useMemo(() => partnerInvites.filter((i) => i.direction === "sent"), [partnerInvites]);
+  const receivedInvites = useMemo(() => partnerInvites.filter((i) => i.direction === "received"), [partnerInvites]);
+  const pendingReceived = useMemo(() => receivedInvites.filter((i) => !declinedInvites.has(i.id) && !acceptedInvites.has(i.id)), [receivedInvites, declinedInvites, acceptedInvites]);
+  const myNetworks = useMemo(() => networkGroups.filter((ng) => ng.isMember || ng.isOwner), [networkGroups]);
+  const discoverNetworks = useMemo(() => networkGroups.filter((ng) => !ng.isMember && !ng.isOwner), [networkGroups]);
+  const connected = partners.filter((p) => p.connectionStatus === "connected").length;
+  const pendingCount = partners.filter((p) => p.connectionStatus === "pending").length;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-8 md:py-10">
-      <div className="flex items-center justify-between gap-3">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2">
-            <div
-              className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10 border border-primary/15"
-              aria-hidden="true"
-            >
-              <Handshake className="h-4 w-4 text-primary" />
+            <div className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10 border border-primary/15">
+              <Network className="h-4 w-4 text-primary" />
             </div>
-            <h1
-              className="font-semibold text-2xl tracking-tight md:text-3xl"
-              data-testid="text-title-network"
-            >
-              My Network
-            </h1>
+            <h1 className="font-semibold text-2xl tracking-tight md:text-3xl" data-testid="text-title-network">Network</h1>
           </div>
           <p className="text-sm text-muted-foreground" data-testid="text-subtitle-network">
-            Private-by-default partners, integrations, and matchmaking.
+            Structured relationships, participants, and matchmaking — private by default.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" className="h-9" data-testid="button-import">
-            <Puzzle className="mr-2 h-4 w-4" />
-            Import
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Button variant="secondary" size="sm" className="h-9 gap-1.5" data-testid="button-import">
+            <Upload className="h-3.5 w-3.5" />Import
           </Button>
-          <Button 
-            variant="secondary" 
-            className="h-9" 
-            onClick={() => setShowJoinModal(true)}
-            data-testid="button-join-network"
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            Join
+          <Button variant="secondary" size="sm" className="h-9 gap-1.5" onClick={() => setShowAddModal(true)} data-testid="button-add-party">
+            <Plus className="h-3.5 w-3.5" />Add party
           </Button>
-          <Button 
-            className="h-9" 
-            onClick={() => setShowCreateModal(true)}
-            data-testid="button-create-network"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create
+          <Button size="sm" className="h-9 gap-1.5" onClick={() => setShowInviteModal(true)} data-testid="button-invite">
+            <UserPlus className="h-3.5 w-3.5" />Invite
           </Button>
         </div>
       </div>
 
-      <div className="mt-4">
+      {/* Summary bar */}
+      <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5">
+        {[
+          { label: "Total parties", value: partners.length, icon: <Users className="h-4 w-4" /> },
+          { label: "Connected", value: connected, icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" /> },
+          { label: "Pending", value: pendingCount, icon: <Clock className="h-4 w-4 text-amber-500" /> },
+          { label: "My Networks", value: myNetworks.length, icon: <Network className="h-4 w-4 text-primary" /> },
+          { label: "Invitations", value: pendingReceived.length, icon: <Inbox className="h-4 w-4" /> },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-2xl border bg-card/60 p-3 flex flex-col gap-1">
+            <div className="text-muted-foreground">{stat.icon}</div>
+            <div className="text-xl font-semibold tabular-nums">{stat.value}</div>
+            <div className="text-[11px] text-muted-foreground">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-5">
         <Tabs defaultValue="directory" data-testid="tabs-network">
-          <TabsList className="w-full justify-start" data-testid="tabslist-network">
+          <TabsList className="w-full justify-start overflow-x-auto" data-testid="tabslist-network">
             <TabsTrigger value="directory" data-testid="tab-directory">
-              Directory
+              <Globe className="mr-1.5 h-3.5 w-3.5" />Directory
             </TabsTrigger>
-            <TabsTrigger value="integrations" data-testid="tab-integrations">
-              Integrations
+            <TabsTrigger value="counterparties" data-testid="tab-counterparties">
+              <Handshake className="mr-1.5 h-3.5 w-3.5" />Counterparties
             </TabsTrigger>
-            <TabsTrigger value="invites" data-testid="tab-invites">
-              Invites
+            <TabsTrigger value="participants" data-testid="tab-participants">
+              <Briefcase className="mr-1.5 h-3.5 w-3.5" />Participants
+            </TabsTrigger>
+            <TabsTrigger value="invitations" data-testid="tab-invitations">
+              <Mail className="mr-1.5 h-3.5 w-3.5" />
+              Invitations
+              {pendingReceived.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 leading-none">
+                  {pendingReceived.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="networks" data-testid="tab-networks">
+              <Network className="mr-1.5 h-3.5 w-3.5" />Networks
             </TabsTrigger>
             <TabsTrigger value="matchmaking" data-testid="tab-matchmaking">
-              Matchmaking
-            </TabsTrigger>
-            <TabsTrigger value="challenges" data-testid="tab-challenges">
-              Challenges
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />Matchmaking
             </TabsTrigger>
           </TabsList>
 
+          {/* Directory */}
           <TabsContent value="directory" className="mt-4" data-testid="panel-directory">
-            <TBCard
-              title="Directory"
-              subtitle="A calm view into your trusted graph"
-              state="idle"
-              icon={<Globe className="h-4 w-4" />}
-              dataTestId="card-directory"
-            >
-              <div className="flex items-center gap-2 flex-wrap">
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search partners…"
-                  className="flex-1 min-w-[200px]"
-                  data-testid="input-partner-search"
-                />
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as PartnerRole | "all")}
-                  className="h-10 px-3 rounded-lg border border-border bg-background text-sm"
-                  data-testid="select-role-filter"
-                >
-                  <option value="all">All Roles</option>
-                  {CAN_ACT_AS_ROLES.map((role) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
+            <TBCard title="Directory" subtitle="All parties in your Network — private by default"
+              state="idle" icon={<Globe className="h-4 w-4" />} dataTestId="card-directory">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <div className="relative flex-1 min-w-[160px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search parties…" className="pl-9" data-testid="input-party-search" />
+                </div>
+                <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value as any)}
+                  className="h-9 rounded-lg border bg-background/60 px-3 text-sm" data-testid="select-type-filter">
+                  <option value="all">All types</option>
+                  <option value="counterparty">Counterparties</option>
+                  <option value="participant">Participants</option>
+                  <option value="organization">Organizations</option>
                 </select>
-                <Button variant="secondary" data-testid="button-add-partner">
-                  Add
-                </Button>
+                <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as any)}
+                  className="h-9 rounded-lg border bg-background/60 px-3 text-sm" data-testid="select-role-filter">
+                  <option value="all">All roles</option>
+                  {ALL_PARTNER_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
               </div>
-              
-              {roleFilter !== "all" && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Filtered by:</span>
-                  <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium">
-                    {roleFilter}
-                    <button 
-                      onClick={() => setRoleFilter("all")}
-                      className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
-                      data-testid="button-clear-role-filter"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
+              {filteredAll.length === 0 ? (
+                <div className="rounded-2xl border bg-background/60 p-6 text-center text-sm text-muted-foreground">No parties match your filters.</div>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredAll.map((p) => <PartyCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />)}
                 </div>
               )}
-
-              <div className="mt-4 grid gap-3">
-                {filtered.map((p) => (
-                  <PartnerCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />
-                ))}
-              </div>
-
-              <div
-                className="mt-5 rounded-2xl border bg-background/60 p-4"
-                data-testid="callout-privacy"
-              >
+              <div className="mt-5 rounded-2xl border bg-background/60 p-4" data-testid="callout-privacy">
                 <div className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
-                  <div className="text-sm font-medium">Visibility cues</div>
+                  <span className="text-sm font-medium">Private by default</span>
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Everything is private by default. Share a partner only when you explicitly invite them into a trade.
-                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  All parties are private until explicitly shared within a trade or Network. Your relationship graph is never exposed externally.
+                </p>
               </div>
             </TBCard>
           </TabsContent>
 
-          <TabsContent value="integrations" className="mt-4" data-testid="panel-integrations">
-            <TBCard
-              title="Integrations"
-              subtitle="Connect tools you already trust"
-              state="idle"
-              icon={<Puzzle className="h-4 w-4" />}
-              dataTestId="card-integrations"
-            >
-              <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { name: "Document vault", desc: "Bring your own DMS" },
-                  { name: "Sanctions screening", desc: "Policy-aligned providers" },
-                  { name: "Bank rails", desc: "SWIFT / local" },
-                  { name: "E-sign", desc: "Audit-ready signatures" },
-                ].map((i) => (
-                  <div
-                    key={i.name}
-                    className="rounded-2xl border bg-background/60 p-4"
-                    data-testid={`card-integration-${i.name
-                      .replace(/\s+/g, "-")
-                      .toLowerCase()}`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium">{i.name}</div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {i.desc}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-8"
-                        data-testid={`button-connect-${i.name
-                          .replace(/\s+/g, "-")
-                          .toLowerCase()}`}
-                      >
-                        Connect
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TBCard>
-          </TabsContent>
-
-          <TabsContent value="invites" className="mt-4" data-testid="panel-invites">
-            <TBCard
-              title="Invites"
-              subtitle="Grant access with intent"
-              state="idle"
-              icon={<UserPlus className="h-4 w-4" />}
-              dataTestId="card-invites"
-            >
-              <div className="mb-4 space-y-3 rounded-2xl border bg-background/60 p-4">
-                <div className="text-sm font-medium">Send New Invite</div>
-                <Input
-                  placeholder="Partner name"
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  data-testid="input-invite-name"
-                />
-                <Input
-                  placeholder="Email address"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  data-testid="input-invite-email"
-                />
-                <Button onClick={handleSendInvite} disabled={!inviteEmail || !inviteName} data-testid="button-send-invite">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Invite
-                </Button>
-              </div>
-
-              {partnerInvites.length === 0 ? (
-                <div
-                  className="rounded-2xl border bg-background/60 p-4"
-                  data-testid="empty-invites"
-                >
-                  <div className="flex items-center gap-2">
-                    <BadgeCheck className="h-4 w-4 text-primary" />
-                    <div className="text-sm font-medium">No pending invites</div>
-                  </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    Invitations are scoped to a trade, and can be revoked at any time.
-                  </div>
+          {/* Counterparties */}
+          <TabsContent value="counterparties" className="mt-4" data-testid="panel-counterparties">
+            <TBCard title="Counterparties" subtitle="Trading partners — buyers, sellers, and suppliers you transact with"
+              state="idle" icon={<Handshake className="h-4 w-4" />} dataTestId="card-counterparties">
+              {counterparties.length === 0 ? (
+                <div className="rounded-2xl border bg-background/60 p-6 text-center">
+                  <Handshake className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-medium">No counterparties yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Add a buyer, seller, or supplier to get started.</p>
+                  <Button size="sm" className="mt-4" onClick={() => setShowAddModal(true)} data-testid="button-add-counterparty">
+                    <Plus className="mr-2 h-4 w-4" />Add counterparty
+                  </Button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {partnerInvites.map((invite) => (
-                    <div
-                      key={invite.id}
-                      className="rounded-2xl border bg-background/60 p-4"
-                      data-testid={`invite-${invite.id}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-medium">{invite.partnerName}</div>
-                          <div className="text-sm text-muted-foreground mt-1">{invite.email}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {new Date(invite.createdAt).toLocaleDateString()}
+                <div className="grid gap-3">
+                  {counterparties.map((p) => <PartyCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />)}
+                </div>
+              )}
+              <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Reuse across trades</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Counterparties saved here can be linked to any trade. Their roles, trust level, and Trade Passport readiness carry over automatically.
+                </p>
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          {/* Participants */}
+          <TabsContent value="participants" className="mt-4" data-testid="panel-participants">
+            <TBCard title="Participants" subtitle="Service providers — logistics, finance, compliance, insurance, and more"
+              state="idle" icon={<Briefcase className="h-4 w-4" />} dataTestId="card-participants">
+              {participants.length === 0 ? (
+                <div className="rounded-2xl border bg-background/60 p-6 text-center">
+                  <Briefcase className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-medium">No participants yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Add logistics providers, financiers, or compliance specialists.</p>
+                  <Button size="sm" className="mt-4" onClick={() => setShowAddModal(true)} data-testid="button-add-participant">
+                    <Plus className="mr-2 h-4 w-4" />Add participant
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {participants.map((p) => <PartyCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />)}
+                </div>
+              )}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  { label: "Logistics & Freight", icon: <Truck className="h-4 w-4" />, count: participants.filter((p) => p.canActAs?.includes("Logistics")).length },
+                  { label: "Trade Finance", icon: <CreditCard className="h-4 w-4" />, count: participants.filter((p) => p.canActAs?.includes("Financier")).length },
+                  { label: "Insurance & Risk", icon: <Shield className="h-4 w-4" />, count: participants.filter((p) => p.canActAs?.includes("Insurance")).length },
+                  { label: "Customs & Compliance", icon: <BadgeCheck className="h-4 w-4" />, count: participants.filter((p) => p.canActAs?.includes("Customs")).length },
+                ].map((cat) => (
+                  <div key={cat.label} className="rounded-2xl border bg-background/60 p-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center text-primary">{cat.icon}</div>
+                    <div>
+                      <div className="text-sm font-medium">{cat.label}</div>
+                      <div className="text-xs text-muted-foreground">{cat.count} participant{cat.count !== 1 ? "s" : ""}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TBCard>
+          </TabsContent>
+
+          {/* Invitations */}
+          <TabsContent value="invitations" className="mt-4" data-testid="panel-invitations">
+            <div className="grid gap-4 md:grid-cols-2">
+              <TBCard title="Received" subtitle="Parties who want to connect with you"
+                state={pendingReceived.length > 0 ? "ready" : "idle"} icon={<Inbox className="h-4 w-4" />} dataTestId="card-invites-received">
+                {receivedInvites.length === 0 ? (
+                  <div className="rounded-2xl border bg-background/60 p-4 text-center text-sm text-muted-foreground">No pending invitations received.</div>
+                ) : (
+                  <div className="grid gap-3">
+                    {receivedInvites.map((invite) => {
+                      const accepted = acceptedInvites.has(invite.id);
+                      const declined = declinedInvites.has(invite.id);
+                      return (
+                        <div key={invite.id} className="rounded-2xl border bg-background/60 p-3" data-testid={`card-received-invite-${invite.id}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm">{invite.partnerName}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">{invite.email}</div>
+                              {invite.message && <p className="mt-1.5 text-xs text-muted-foreground italic">"{invite.message}"</p>}
+                              {invite.scope && <span className="mt-1.5 inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope}</span>}
+                            </div>
+                            {accepted ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <CheckCircle2 className="h-3.5 w-3.5" />Accepted
+                              </span>
+                            ) : declined ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                                <X className="h-3.5 w-3.5" />Declined
+                              </span>
+                            ) : (
+                              <div className="flex gap-1.5 shrink-0">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs"
+                                  onClick={() => setDeclinedInvites((prev) => new Set(prev).add(invite.id))}
+                                  data-testid={`button-decline-invite-${invite.id}`}>Decline</Button>
+                                <Button size="sm" className="h-7 text-xs"
+                                  onClick={() => setAcceptedInvites((prev) => new Set(prev).add(invite.id))}
+                                  data-testid={`button-accept-invite-${invite.id}`}>Accept</Button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <TBChip 
-                          tone={invite.status === 'accepted' ? 'success' : invite.status === 'declined' ? 'error' : 'warn'} 
-                          dataTestId={`chip-invite-status-${invite.id}`}
-                        >
-                          {invite.status}
-                        </TBChip>
+                      );
+                    })}
+                  </div>
+                )}
+              </TBCard>
+
+              <TBCard title="Sent" subtitle="Invitations you have dispatched"
+                state="idle" icon={<Send className="h-4 w-4" />} dataTestId="card-invites-sent">
+                {sentInvites.length === 0 ? (
+                  <div className="rounded-2xl border bg-background/60 p-4 text-center">
+                    <Mail className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-sm text-muted-foreground">No invitations sent yet.</p>
+                    <Button size="sm" className="mt-3" onClick={() => setShowInviteModal(true)} data-testid="button-send-invite-empty">
+                      <UserPlus className="mr-2 h-4 w-4" />Send invitation
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {sentInvites.map((invite) => (
+                      <div key={invite.id} className="rounded-2xl border bg-background/60 p-3" data-testid={`card-sent-invite-${invite.id}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm">{invite.partnerName}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{invite.email}</div>
+                            {invite.scope && <span className="mt-1.5 inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope}</span>}
+                          </div>
+                          <TBChip tone={invite.status === "accepted" ? "success" : invite.status === "declined" ? "error" : "neutral"}
+                            dataTestId={`chip-invite-status-${invite.id}`}>{invite.status}</TBChip>
+                        </div>
                       </div>
+                    ))}
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => setShowInviteModal(true)} data-testid="button-send-another-invite">
+                      <UserPlus className="mr-2 h-3.5 w-3.5" />Send another
+                    </Button>
+                  </div>
+                )}
+              </TBCard>
+            </div>
+            <div className="mt-4 rounded-2xl border bg-background/60 p-4" data-testid="callout-invitations">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Invitation model</span>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Invitations are always intentional and scoped — to a trade, a Network, or the platform. They can be revoked at any time. Acceptance does not grant access to your data.
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* Networks */}
+          <TabsContent value="networks" className="mt-4" data-testid="panel-networks">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Curated, ownable mini-marketplaces organized by geography, industry, corridor, or theme.
+              </p>
+              <Button size="sm" className="h-9 gap-1.5 shrink-0" onClick={() => setShowCreateNetworkModal(true)} data-testid="button-create-network">
+                <Plus className="h-3.5 w-3.5" />Create Network
+              </Button>
+            </div>
+            {myNetworks.length > 0 && (
+              <div className="mb-5">
+                <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">My Networks</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {myNetworks.map((ng) => (
+                    <div key={ng.id}>
+                      <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
+                      {openNetworkId === ng.id && (
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
+                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
+                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
+                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
+                          <p>{ng.description}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              )}
-            </TBCard>
+              </div>
+            )}
+            {discoverNetworks.length > 0 && (
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">Discover</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {discoverNetworks.map((ng) => (
+                    <div key={ng.id}>
+                      <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
+                      {openNetworkId === ng.id && (
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
+                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
+                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
+                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
+                          <p>{ng.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Network className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">What is a Network?</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A Network is a curated, interactive space you own and manage — not a social feed. Use it to organize vetted parties by geography, industry, or trade corridor. Members can be invited, given roles, and reused across your trades. Networks are private or invite-only by default.
+              </p>
+            </div>
           </TabsContent>
 
+          {/* Matchmaking */}
           <TabsContent value="matchmaking" className="mt-4" data-testid="panel-matchmaking">
-            <TBCard
-              title="Matchmaking"
-              subtitle="Get paired with partners who can execute"
-              state="ready"
-              icon={<Sparkles className="h-4 w-4" />}
-              dataTestId="card-matchmaking"
-            >
-              <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { name: "Forwarder in VN", note: "SEA corridor, verified" },
-                  { name: "LC advising bank", note: "SG-based, fast settlement" },
-                  { name: "Cargo insurer", note: "Evidence-first policy" },
-                  { name: "Trade finance desk", note: "Invoice factoring" },
-                ].map((m) => (
-                  <div
-                    key={m.name}
-                    className="rounded-2xl border bg-background/60 p-4"
-                    data-testid={`card-match-${m.name
-                      .replace(/\s+/g, "-")
-                      .toLowerCase()}`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium">{m.name}</div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {m.note}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="h-8"
-                        data-testid={`button-request-${m.name
-                          .replace(/\s+/g, "-")
-                          .toLowerCase()}`}
-                      >
-                        Request
-                      </Button>
-                    </div>
-                  </div>
+            <TBCard title="Matchmaking" subtitle="Intelligence-driven party discovery — matched to your trade requirements"
+              state="ready" icon={<Sparkles className="h-4 w-4" />} dataTestId="card-matchmaking">
+              <div className="mb-4 rounded-2xl border bg-background/60 p-3.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Matching criteria</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {["SEA corridor", "LC-based funding", "Agri commodities", "Verified only", "Fast onboarding"].map((c) => (
+                    <span key={c} className="rounded-full border bg-primary/8 border-primary/15 text-primary px-2.5 py-1 text-[11px] font-medium">{c}</span>
+                  ))}
+                  <button className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-background transition-colors">+ Edit criteria</button>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {MATCH_SUGGESTIONS.map((match) => (
+                  <MatchCard key={match.id} match={match}
+                    onRequest={(id) => setRequestedMatches((prev) => new Set(prev).add(id))}
+                    requested={requestedMatches.has(match.id)} />
                 ))}
               </div>
-              <div
-                className="mt-4 rounded-2xl border bg-background/60 p-4"
-                data-testid="callout-private-default"
-              >
+              <div className="mt-5 rounded-2xl border bg-background/60 p-4" data-testid="callout-matchmaking-privacy">
                 <div className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
-                  <div className="text-sm font-medium">Private-by-default</div>
+                  <span className="text-sm font-medium">Intent-based, not data-exhaust</span>
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  Matchmaking uses your intent signals—not your data exhaust. You control what's shared.
-                </div>
-              </div>
-            </TBCard>
-          </TabsContent>
-
-          <TabsContent value="challenges" className="mt-4" data-testid="panel-challenges">
-            <TBCard
-              title="Challenges"
-              subtitle="Turn readiness into a competitive edge"
-              state="idle"
-              icon={<Swords className="h-4 w-4" />}
-              dataTestId="card-challenges"
-            >
-              <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { title: "KYC completeness", reward: "Faster onboarding" },
-                  { title: "Evidence hygiene", reward: "Lower counterparty friction" },
-                  { title: "Compliance clean runs", reward: "Higher trust tier" },
-                  { title: "Settlement speed", reward: "Lower fees" },
-                ].map((c) => (
-                  <div
-                    key={c.title}
-                    className="rounded-2xl border bg-background/60 p-4"
-                    data-testid={`card-challenge-${c.title
-                      .replace(/\s+/g, "-")
-                      .toLowerCase()}`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium">{c.title}</div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          Reward: {c.reward}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-8"
-                        data-testid={`button-view-${c.title
-                          .replace(/\s+/g, "-")
-                          .toLowerCase()}`}
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Matchmaking uses your trade intent signals — corridor, role needs, funding structure — not your raw data. You control what is shared, and matches are always opt-in.
+                </p>
               </div>
             </TBCard>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Create Network Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Create Network</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Network Name</label>
-                <input
-                  data-testid="input-network-name"
-                  type="text"
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
-                  placeholder="Enter network name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Description</label>
-                <textarea
-                  data-testid="input-network-description"
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
-                  rows={3}
-                  placeholder="Optional description"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  data-testid="button-cancel-create"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 bg-card text-foreground border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  data-testid="button-confirm-create"
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Join Network Modal */}
-      {showJoinModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowJoinModal(false)}>
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Join Network</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">Invitation Code</label>
-                <input
-                  data-testid="input-invitation-code"
-                  type="text"
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50"
-                  placeholder="Enter invitation code"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  data-testid="button-cancel-join"
-                  onClick={() => setShowJoinModal(false)}
-                  className="flex-1 px-4 py-2 bg-card text-foreground border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  data-testid="button-confirm-join"
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Join
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editingPartner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
-            className="absolute inset-0 bg-black/50" 
-            onClick={() => setEditingPartner(null)}
-          />
-          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Edit Partner</h3>
-              <button
-                onClick={() => setEditingPartner(null)}
-                className="p-1 rounded-lg hover:bg-accent"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="text-sm text-muted-foreground mb-4">
-              Update <span className="font-medium text-foreground">{editingPartner.name}</span>
-            </div>
-            
-            <div className="mb-4">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Can act as:</div>
-              <div className="flex flex-wrap gap-2">
-                {CAN_ACT_AS_ROLES.map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => handleToggleCanActAs(role)}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                      editCanActAs.includes(role)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-accent"
-                    }`}
-                    data-testid={`role-chip-${role.toLowerCase()}`}
-                  >
-                    {editCanActAs.includes(role) && <Check className="w-3 h-3 inline mr-1" />}
-                    {role}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Services:</div>
-              <div className="flex flex-wrap gap-2">
-                {SERVICE_CAPABILITIES.map((cap) => (
-                  <button
-                    key={cap}
-                    onClick={() => handleToggleCapability(cap)}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                      editCapabilities.includes(cap)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-accent"
-                    }`}
-                    data-testid={`cap-chip-${cap.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    {editCapabilities.includes(cap) && <Check className="w-3 h-3 inline mr-1" />}
-                    {cap}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setEditingPartner(null)}
-                data-testid="button-cancel-capability-edit"
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleSaveCapabilities}
-                data-testid="button-save-capabilities"
-              >
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <AnimatePresence>
+        {editingPartner && (
+          <CapabilityEditModal partner={editingPartner} capabilities={editCapabilities} canActAs={editCanActAs}
+            onToggleCapability={handleToggleCapability} onToggleRole={handleToggleCanActAs}
+            onSave={handleSaveCapabilities} onClose={() => setEditingPartner(null)} />
+        )}
+        {showAddModal && <AddPartyModal onAdd={handleAddParty} onClose={() => setShowAddModal(false)} />}
+        {showInviteModal && <InviteModal onSend={handleSendInvite} onClose={() => setShowInviteModal(false)} />}
+        {showCreateNetworkModal && <CreateNetworkModal onCreate={handleCreateNetwork} onClose={() => setShowCreateNetworkModal(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
