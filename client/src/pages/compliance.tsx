@@ -177,7 +177,7 @@ function CBAMPanel() {
             electricity, hydrogen</strong>.
           </p>
           <p className="text-xs">
-            Transitional period: Oct 2023 – Dec 2025 (reporting only). Full obligations from 1 Jan 2026.
+            Transitional period: Oct 2023 – Dec 2025 (reporting only). Full obligations in effect from 1 Jan 2026.
           </p>
         </div>
       </TBCard>
