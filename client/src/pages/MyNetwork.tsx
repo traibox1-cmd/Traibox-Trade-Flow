@@ -38,7 +38,7 @@ import {
   CreditCard,
   Upload,
 } from "lucide-react";
-import { useAppStore, type Partner, type PartnerRole, ALL_PARTNER_ROLES, type NetworkGroup } from "@/lib/store";
+import { useAppStore, type Partner, type PartnerRole, ALL_PARTNER_ROLES, type NetworkGroup, type PartnerInviteStatus, type Match, type MatchSignal } from "@/lib/store";
 
 // --- Helpers ---
 
@@ -213,16 +213,73 @@ function NetworkGroupCard({ ng, onJoin, onOpen }: { ng: NetworkGroup; onJoin: (i
 
 // --- Match Suggestions ---
 
-const MATCH_SUGGESTIONS = [
-  { id: "m1", name: "Forwarder in Vietnam", reason: "Matched to your SEA corridor requirements", fit: "98%", tags: ["SEA", "Verified", "Fast onboarding"], role: "Logistics" as PartnerRole },
-  { id: "m2", name: "LC Advising Bank – Singapore", reason: "Matches your funding structure (LC) and corridor", fit: "95%", tags: ["Finance", "SG-based", "Rapid issuance"], role: "Financier" as PartnerRole },
-  { id: "m3", name: "Cargo Insurer – Lloyd's Syndicate", reason: "Evidence-first policy aligned with your compliance stance", fit: "91%", tags: ["Insurance", "Evidence-ready", "EU corridors"], role: "Insurance" as PartnerRole },
-  { id: "m4", name: "East Africa Customs Broker", reason: "Specialist in Kenya import clearance", fit: "89%", tags: ["Africa", "Customs", "Trade docs"], role: "Customs" as PartnerRole },
-  { id: "m5", name: "Commodity Aggregator – West Africa", reason: "Operates in your target sourcing corridor", fit: "84%", tags: ["Africa", "Agri", "Aggregation"], role: "Supplier" as PartnerRole },
-  { id: "m6", name: "Invoice Factoring Desk – LATAM", reason: "Available for LATAM receivables on short-cycle trades", fit: "80%", tags: ["Finance", "LATAM", "Factoring"], role: "Financier" as PartnerRole },
+const MATCH_SUGGESTIONS: Match[] = [
+  {
+    id: "m1", name: "Forwarder in Vietnam", reason: "Matched to your SEA corridor requirements", fitScore: "98%",
+    tags: ["SEA", "Verified", "Fast onboarding"], role: "Logistics" as PartnerRole,
+    signals: [
+      { label: "Operates in your active SEA corridor", strength: "strong" },
+      { label: "Verified identity and Trade Passport", strength: "strong" },
+      { label: "3 shared network memberships", strength: "moderate" },
+    ],
+    unknowns: ["No direct trade history with your workspace"],
+    suggestedActions: ["Invite to trade", "Request introduction", "View profile"],
+  },
+  {
+    id: "m2", name: "LC Advising Bank – Singapore", reason: "Matches your funding structure (LC) and corridor", fitScore: "95%",
+    tags: ["Finance", "SG-based", "Rapid issuance"], role: "Financier" as PartnerRole,
+    signals: [
+      { label: "Specializes in LC issuance for SEA trades", strength: "strong" },
+      { label: "Active in your target corridor", strength: "strong" },
+      { label: "Compliance-ready with full Trade Passport", strength: "moderate" },
+    ],
+    unknowns: ["Rate competitiveness not yet assessed"],
+    suggestedActions: ["Invite to trade", "Request readiness documents", "Compare matches"],
+  },
+  {
+    id: "m3", name: "Cargo Insurer – Lloyd's Syndicate", reason: "Evidence-first policy aligned with your compliance stance", fitScore: "91%",
+    tags: ["Insurance", "Evidence-ready", "EU corridors"], role: "Insurance" as PartnerRole,
+    signals: [
+      { label: "EU corridor coverage matches your activity", strength: "strong" },
+      { label: "Evidence-first underwriting model", strength: "moderate" },
+    ],
+    unknowns: ["Premium pricing not yet compared", "Africa corridor coverage unconfirmed"],
+    suggestedActions: ["Invite to trade", "Add to network", "Request introduction"],
+  },
+  {
+    id: "m4", name: "East Africa Customs Broker", reason: "Specialist in Kenya import clearance", fitScore: "89%",
+    tags: ["Africa", "Customs", "Trade docs"], role: "Customs" as PartnerRole,
+    signals: [
+      { label: "Specialist in Kenya customs clearance", strength: "strong" },
+      { label: "Trusted by 12 network members", strength: "moderate" },
+    ],
+    unknowns: ["Trade Passport partially complete", "Limited digital integration"],
+    suggestedActions: ["Invite to trade", "View profile", "Request readiness documents"],
+  },
+  {
+    id: "m5", name: "Commodity Aggregator – West Africa", reason: "Operates in your target sourcing corridor", fitScore: "84%",
+    tags: ["Africa", "Agri", "Aggregation"], role: "Supplier" as PartnerRole,
+    signals: [
+      { label: "Active in West Africa agricultural sourcing", strength: "moderate" },
+      { label: "Connected to 2 existing partners", strength: "weak" },
+    ],
+    unknowns: ["No Trade Passport on file", "Compliance status unverified"],
+    suggestedActions: ["Request introduction", "View profile", "Save for later"],
+  },
+  {
+    id: "m6", name: "Invoice Factoring Desk – LATAM", reason: "Available for LATAM receivables on short-cycle trades", fitScore: "80%",
+    tags: ["Finance", "LATAM", "Factoring"], role: "Financier" as PartnerRole,
+    signals: [
+      { label: "LATAM receivables specialist", strength: "moderate" },
+      { label: "Verified identity", strength: "moderate" },
+    ],
+    unknowns: ["No shared network memberships", "Factoring terms not yet disclosed"],
+    suggestedActions: ["Invite to trade", "Request introduction", "Compare matches"],
+  },
 ];
 
-function MatchCard({ match, onRequest, requested }: { match: (typeof MATCH_SUGGESTIONS)[0]; onRequest: (id: string) => void; requested: boolean; }) {
+function MatchCard({ match, onRequest, requested }: { match: Match; onRequest: (id: string) => void; requested: boolean; }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
       className="rounded-2xl border bg-card/60 p-4 hover:bg-card transition-colors" data-testid={`card-match-${match.id}`}>
@@ -231,24 +288,75 @@ function MatchCard({ match, onRequest, requested }: { match: (typeof MATCH_SUGGE
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium">{match.name}</span>
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/15 text-primary px-2 py-0.5 text-[10px] font-medium">
-              <Zap className="h-2.5 w-2.5" />{match.fit} fit
+              <Zap className="h-2.5 w-2.5" />{match.fitScore} fit
             </span>
+            <span className="inline-flex items-center gap-1 rounded-full border bg-background/60 px-2 py-0.5 text-[10px]">{match.role}</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{match.reason}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {match.tags.map((tag) => <span key={tag} className="rounded-full border bg-background/60 px-2 py-0.5 text-[10px]">{tag}</span>)}
           </div>
         </div>
-        {requested ? (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 shrink-0">
-            <CheckCircle2 className="h-3.5 w-3.5" />Requested
-          </span>
-        ) : (
-          <Button size="sm" className="h-8 shrink-0" onClick={() => onRequest(match.id)} data-testid={`button-request-${match.id}`}>
-            Request<ArrowRight className="ml-1 h-3 w-3" />
-          </Button>
-        )}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {requested ? (
+            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />Requested
+            </span>
+          ) : (
+            <Button size="sm" className="h-8" onClick={() => onRequest(match.id)} data-testid={`button-request-${match.id}`}>
+              Request<ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
+          )}
+          <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors" data-testid={`button-explain-${match.id}`}>
+            {expanded ? "Hide details" : "Why this match?"}
+          </button>
+        </div>
       </div>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+            className="overflow-hidden" data-testid={`panel-match-explain-${match.id}`}>
+            <div className="mt-3 pt-3 border-t space-y-3">
+              {/* Signals */}
+              <div>
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Supporting signals</div>
+                <div className="space-y-1">
+                  {match.signals.map((signal, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${signal.strength === "strong" ? "bg-emerald-500" : signal.strength === "moderate" ? "bg-amber-500" : "bg-muted-foreground/40"}`} />
+                      <span>{signal.label}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">({signal.strength})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Unknowns */}
+              {match.unknowns.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Still unknown</div>
+                  <div className="space-y-1">
+                    {match.unknowns.map((u, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
+                        {u}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Suggested Actions */}
+              <div>
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Suggested actions</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {match.suggestedActions.map((action) => (
+                    <span key={action} className="rounded-full border bg-primary/5 border-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-primary/10 transition-colors">{action}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -364,17 +472,30 @@ function AddPartyModal({ onAdd, onClose }: { onAdd: (name: string, region: strin
 
 // --- Create Network Modal ---
 
-function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, theme: NetworkGroup["theme"], description: string, tags: string[]) => void; onClose: () => void; }) {
+type CreateNetworkOptions = {
+  name: string;
+  theme: NetworkGroup["theme"];
+  description: string;
+  tags: string[];
+  purpose: string;
+  regionScope: string;
+  governanceMode: NetworkGroup["governanceMode"];
+};
+
+function CreateNetworkModal({ onCreate, onClose }: { onCreate: (options: CreateNetworkOptions) => void; onClose: () => void; }) {
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<NetworkGroup["theme"]>("geography");
   const [description, setDescription] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [regionScope, setRegionScope] = useState("");
+  const [governanceMode, setGovernanceMode] = useState<NonNullable<NetworkGroup["governanceMode"]>>("invite-only");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const addTag = () => { const t = tagInput.trim(); if (t && !tags.includes(t)) { setTags([...tags, t]); setTagInput(""); } };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-create-network">
       <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
-        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-5">
           <div><h3 className="font-semibold">Create Network</h3><p className="text-xs text-muted-foreground mt-0.5">Build a curated, ownable mini-marketplace</p></div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
@@ -385,6 +506,14 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. US Wine Market Network" data-testid="input-network-name" />
           </div>
           <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Purpose</label>
+            <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="e.g. Market entry, sourcing, partnerships" data-testid="input-network-purpose" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Region / Scope</label>
+            <Input value={regionScope} onChange={(e) => setRegionScope(e.target.value)} placeholder="e.g. Latin America, EU–Africa corridor" data-testid="input-network-region" />
+          </div>
+          <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1.5">Theme</label>
             <div className="grid grid-cols-2 gap-2">
               {(["geography", "industry", "corridor", "custom"] as NetworkGroup["theme"][]).map((t) => (
@@ -392,6 +521,18 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
                   className={`flex items-center gap-2 rounded-xl border p-2.5 text-[11px] capitalize transition-colors ${theme === t ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
                   data-testid={`button-theme-${t}`}>
                   {themeIcon(t)}{t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Governance</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["private", "invite-only", "partner-approved", "selectively-open"] as NonNullable<NetworkGroup["governanceMode"]>[]).map((g) => (
+                <button key={g} onClick={() => setGovernanceMode(g)}
+                  className={`rounded-xl border p-2 text-[11px] capitalize transition-colors ${governanceMode === g ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`button-governance-${g}`}>
+                  {g}
                 </button>
               ))}
             </div>
@@ -422,7 +563,7 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
           <Button className="h-9" disabled={!name.trim()}
-            onClick={() => { if (name.trim()) { onCreate(name.trim(), theme, description.trim(), tags); onClose(); } }}
+            onClick={() => { if (name.trim()) { onCreate({ name: name.trim(), theme, description: description.trim(), tags, purpose: purpose.trim(), regionScope: regionScope.trim(), governanceMode }); onClose(); } }}
             data-testid="button-confirm-create-network">
             <Network className="mr-2 h-4 w-4" />Create Network
           </Button>
@@ -434,16 +575,26 @@ function CreateNetworkModal({ onCreate, onClose }: { onCreate: (name: string, th
 
 // --- Invite Modal ---
 
-function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string, message: string) => void; onClose: () => void; }) {
+type SendInviteOptions = {
+  name: string;
+  email: string;
+  message: string;
+  scope: 'platform' | 'trade' | 'network';
+  role?: PartnerRole;
+};
+
+function InviteModal({ onSend, onClose }: { onSend: (options: SendInviteOptions) => void; onClose: () => void; }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [scope, setScope] = useState<'platform' | 'trade' | 'network'>("platform");
+  const [selectedRole, setSelectedRole] = useState<PartnerRole | undefined>();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" data-testid="modal-invite">
       <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
-        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4">
+        className="relative w-full max-w-md rounded-3xl border bg-card shadow-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-5">
-          <div><h3 className="font-semibold">Send invitation</h3><p className="text-xs text-muted-foreground mt-0.5">Invite a party into TRAIBOX</p></div>
+          <div><h3 className="font-semibold">Send invitation</h3><p className="text-xs text-muted-foreground mt-0.5">Invite a party into TRAIBOX, a trade, or a network</p></div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
         </div>
         <div className="space-y-4">
@@ -456,6 +607,29 @@ function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ops@example.com" data-testid="input-invite-email" />
           </div>
           <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Invitation scope</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["platform", "trade", "network"] as const).map((s) => (
+                <button key={s} onClick={() => setScope(s)}
+                  className={`rounded-xl border py-2 text-[11px] capitalize transition-colors ${scope === s ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`button-scope-${s}`}>{s === "platform" ? "TRAIBOX" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Assigned role (optional)</label>
+            <div className="flex flex-wrap gap-1.5">
+              {ALL_PARTNER_ROLES.map((role) => (
+                <button key={role} onClick={() => setSelectedRole(selectedRole === role ? undefined : role)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors ${selectedRole === role ? "bg-primary border-primary/40 text-primary-foreground" : "bg-background/60 hover:bg-background"}`}
+                  data-testid={`button-invite-role-${role}`}>
+                  {roleIcon(role)}{role}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1.5">Optional message</label>
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Why are you inviting them?"
               className="w-full rounded-xl border bg-background/60 px-3 py-2 text-sm resize-none h-20 outline-none focus:ring-1 focus:ring-primary/30"
@@ -465,7 +639,7 @@ function InviteModal({ onSend, onClose }: { onSend: (name: string, email: string
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="ghost" className="h-9" onClick={onClose}>Cancel</Button>
           <Button className="h-9" disabled={!name.trim() || !email.trim()}
-            onClick={() => { if (name.trim() && email.trim()) { onSend(name.trim(), email.trim(), message.trim()); onClose(); } }}
+            onClick={() => { if (name.trim() && email.trim()) { onSend({ name: name.trim(), email: email.trim(), message: message.trim(), scope, role: selectedRole }); onClose(); } }}
             data-testid="button-confirm-invite">
             <Send className="mr-2 h-4 w-4" />Send invitation
           </Button>
@@ -528,12 +702,12 @@ export default function MyNetwork() {
     }));
   };
 
-  const handleSendInvite = (name: string, email: string, message: string) => {
-    addPartnerInvite({ partnerName: name, email, status: "sent", direction: "sent", scope: "network", message: message || undefined });
+  const handleSendInvite = ({ name, email, message, scope, role }: SendInviteOptions) => {
+    addPartnerInvite({ partnerName: name, email, status: "sent", direction: "sent", scope, assignedRole: role, message: message || undefined });
   };
 
-  const handleCreateNetwork = (name: string, theme: NetworkGroup["theme"], description: string, tags: string[]) => {
-    addNetworkGroup({ name, theme, description, tags, memberCount: 1, visibility: "invite-only", isOwner: true, isMember: true });
+  const handleCreateNetwork = ({ name, theme, description, tags, purpose, regionScope, governanceMode }: CreateNetworkOptions) => {
+    addNetworkGroup({ name, theme, description, purpose: purpose || undefined, regionScope: regionScope || undefined, tags, memberCount: 1, visibility: governanceMode === "private" ? "private" : governanceMode === "selectively-open" ? "open" : "invite-only", governanceMode, isOwner: true, isMember: true });
   };
 
   const filteredAll = useMemo(() => {
@@ -686,7 +860,30 @@ export default function MyNetwork() {
                 </div>
               ) : (
                 <div className="grid gap-3">
-                  {counterparties.map((p) => <PartyCard key={p.id} p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />)}
+                  {counterparties.map((p) => (
+                    <div key={p.id} className="space-y-0">
+                      <PartyCard p={p} onConnect={handleConnect} onEditCapabilities={handleOpenCapabilityEdit} />
+                      {/* Trade Passport Summary Strip */}
+                      <div className="mx-2 rounded-b-xl border border-t-0 bg-background/40 px-3 py-2 flex items-center gap-3" data-testid={`strip-passport-${p.id}`}>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Shield className="h-3 w-3 text-primary" />
+                          <span className="font-medium text-muted-foreground">Trade Passport</span>
+                        </div>
+                        {p.tradePassportReady ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <BadgeCheck className="h-3 w-3" />Ready
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400">
+                            <Clock className="h-3 w-3" />Incomplete
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          {p.trust === "verified" ? "Identity verified" : p.trust === "partner" ? "Partner-level trust" : "Not yet verified"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4">
@@ -757,7 +954,14 @@ export default function MyNetwork() {
                               <div className="font-medium text-sm">{invite.partnerName}</div>
                               <div className="text-xs text-muted-foreground mt-0.5">{invite.email}</div>
                               {invite.message && <p className="mt-1.5 text-xs text-muted-foreground italic">"{invite.message}"</p>}
-                              {invite.scope && <span className="mt-1.5 inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope}</span>}
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {invite.scope && <span className="inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope === "platform" ? "TRAIBOX" : invite.scope}</span>}
+                                {invite.assignedRole && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">
+                                    {roleIcon(invite.assignedRole)}{invite.assignedRole}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {accepted ? (
                               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -797,19 +1001,29 @@ export default function MyNetwork() {
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {sentInvites.map((invite) => (
-                      <div key={invite.id} className="rounded-2xl border bg-background/60 p-3" data-testid={`card-sent-invite-${invite.id}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="font-medium text-sm">{invite.partnerName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{invite.email}</div>
-                            {invite.scope && <span className="mt-1.5 inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope}</span>}
+                    {sentInvites.map((invite) => {
+                      const statusTone = invite.status === "accepted" ? "success" : invite.status === "declined" || invite.status === "expired" || invite.status === "revoked" ? "error" : "neutral";
+                      return (
+                        <div key={invite.id} className="rounded-2xl border bg-background/60 p-3" data-testid={`card-sent-invite-${invite.id}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm">{invite.partnerName}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">{invite.email}</div>
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {invite.scope && <span className="inline-block rounded-full border bg-background px-2 py-0.5 text-[10px] capitalize">{invite.scope === "platform" ? "TRAIBOX" : invite.scope}</span>}
+                                {invite.assignedRole && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">
+                                    {roleIcon(invite.assignedRole)}{invite.assignedRole}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <TBChip tone={statusTone}
+                              dataTestId={`chip-invite-status-${invite.id}`}>{invite.status}</TBChip>
                           </div>
-                          <TBChip tone={invite.status === "accepted" ? "success" : invite.status === "declined" ? "error" : "neutral"}
-                            dataTestId={`chip-invite-status-${invite.id}`}>{invite.status}</TBChip>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <Button variant="outline" size="sm" className="h-8" onClick={() => setShowInviteModal(true)} data-testid="button-send-another-invite">
                       <UserPlus className="mr-2 h-3.5 w-3.5" />Send another
                     </Button>
@@ -823,7 +1037,7 @@ export default function MyNetwork() {
                 <span className="text-sm font-medium">Invitation model</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Invitations are always intentional and scoped — to a trade, a Network, or the platform. They can be revoked at any time. Acceptance does not grant access to your data.
+                Invitations are contextual and scoped — to TRAIBOX, a trade, or a Network. They support role assignment, can be revoked at any time, and progress through clear states: draft → sent → viewed → accepted / declined / expired / revoked. Acceptance does not grant access to your data.
               </p>
             </div>
           </TabsContent>
@@ -846,11 +1060,24 @@ export default function MyNetwork() {
                     <div key={ng.id}>
                       <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
                       {openNetworkId === ng.id && (
-                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
-                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
-                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
-                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
-                          <p>{ng.description}</p>
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs space-y-3" data-testid={`panel-network-detail-${ng.id}`}>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><span className="font-medium text-foreground block mb-0.5">Theme</span><span className="text-muted-foreground capitalize">{ng.theme}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Visibility</span><span className="text-muted-foreground capitalize">{ng.visibility}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Members</span><span className="text-muted-foreground">{ng.memberCount}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Governance</span><span className="text-muted-foreground capitalize">{ng.governanceMode ?? ng.visibility}</span></div>
+                          </div>
+                          {ng.purpose && <div><span className="font-medium text-foreground block mb-0.5">Purpose</span><span className="text-muted-foreground">{ng.purpose}</span></div>}
+                          {ng.regionScope && <div><span className="font-medium text-foreground block mb-0.5">Region / Scope</span><span className="text-muted-foreground">{ng.regionScope}</span></div>}
+                          <div><span className="font-medium text-foreground block mb-0.5">Description</span><span className="text-muted-foreground">{ng.description}</span></div>
+                          <div className="pt-2 border-t">
+                            <span className="font-medium text-foreground block mb-1">Ecosystem actions</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="rounded-full border bg-primary/5 border-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-primary/10 transition-colors">Invite members</span>
+                              <span className="rounded-full border bg-primary/5 border-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-primary/10 transition-colors">Discover participants</span>
+                              <span className="rounded-full border bg-primary/5 border-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-primary/10 transition-colors">View trust profile</span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -866,11 +1093,16 @@ export default function MyNetwork() {
                     <div key={ng.id}>
                       <NetworkGroupCard ng={ng} onJoin={joinNetworkGroup} onOpen={(n) => setOpenNetworkId(openNetworkId === n.id ? null : n.id)} />
                       {openNetworkId === ng.id && (
-                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs text-muted-foreground space-y-1.5">
-                          <p><span className="font-medium text-foreground">Theme:</span> {ng.theme}</p>
-                          <p><span className="font-medium text-foreground">Visibility:</span> {ng.visibility}</p>
-                          <p><span className="font-medium text-foreground">Members:</span> {ng.memberCount}</p>
-                          <p>{ng.description}</p>
+                        <div className="mt-2 rounded-2xl border bg-background/60 p-4 text-xs space-y-3" data-testid={`panel-network-detail-${ng.id}`}>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><span className="font-medium text-foreground block mb-0.5">Theme</span><span className="text-muted-foreground capitalize">{ng.theme}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Visibility</span><span className="text-muted-foreground capitalize">{ng.visibility}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Members</span><span className="text-muted-foreground">{ng.memberCount}</span></div>
+                            <div><span className="font-medium text-foreground block mb-0.5">Governance</span><span className="text-muted-foreground capitalize">{ng.governanceMode ?? ng.visibility}</span></div>
+                          </div>
+                          {ng.purpose && <div><span className="font-medium text-foreground block mb-0.5">Purpose</span><span className="text-muted-foreground">{ng.purpose}</span></div>}
+                          {ng.regionScope && <div><span className="font-medium text-foreground block mb-0.5">Region / Scope</span><span className="text-muted-foreground">{ng.regionScope}</span></div>}
+                          <div><span className="font-medium text-foreground block mb-0.5">Description</span><span className="text-muted-foreground">{ng.description}</span></div>
                         </div>
                       )}
                     </div>
@@ -884,7 +1116,7 @@ export default function MyNetwork() {
                 <span className="text-sm font-medium">What is a Network?</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                A Network is a curated, interactive space you own and manage — not a social feed. Use it to organize vetted parties by geography, industry, or trade corridor. Members can be invited, given roles, and reused across your trades. Networks are private or invite-only by default.
+                A Network is a curated, interactive space you own and manage — not a social feed. Use it to organize vetted parties by geography, industry, or trade corridor. Members can be invited, given roles, and reused across your trades. Networks support governance modes (private, invite-only, partner-approved, selectively open) and function as controlled mini-marketplaces for real business use.
               </p>
             </div>
           </TabsContent>
