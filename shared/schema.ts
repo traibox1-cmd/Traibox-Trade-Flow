@@ -1,14 +1,57 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, numeric, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, numeric, jsonb, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const orgs = pgTable("orgs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  country: text("country"),
+  legalName: text("legal_name"),
+  taxId: text("tax_id"),
+  addressJson: jsonb("address_json"),
+  onboardingStatus: text("onboarding_status").notNull().default("demo_active"),
+  demoSeeded: boolean("demo_seeded").notNull().default(false),
+  financePolicyJson: jsonb("finance_policy_json"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email"),
-  role: text("role").notNull().default("operator"),
+  orgId: varchar("org_id").notNull().references(() => orgs.id),
+  email: text("email").notNull(),
+  name: text("name"),
+  role: text("role").notNull().default("ops"),
+  passwordHash: text("password_hash").notNull(),
+  onboardingStatus: text("onboarding_status").notNull().default("quick_complete"),
+  lastLoginAt: timestamp("last_login_at"),
+  twoFactorSecret: text("two_factor_secret"),
+  isTwoFactorEnabled: boolean("is_two_factor_enabled").notNull().default(false),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [uniqueIndex("users_org_email_idx").on(table.orgId, table.email)]);
+
+export const invites = pgTable("invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orgId: varchar("org_id").notNull().references(() => orgs.id),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("finance"),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orgId: varchar("org_id"),
+  userId: varchar("user_id"),
+  action: text("action").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const conversations = pgTable("conversations", {
@@ -79,11 +122,29 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const insertOrgSchema = createInsertSchema(orgs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
   email: true,
+  name: true,
   role: true,
+  passwordHash: true,
+  orgId: true,
+  onboardingStatus: true,
+});
+
+export const insertInviteSchema = createInsertSchema(invites).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).pick({
@@ -122,8 +183,14 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   createdAt: true,
 });
 
+export type Org = typeof orgs.$inferSelect;
+export type InsertOrg = z.infer<typeof insertOrgSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type Invite = typeof invites.$inferSelect;
+export type InsertInvite = z.infer<typeof insertInviteSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;

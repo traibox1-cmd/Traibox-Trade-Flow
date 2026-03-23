@@ -15,6 +15,12 @@ import {
   type InsertDocument,
   type ChatMessage,
   type InsertChatMessage,
+  type Org,
+  type InsertOrg,
+  type AuditLog,
+  type InsertAuditLog,
+  type Invite,
+  type InsertInvite,
   users,
   conversations,
   messages,
@@ -23,6 +29,9 @@ import {
   tradeParties,
   documents,
   chatMessages,
+  orgs,
+  invites,
+  auditLogs,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -30,8 +39,24 @@ import { eq, desc, isNull, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, data: Partial<Omit<User, "id" | "createdAt">>): Promise<User | undefined>;
+
+  // Orgs
+  getOrg(id: string): Promise<Org | undefined>;
+  createOrg(data: InsertOrg): Promise<Org>;
+  updateOrg(id: string, data: Partial<InsertOrg>): Promise<Org | undefined>;
+
+  // Invites
+  createInvite(data: InsertInvite): Promise<Invite>;
+  getInviteByToken(tokenHash: string): Promise<Invite | undefined>;
+  acceptInvite(id: string): Promise<void>;
+
+  // Audit
+  createAuditLog(data: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(orgId: string): Promise<AuditLog[]>;
   
   createConversation(data: InsertConversation): Promise<Conversation>;
   getConversation(id: string): Promise<Conversation | undefined>;
@@ -72,14 +97,75 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.resetPasswordToken, token));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user!;
+  }
+
+  async updateUser(id: string, data: Partial<Omit<User, "id" | "createdAt">>): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // Orgs
+  async getOrg(id: string): Promise<Org | undefined> {
+    const [org] = await db.select().from(orgs).where(eq(orgs.id, id));
+    return org;
+  }
+
+  async createOrg(data: InsertOrg): Promise<Org> {
+    const [org] = await db.insert(orgs).values(data).returning();
+    return org!;
+  }
+
+  async updateOrg(id: string, data: Partial<InsertOrg>): Promise<Org | undefined> {
+    const [org] = await db.update(orgs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(orgs.id, id))
+      .returning();
+    return org;
+  }
+
+  // Invites
+  async createInvite(data: InsertInvite): Promise<Invite> {
+    const [invite] = await db.insert(invites).values(data).returning();
+    return invite!;
+  }
+
+  async getInviteByToken(tokenHash: string): Promise<Invite | undefined> {
+    const [invite] = await db.select().from(invites).where(eq(invites.tokenHash, tokenHash));
+    return invite;
+  }
+
+  async acceptInvite(id: string): Promise<void> {
+    await db.update(invites)
+      .set({ acceptedAt: new Date() })
+      .where(eq(invites.id, id));
+  }
+
+  // Audit
+  async createAuditLog(data: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await db.insert(auditLogs).values(data).returning();
+    return log!;
+  }
+
+  async getAuditLogs(orgId: string): Promise<AuditLog[]> {
+    return db.select().from(auditLogs)
+      .where(eq(auditLogs.orgId, orgId))
+      .orderBy(desc(auditLogs.createdAt));
   }
 
   async createConversation(data: InsertConversation): Promise<Conversation> {

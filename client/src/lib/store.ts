@@ -123,15 +123,145 @@ export type TimelineEvent = {
   createdAt: Date;
 };
 
+// ── Compliance v5.0 Types ──────────────────────────────────────────
+
+export type ComplianceCheckType =
+  | 'KYC' | 'KYB' | 'SANCTIONS' | 'PEP' | 'ADVERSE_MEDIA'
+  | 'EXPORT' | 'JURISDICTION' | 'ESG' | 'CBAM' | 'AML' | 'INCOTERMS';
+
+export type ComplianceCheckStatus = 'pass' | 'warn' | 'fail';
+
+export type ComplianceOverall = 'passed' | 'warnings' | 'failed';
+
+export type OperationalStatus = 'clear' | 'warning' | 'blocked' | 'missing' | 'expiring';
+
+export type ComplianceCheck = {
+  type: ComplianceCheckType;
+  status: ComplianceCheckStatus;
+  score?: number | null;
+  reasons: string[];
+  provider?: string | null;
+  provider_ref?: string | null;
+  updated_at: string;
+};
+
 export type ComplianceRun = {
   id: string;
   tradeId: string;
   targetEntity: string;
-  checks: string[];
-  status: 'pending' | 'running' | 'passed' | 'failed';
-  findings: { type: 'pass' | 'warn' | 'fail'; message: string }[];
+  checks: ComplianceCheck[];
+  overall: ComplianceOverall;
+  operational_status: OperationalStatus;
+  risk_level: 'low' | 'medium' | 'high';
+  next_actions: string[];
+  requirements_pending: number;
+  report_url: string;
+  trace_id: string;
   createdAt: Date;
 };
+
+export type RequirementState =
+  | 'required_now' | 'required_soon' | 'optional_recommended'
+  | 'blocked_until_resolved' | 'expired' | 'completed';
+
+export type RequirementPriority = 'blocking' | 'high' | 'medium' | 'low';
+
+export type Requirement = {
+  id: string;
+  tradeId: string;
+  type: 'document' | 'data' | 'check' | 'approval' | 'evidence';
+  category: 'identity' | 'screening' | 'export' | 'sustainability' | 'incoterms' | 'corridor' | 'financing';
+  title: string;
+  description: string;
+  who_should_provide: string;
+  what_happens_after: string;
+  state: RequirementState;
+  priority: RequirementPriority;
+  linked_check_type?: ComplianceCheckType | null;
+  evidence_id?: string | null;
+  created_at: string;
+  resolved_at?: string | null;
+};
+
+export type ComplianceEvidence = {
+  id: string;
+  tradeId?: string | null;
+  partyId?: string | null;
+  type: 'registration' | 'kyb_doc' | 'sanctions_clearance' | 'export_license' | 'esg_cert' | 'cbam_evidence' | 'lca_carbon' | 'uop_declaration' | 'incoterm_doc' | 'other';
+  file_url: string;
+  extracted_fields?: Record<string, unknown> | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  validation_state: 'pending' | 'validated' | 'rejected' | 'expired';
+  source: string;
+  reusable: boolean;
+  created_at: string;
+};
+
+export type SustainabilityScreening = {
+  tradeId: string;
+  esg: { flags: string[]; risk_level: 'low' | 'medium' | 'high' };
+  ghg_scope3: { applicable: boolean; estimate_tco2?: number | null; confidence: 'high' | 'medium' | 'low' | 'unknown'; notes: string };
+  cbam: { in_scope: boolean; items_in_scope: { hs_code: string; category: string }[] };
+  next_actions: string[];
+  trace_id: string;
+};
+
+export type CBAMCalculation = {
+  tradeId: string;
+  in_scope: boolean;
+  items: {
+    hs_code: string;
+    category: string;
+    quantity_tonnes: number;
+    embedded_emissions_tco2: number;
+    emission_source: 'actual' | 'default' | 'mixed';
+    cbam_certificates_required?: number | null;
+    estimated_cost_eur?: number | null;
+  }[];
+  totals: {
+    total_emissions_tco2: number;
+    total_certificates?: number | null;
+    estimated_total_cost_eur?: number | null;
+  };
+  carbon_price_reference: { ets_price_eur_per_tco2: number; as_of: string };
+  reporting_obligations: string[];
+  glass_box: { reasons: string[] };
+  trace_id: string;
+};
+
+export type AuditEvent = {
+  id: string;
+  tradeId: string;
+  actor: string;
+  action: string;
+  payload: Record<string, unknown>;
+  hash: string;
+  created_at: string;
+};
+
+export type CompliancePolicy = {
+  id: string;
+  thresholds: {
+    sanctions_fail_on_match: boolean;
+    pep_warn_on_level: number;
+    export_warn_on_chapters: string[];
+  };
+  sustainability: {
+    esg_enabled: boolean;
+    cbam_enabled: boolean;
+    ghg_scope3_enabled: boolean;
+  };
+  incoterms_checks_enabled: boolean;
+  retention_days: number;
+  escalation: {
+    notify_roles: string[];
+    block_on_fail: boolean;
+  };
+};
+
+// Legacy compat: flatten to simple findings for old consumers
+export type ComplianceFinding = { type: 'pass' | 'warn' | 'fail'; message: string };
 
 export type ProofPack = {
   id: string;
@@ -246,6 +376,10 @@ type AppStore = {
   fundingRequests: FundingRequest[];
   complianceRuns: ComplianceRun[];
   proofPacks: ProofPack[];
+  requirements: Requirement[];
+  evidence: ComplianceEvidence[];
+  auditEvents: AuditEvent[];
+  compliancePolicies: CompliancePolicy[];
   partnerInvites: PartnerInvite[];
   payments: Payment[];
   partners: Partner[];
@@ -275,6 +409,11 @@ type AppStore = {
   updateFundingRequest: (id: string, updates: Partial<FundingRequest>) => void;
   addComplianceRun: (run: Omit<ComplianceRun, 'id' | 'createdAt'>) => string;
   updateComplianceRun: (id: string, updates: Partial<ComplianceRun>) => void;
+  addRequirement: (req: Omit<Requirement, 'id'>) => string;
+  resolveRequirement: (id: string, evidenceId?: string) => void;
+  addEvidence: (ev: Omit<ComplianceEvidence, 'id'>) => string;
+  removeEvidence: (id: string) => void;
+  addAuditEvent: (event: Omit<AuditEvent, 'id'>) => string;
   addProofPack: (pack: Omit<ProofPack, 'id' | 'createdAt'>) => string;
   updateProofPack: (id: string, updates: Partial<ProofPack>) => void;
   addPartnerInvite: (invite: Omit<PartnerInvite, 'id' | 'createdAt'>) => void;
@@ -494,6 +633,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   fundingRequests: [],
   complianceRuns: [],
   proofPacks: [],
+  requirements: [],
+  evidence: [],
+  auditEvents: [],
+  compliancePolicies: [],
   partnerInvites: [
     {
       id: "invite-demo-1",
@@ -635,6 +778,44 @@ export const useAppStore = create<AppStore>((set, get) => ({
         run.id === id ? { ...run, ...updates } : run
       ),
     })),
+
+  addRequirement: (req) => {
+    const id = `req-${Date.now()}`;
+    set((state) => ({
+      requirements: [...state.requirements, { ...req, id }],
+    }));
+    return id;
+  },
+
+  resolveRequirement: (id, evidenceId) =>
+    set((state) => ({
+      requirements: state.requirements.map((r) =>
+        r.id === id
+          ? { ...r, state: 'completed' as const, resolved_at: new Date().toISOString(), evidence_id: evidenceId || r.evidence_id }
+          : r
+      ),
+    })),
+
+  addEvidence: (ev) => {
+    const id = `ev-${Date.now()}`;
+    set((state) => ({
+      evidence: [...state.evidence, { ...ev, id }],
+    }));
+    return id;
+  },
+
+  removeEvidence: (id) =>
+    set((state) => ({
+      evidence: state.evidence.filter((e) => e.id !== id),
+    })),
+
+  addAuditEvent: (event) => {
+    const id = `audit-${Date.now()}`;
+    set((state) => ({
+      auditEvents: [...state.auditEvents, { ...event, id }],
+    }));
+    return id;
+  },
 
   addProofPack: (pack) => {
     const id = `proof-${Date.now()}`;
@@ -910,28 +1091,40 @@ export const useAppStore = create<AppStore>((set, get) => ({
           id: `compliance-demo-1-${now}`,
           tradeId: trade1Id,
           targetEntity: "Kijani Cooperative",
-          checks: ["Sanctions Screening", "KYC Verification", "AML Check", "PEP Screening"],
-          status: "passed",
-          findings: [
-            { type: "pass", message: "No sanctions matches found" },
-            { type: "pass", message: "KYC documents verified" },
-            { type: "warn", message: "UBO declaration expires in 30 days" },
-            { type: "pass", message: "No PEP associations detected" }
+          checks: [
+            { type: "KYB", status: "pass", provider: "provA", provider_ref: "A-9912", reasons: [], updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "SANCTIONS", status: "pass", provider: "provA", reasons: [], updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "PEP", status: "pass", provider: "provA", reasons: [], updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "EXPORT", status: "warn", reasons: ["HS 0901 flagged; confirm end-use/end-user statement"], provider: "provB", updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "ESG", status: "pass", reasons: [], updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "CBAM", status: "warn", reasons: ["Corridor to EU; product may fall under CBAM reporting"], updated_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString() },
           ],
+          overall: "warnings",
+          operational_status: "warning",
+          risk_level: "medium",
+          next_actions: ["Collect end-use statement", "Attach ESG evidence for STF"],
+          requirements_pending: 2,
+          report_url: `/reports/compliance/${trade1Id}.pdf`,
+          trace_id: "trc_cmp_demo1",
           createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
         },
         {
           id: `compliance-demo-2-${now}`,
           tradeId: trade2Id,
           targetEntity: "MedTech Solutions",
-          checks: ["Sanctions Screening", "KYC Verification", "Export License Check"],
-          status: "failed",
-          findings: [
-            { type: "pass", message: "No sanctions matches found" },
-            { type: "fail", message: "Missing: Proof of address (required)" },
-            { type: "fail", message: "Missing: UBO declaration (required)" },
-            { type: "warn", message: "Export license pending FDA review" }
+          checks: [
+            { type: "KYB", status: "fail", reasons: ["Missing: Proof of address (required)", "Missing: UBO declaration (required)"], updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "SANCTIONS", status: "pass", provider: "provA", reasons: [], updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "EXPORT", status: "warn", reasons: ["Export license pending FDA review"], provider: "provB", updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString() },
+            { type: "INCOTERMS", status: "pass", reasons: [], updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString() },
           ],
+          overall: "failed",
+          operational_status: "blocked",
+          risk_level: "high",
+          next_actions: ["Upload proof of address", "Submit UBO declaration", "Await FDA export license review"],
+          requirements_pending: 3,
+          report_url: `/reports/compliance/${trade2Id}.pdf`,
+          trace_id: "trc_cmp_demo2",
           createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
         }
       ],
@@ -1014,6 +1207,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       fundingRequests: [],
       complianceRuns: [],
       proofPacks: [],
+      requirements: [],
+      evidence: [],
+      auditEvents: [],
+      compliancePolicies: [],
       partnerInvites: [],
       payments: [],
       matches: [],
