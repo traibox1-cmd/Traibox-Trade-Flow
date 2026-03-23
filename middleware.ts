@@ -2,15 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { JWT_SECRET, COOKIE_NAME } from "@server/auth/config";
 
-// Routes that require authentication
-const PROTECTED_PREFIXES = [
-  "/dashboard", "/space", "/trade", "/network", "/finance",
-  "/compliance", "/settings", "/capital-console", "/funding-desk",
-  "/deal-assistant", "/counterparties", "/risk-policy", "/settlement",
-  "/evidence", "/assurance", "/risk-assessment", "/trade-passport",
-  "/trade-trends", "/trade-workspace", "/trades", "/proofs", "/payments",
-];
-
 // Routes that should NOT be protected (auth pages, API, static)
 const PUBLIC_PREFIXES = ["/api/", "/onboarding", "/_next", "/favicon", "/opengraph"];
 
@@ -22,17 +13,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if route needs protection
-  const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
-  if (!isProtected) {
-    return NextResponse.next();
-  }
+  // All other routes require authentication (default-deny)
+  const redirectTarget = pathname === "/" ? "/space" : pathname;
 
   // Verify session
   const token = request.cookies.get(COOKIE_NAME)?.value;
   if (!token) {
     const loginUrl = new URL("/onboarding/quick", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("redirect", redirectTarget);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -49,8 +37,10 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch {
-    // Invalid token - clear cookie and redirect to login
-    const response = NextResponse.redirect(new URL("/onboarding/quick", request.url));
+    // Invalid token - clear cookie and redirect to onboarding
+    const loginUrl = new URL("/onboarding/quick", request.url);
+    loginUrl.searchParams.set("redirect", redirectTarget);
+    const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(COOKIE_NAME);
     return response;
   }
