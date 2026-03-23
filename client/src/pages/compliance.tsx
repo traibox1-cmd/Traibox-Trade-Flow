@@ -98,9 +98,9 @@ function CBAMPanel() {
     try {
       const codes = hsInput
         .split(/[,\s]+/)
-        .map((s) => s.trim())
+        .map((s: string) => s.trim())
         .filter(Boolean)
-        .map((hs_code) => ({ hs_code }));
+        .map((hs_code: string) => ({ hs_code }));
 
       const res = await fetch("/api/cbam/scope-check", {
         method: "POST",
