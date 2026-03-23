@@ -97,15 +97,23 @@ export default function TradeWorkspace() {
   const currentStepIndex = getStepIndex(trade.timelineStep);
 
   const handleRunCompliance = () => {
+    const now = new Date().toISOString();
     addComplianceRun({
       tradeId,
       targetEntity: trade.parties[0]?.name || "Trade Counterparty",
-      checks: ["sanctions", "kyc", "restricted-goods", "pep"],
-      status: "passed",
-      findings: [
-        { type: "pass", message: "No sanctions matches found" },
-        { type: "pass", message: "KYC documentation verified" },
+      checks: [
+        { type: "KYB", status: "pass", reasons: [], provider: "provA", updated_at: now },
+        { type: "SANCTIONS", status: "pass", reasons: [], provider: "provA", updated_at: now },
+        { type: "PEP", status: "pass", reasons: [], updated_at: now },
+        { type: "EXPORT", status: "pass", reasons: [], updated_at: now },
       ],
+      overall: "passed",
+      operational_status: "clear",
+      risk_level: "low",
+      next_actions: [],
+      requirements_pending: 0,
+      report_url: `/reports/compliance/${tradeId}.pdf`,
+      trace_id: `trc_cmp_${Date.now()}`,
     });
     if (currentStepIndex < 1) {
       updateTrade(tradeId, { timelineStep: "compliance" });
@@ -655,8 +663,8 @@ export default function TradeWorkspace() {
                   <div key={run.id} className="p-2 rounded-lg border bg-background/60">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Compliance Check</span>
-                      <TBChip tone={run.status === "passed" ? "success" : run.status === "failed" ? "error" : "warn"} dataTestId={`chip-compliance-${run.id}`}>
-                        {run.status}
+                      <TBChip tone={run.overall === "passed" ? "success" : run.overall === "failed" ? "error" : "warn"} dataTestId={`chip-compliance-${run.id}`}>
+                        {run.overall === "passed" ? "Clear" : run.overall === "failed" ? "Blocked" : "Warning"}
                       </TBChip>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">{new Date(run.createdAt).toLocaleDateString()}</div>

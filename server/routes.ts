@@ -647,5 +647,455 @@ export async function registerRoutes(
     }
   });
 
+  // ===== COMPLIANCE v5.0 ENDPOINTS =====
+
+  // Run compliance checks for a trade
+  app.post("/api/compliance/check", async (req, res) => {
+    try {
+      const { trade_id, modules, policy_id } = req.body;
+      if (!trade_id) {
+        return res.status(422).json({
+          error: "invalid_request",
+          message: "We couldn't start without the basics. Add the trade or party details.",
+          hint: "Provide a trade_id in the request body.",
+          trace_id: `trc_cmp_${Date.now()}`,
+        });
+      }
+
+      const traceId = `trc_cmp_${Date.now()}`;
+      const now = new Date().toISOString();
+
+      // Simulate parallel provider calls with normalized results
+      const checks = [
+        { type: "KYB", status: "pass", reasons: [] as string[], provider: "provA", provider_ref: `A-${Date.now()}`, updated_at: now },
+        { type: "SANCTIONS", status: "pass", reasons: [] as string[], provider: "provA", provider_ref: `A-${Date.now() + 1}`, updated_at: now },
+        { type: "PEP", status: "pass", reasons: [] as string[], provider: "provA", provider_ref: null, updated_at: now },
+        { type: "ADVERSE_MEDIA", status: "pass", reasons: [] as string[], provider: "provA", provider_ref: null, updated_at: now },
+        { type: "EXPORT", status: "warn", reasons: ["HS code may require end-use/end-user confirmation"], provider: "provB", provider_ref: null, updated_at: now },
+        { type: "ESG", status: "pass", reasons: [] as string[], provider: null, provider_ref: null, updated_at: now },
+        { type: "CBAM", status: "warn", reasons: ["Corridor to EU; product may fall under CBAM reporting"], provider: null, provider_ref: null, updated_at: now },
+      ];
+
+      // Filter modules if specified
+      const activeChecks = modules && modules.length > 0
+        ? checks.filter((c: { type: string }) => modules.includes(c.type.toLowerCase()))
+        : checks;
+
+      const hasFail = activeChecks.some((c: { status: string }) => c.status === "fail");
+      const hasWarn = activeChecks.some((c: { status: string }) => c.status === "warn");
+      const overall = hasFail ? "failed" : hasWarn ? "warnings" : "passed";
+      const operationalStatus = hasFail ? "blocked" : hasWarn ? "warning" : "clear";
+      const riskLevel = hasFail ? "high" : hasWarn ? "medium" : "low";
+
+      res.json({
+        trade_id,
+        overall,
+        operational_status: operationalStatus,
+        risk_level: riskLevel,
+        checks: activeChecks,
+        next_actions: hasWarn ? ["Collect end-use statement", "Attach ESG evidence for STF"] : [],
+        requirements_pending: hasWarn ? 2 : 0,
+        report_url: `/reports/compliance/${trade_id}.pdf`,
+        trace_id: traceId,
+      });
+    } catch (error) {
+      console.error("Compliance check error:", error);
+      res.status(500).json({
+        error: "provider_unavailable",
+        message: "Our screening partner didn't respond. Try again.",
+        trace_id: `trc_cmp_${Date.now()}`,
+      });
+    }
+  });
+
+  // Poll current compliance status
+  app.get("/api/compliance/status", async (req, res) => {
+    try {
+      const { trade_id } = req.query;
+      if (!trade_id) {
+        return res.status(400).json({ error: "trade_id is required" });
+      }
+      res.json({
+        trade_id,
+        overall: "passed",
+        operational_status: "clear",
+        risk_level: "low",
+        last_checked: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch compliance status" });
+    }
+  });
+
+  // Download compliance report
+  app.get("/api/compliance/reports/:trade_id", async (req, res) => {
+    try {
+      const { trade_id } = req.params;
+      const format = (req.query.format as string) || "json";
+
+      const report = {
+        report_id: `cr-${Date.now()}`,
+        trade_id,
+        generated_at: new Date().toISOString(),
+        policy_id: "pol-std-1",
+        overall: "warnings",
+        risk_level: "medium",
+        checks: [
+          { type: "KYB", status: "pass", provider: "provA" },
+          { type: "SANCTIONS", status: "pass", provider: "provA" },
+          { type: "EXPORT", status: "warn", notes: "HS chapter flagged; end-use required" },
+        ],
+        cbam: { flag: true, reason: "HS family may be in scope" },
+        esg: { flag: true, notes: "STF evidence recommended" },
+        signatures: { hash: "sha256:placeholder", version: "5.0.0" },
+      };
+
+      if (format === "pdf") {
+        res.setHeader("Content-Type", "application/json");
+        res.json({ ...report, note: "PDF generation placeholder — JSON returned" });
+      } else {
+        res.json(report);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Get contextual requirements for a trade
+  app.get("/api/compliance/requirements/:trade_id", async (req, res) => {
+    try {
+      const { trade_id } = req.params;
+      const now = new Date().toISOString();
+
+      const requirements = [
+        {
+          requirement_id: `req-${Date.now()}`,
+          trade_id,
+          type: "document",
+          category: "identity",
+          title: "Upload UBO declaration",
+          description: "Beneficial ownership documentation is required for KYB compliance",
+          who_should_provide: "Seller",
+          what_happens_after: "KYB check can be completed and trade progressed",
+          state: "required_now",
+          priority: "blocking",
+          linked_check_type: "KYB",
+          evidence_id: null,
+          created_at: now,
+          resolved_at: null,
+        },
+        {
+          requirement_id: `req-${Date.now() + 1}`,
+          trade_id,
+          type: "evidence",
+          category: "sustainability",
+          title: "Attach ESG certification",
+          description: "ESG evidence recommended for sustainable trade finance",
+          who_should_provide: "Seller",
+          what_happens_after: "STF funding options become available",
+          state: "optional_recommended",
+          priority: "medium",
+          linked_check_type: "ESG",
+          evidence_id: null,
+          created_at: now,
+          resolved_at: null,
+        },
+      ];
+
+      res.json({
+        trade_id,
+        requirements,
+        blocking_count: requirements.filter((r: { priority: string }) => r.priority === "blocking").length,
+        total_count: requirements.length,
+        trace_id: `trc_req_${Date.now()}`,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch requirements" });
+    }
+  });
+
+  // Resolve a requirement
+  app.post("/api/compliance/requirements/:requirement_id/resolve", async (req, res) => {
+    try {
+      const { requirement_id } = req.params;
+      const { evidence_id, notes } = req.body;
+      res.json({
+        requirement_id,
+        state: "completed",
+        resolved_at: new Date().toISOString(),
+        evidence_id: evidence_id || null,
+        notes: notes || null,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to resolve requirement" });
+    }
+  });
+
+  // Sustainability screening
+  app.post("/api/sustainability/screen", async (req, res) => {
+    try {
+      const { trade_id, modules } = req.body;
+      if (!trade_id) {
+        return res.status(422).json({ error: "trade_id is required" });
+      }
+
+      const activeModules = modules || ["esg", "cbam"];
+
+      res.json({
+        trade_id,
+        esg: activeModules.includes("esg")
+          ? { flags: ["STF evidence recommended"], risk_level: "low" }
+          : null,
+        ghg_scope3: activeModules.includes("ghg_scope3")
+          ? { applicable: true, estimate_tco2: 12.5, confidence: "medium", notes: "Estimated based on corridor and commodity defaults" }
+          : null,
+        cbam: activeModules.includes("cbam")
+          ? { in_scope: false, items_in_scope: [] }
+          : null,
+        next_actions: ["Attach ESG certification for STF eligibility"],
+        trace_id: `trc_sus_${Date.now()}`,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to run sustainability screening" });
+    }
+  });
+
+  // CBAM scope check
+  app.post("/api/cbam/scope-check", async (req, res) => {
+    try {
+      const { items, corridor } = req.body;
+      if (!items || !Array.isArray(items)) {
+        return res.status(422).json({ error: "items array is required" });
+      }
+
+      // CBAM scope: iron, steel, aluminium, cement, fertilisers, electricity, hydrogen
+      const cbamHsChapters = ["72", "73", "76", "25", "31"];
+      const results = items.map((item: { hs_code: string; description?: string }) => {
+        const chapter = (item.hs_code || "").substring(0, 2);
+        const inScope = cbamHsChapters.includes(chapter);
+        return {
+          hs_code: item.hs_code,
+          in_scope: inScope,
+          category: inScope ? "CBAM-regulated" : null,
+          cn_code: null,
+          notes: inScope ? `HS chapter ${chapter} falls under CBAM regulation` : "Not in CBAM scope",
+        };
+      });
+
+      res.json({
+        in_scope: results.some((r: { in_scope: boolean }) => r.in_scope),
+        items: results,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check CBAM scope" });
+    }
+  });
+
+  // CBAM calculate
+  app.post("/api/cbam/calculate", async (req, res) => {
+    try {
+      const { trade_id, items, reporting_quarter } = req.body;
+      if (!trade_id) {
+        return res.status(422).json({
+          error: "cbam_data_missing",
+          message: "Trade ID is required for CBAM calculation.",
+          trace_id: `trc_cbam_${Date.now()}`,
+        });
+      }
+
+      const etsPriceEur = 85.0;
+      const calculatedItems = (items || []).map((item: { hs_code: string; quantity_tonnes: number; embedded_emissions_tco2?: number; default_values?: boolean }) => {
+        const emissionsTco2 = item.embedded_emissions_tco2 || (item.quantity_tonnes * 2.1);
+        const certificates = Math.ceil(emissionsTco2);
+        return {
+          hs_code: item.hs_code,
+          category: "CBAM-regulated",
+          quantity_tonnes: item.quantity_tonnes,
+          embedded_emissions_tco2: emissionsTco2,
+          emission_source: item.embedded_emissions_tco2 ? "actual" : "default",
+          cbam_certificates_required: certificates,
+          estimated_cost_eur: certificates * etsPriceEur,
+        };
+      });
+
+      const totalEmissions = calculatedItems.reduce((sum: number, i: { embedded_emissions_tco2: number }) => sum + i.embedded_emissions_tco2, 0);
+      const totalCertificates = calculatedItems.reduce((sum: number, i: { cbam_certificates_required: number }) => sum + i.cbam_certificates_required, 0);
+
+      res.json({
+        trade_id,
+        in_scope: calculatedItems.length > 0,
+        items: calculatedItems,
+        totals: {
+          total_emissions_tco2: totalEmissions,
+          total_certificates: totalCertificates,
+          estimated_total_cost_eur: totalCertificates * etsPriceEur,
+        },
+        carbon_price_reference: {
+          ets_price_eur_per_tco2: etsPriceEur,
+          as_of: new Date().toISOString().split("T")[0],
+        },
+        reporting_obligations: [
+          "Submit CBAM quarterly report",
+          "Purchase CBAM certificates before deadline",
+        ],
+        glass_box: {
+          reasons: [
+            "Calculation based on EU ETS price reference",
+            items && items.length > 0 ? "Items checked against CBAM commodity scope" : "No items provided — defaults used",
+          ],
+        },
+        trace_id: `trc_cbam_${Date.now()}`,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate CBAM obligations" });
+    }
+  });
+
+  // CBAM report
+  app.get("/api/cbam/report/:trade_id", async (req, res) => {
+    try {
+      const { trade_id } = req.params;
+      const format = (req.query.format as string) || "json";
+      res.json({
+        trade_id,
+        report_type: "cbam_quarterly",
+        period: "Q1 2026",
+        in_scope: true,
+        total_emissions_tco2: 42.0,
+        total_certificates: 42,
+        estimated_cost_eur: 3570.0,
+        format,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate CBAM report" });
+    }
+  });
+
+  // Sustainability report
+  app.post("/api/sustainability/report", async (req, res) => {
+    try {
+      const { period_type, period_start, period_end, modules, format: reportFormat } = req.body;
+      if (!period_type) {
+        return res.status(422).json({ error: "period_type is required" });
+      }
+
+      res.json({
+        report_id: `sr-${Date.now()}`,
+        period_type,
+        period_start: period_start || new Date().toISOString().split("T")[0],
+        period_end: period_end || new Date().toISOString().split("T")[0],
+        summary: "Sustainability report generated successfully",
+        esg_summary: { total_trades_screened: 2, flags_raised: 1 },
+        ghg_scope3_summary: { total_tco2: 25.0, trade_count: 2, methodology: "GHG Protocol Scope 3" },
+        cbam_summary: { trades_in_scope: 1, total_emissions_tco2: 42.0, total_certificates: 42, estimated_cost_eur: 3570.0 },
+        missing_inputs: [],
+        confidence_level: "medium",
+        report_url: `/reports/sustainability/sr-${Date.now()}.${reportFormat || "json"}`,
+        trace_id: `trc_sr_${Date.now()}`,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate sustainability report" });
+    }
+  });
+
+  // Upload/register compliance evidence
+  app.post("/api/compliance/evidence", upload.single("file"), async (req, res) => {
+    try {
+      const { trade_id, party_id, type: evidenceType, valid_from, valid_to } = req.body;
+
+      res.json({
+        evidence_id: `ev-${Date.now()}`,
+        trade_id: trade_id || null,
+        party_id: party_id || null,
+        type: evidenceType || "other",
+        file_url: req.file ? `/uploads/${req.file.filename}` : null,
+        extracted_fields: null,
+        valid_from: valid_from || null,
+        valid_to: valid_to || null,
+        validation_state: "pending",
+        source: "upload",
+        reusable: true,
+        created_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save evidence" });
+    }
+  });
+
+  // Get evidence detail
+  app.get("/api/compliance/evidence/:evidence_id", async (req, res) => {
+    try {
+      res.json({
+        evidence_id: req.params.evidence_id,
+        type: "other",
+        validation_state: "pending",
+        created_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch evidence" });
+    }
+  });
+
+  // Remove evidence
+  app.delete("/api/compliance/evidence/:evidence_id", async (req, res) => {
+    try {
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete evidence" });
+    }
+  });
+
+  // Get audit trail for a trade
+  app.get("/api/compliance/audit-trail/:trade_id", async (req, res) => {
+    try {
+      const { trade_id } = req.params;
+      const now = new Date().toISOString();
+
+      res.json({
+        trade_id,
+        events: [
+          { event_id: `ae-1`, trade_id, actor: "system", action: "compliance.check.started", payload_json: {}, hash: "sha256:placeholder", created_at: now },
+          { event_id: `ae-2`, trade_id, actor: "system", action: "compliance.check.completed", payload_json: { overall: "warnings" }, hash: "sha256:placeholder", created_at: now },
+        ],
+        cursor: null,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch audit trail" });
+    }
+  });
+
+  // List active compliance policies
+  app.get("/api/compliance/policies", async (req, res) => {
+    try {
+      res.json([
+        {
+          policy_id: "pol-std-1",
+          thresholds: { sanctions_fail_on_match: true, pep_warn_on_level: 2, export_warn_on_chapters: ["84", "85", "90"] },
+          sustainability: { esg_enabled: true, cbam_enabled: true, ghg_scope3_enabled: false },
+          incoterms_checks_enabled: true,
+          retention_days: 365,
+          escalation: { notify_roles: ["compliance_officer"], block_on_fail: true },
+        },
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch policies" });
+    }
+  });
+
+  // Create/update compliance policy
+  app.post("/api/compliance/policies", async (req, res) => {
+    try {
+      const policy = req.body;
+      res.json({
+        ...policy,
+        policy_id: policy.policy_id || `pol-${Date.now()}`,
+        saved_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save policy" });
+    }
+  });
+
   return httpServer;
 }
