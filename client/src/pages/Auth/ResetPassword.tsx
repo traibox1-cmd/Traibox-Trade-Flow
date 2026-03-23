@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
-export default function ResetPasswordPage({ token }: { token?: string }) {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -16,7 +16,7 @@ export default function ResetPasswordPage({ token }: { token?: string }) {
     
     // Si wouter no pasa el token via props, asume que está en query param: ?token=xxx
     const searchParams = new URLSearchParams(window.location.search);
-    const resetToken = token || searchParams.get("token");
+    const resetToken = searchParams.get("token");
 
     if (!resetToken) {
       return setError("Token en enlace de recuperación es inválido");
