@@ -102,10 +102,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Quick signup error:", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    const isDbError = message.includes("relation") || message.includes("connect") || message.includes("ECONNREFUSED");
     return NextResponse.json(
-      { error: isDbError ? "Database is not available. Please try again later." : "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
