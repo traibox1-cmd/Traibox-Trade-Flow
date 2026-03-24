@@ -4,6 +4,7 @@ import { z } from "zod";
 import { storage } from "@server/storage";
 import { createSessionToken, setSessionCookie } from "@server/auth/session";
 import { checkRateLimit } from "@server/auth/rate-limit";
+import { dbAwareErrorResponse } from "@server/lib/db-errors";
 
 const signupQuickSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -100,11 +101,8 @@ export async function POST(request: NextRequest) {
       },
       redirectTo: "/dashboard?mode=demo",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Quick signup error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return dbAwareErrorResponse(error);
   }
 }
