@@ -29,7 +29,7 @@ export async function ensureTablesExist(): Promise<void> {
       await migrate(db, { migrationsFolder });
       migrationDone = true;
     } catch (error) {
-      // If migrations fail (e.g. tables already exist from push), that's OK
+      // If migrations fail (e.g. tables already exist from drizzle-kit push), that's OK
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes("already exists")) {
         migrationDone = true;
