@@ -1,5 +1,5 @@
 import { storage } from "@server/storage";
-import { db } from "@server/db";
+import { db, ensureTablesExist } from "@server/db";
 import { trades, parties, tradeParties } from "@shared/schema";
 
 /**
@@ -7,6 +7,7 @@ import { trades, parties, tradeParties } from "@shared/schema";
  * This function is idempotent — it checks org.demoSeeded before seeding.
  */
 export async function seedDemoDataForOrg(orgId: string): Promise<boolean> {
+  await ensureTablesExist();
   const org = await storage.getOrg(orgId);
   if (!org) return false;
   if (org.demoSeeded) return false; // Already seeded
