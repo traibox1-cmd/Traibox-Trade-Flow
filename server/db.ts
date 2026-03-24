@@ -7,11 +7,18 @@ import path from "path";
 import fs from "fs";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+  console.error("[db] DATABASE_URL is not set. Database operations will fail.");
 }
 
+// Enable SSL for cloud databases (Neon, Supabase, etc.) —
+// required on Vercel serverless where the DB is remote.
+const dbUrl = process.env.DATABASE_URL || "";
+const isRemote = dbUrl && !dbUrl.includes("localhost") && !dbUrl.includes("127.0.0.1");
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl || undefined,
+  ...(isRemote ? { ssl: { rejectUnauthorized: false } } : {}),
+  connectionTimeoutMillis: 10_000,
 });
 
 export const db = drizzle(pool, { schema });
@@ -281,8 +288,9 @@ export async function ensureTablesExist(): Promise<void> {
         migrationDone = true;
       } else {
         console.error("[db] Table creation error:", msg);
-        migrationPromise = null;
-        throw error;
+        // Don't throw — the actual DB operations will fail with clear errors
+        // if tables are truly missing. Re-throwing here blocks ALL requests.
+        migrationDone = true;
       }
     }
   })();

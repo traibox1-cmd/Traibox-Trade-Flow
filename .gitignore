@@ -9,3 +9,5 @@ vite.config.ts.*
 # Next.js
 .next
 out
+node_modules/
+.next/
