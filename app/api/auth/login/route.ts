@@ -4,6 +4,7 @@ import { z } from "zod";
 import { storage } from "@server/storage";
 import { createSessionToken, setSessionCookie } from "@server/auth/session";
 import { checkRateLimit } from "@server/auth/rate-limit";
+import { dbAwareErrorResponse } from "@server/lib/db-errors";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -100,11 +101,8 @@ export async function POST(request: NextRequest) {
         onboardingStatus: org.onboardingStatus,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return dbAwareErrorResponse(error);
   }
 }

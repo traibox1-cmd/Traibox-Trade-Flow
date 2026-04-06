@@ -34,7 +34,7 @@ import {
   auditLogs,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { db } from "./db";
+import { db, ensureTablesExist } from "./db";
 import { eq, desc, isNull, and } from "drizzle-orm";
 
 export interface IStorage {
@@ -93,26 +93,31 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
+    await ensureTablesExist();
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    await ensureTablesExist();
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
   async getUserByResetToken(token: string): Promise<User | undefined> {
+    await ensureTablesExist();
     const [user] = await db.select().from(users).where(eq(users.resetPasswordToken, token));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    await ensureTablesExist();
     const [user] = await db.insert(users).values(insertUser).returning();
     return user!;
   }
 
   async updateUser(id: string, data: Partial<Omit<User, "id" | "createdAt">>): Promise<User | undefined> {
+    await ensureTablesExist();
     const [user] = await db.update(users)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, id))
@@ -122,16 +127,19 @@ export class DatabaseStorage implements IStorage {
 
   // Orgs
   async getOrg(id: string): Promise<Org | undefined> {
+    await ensureTablesExist();
     const [org] = await db.select().from(orgs).where(eq(orgs.id, id));
     return org;
   }
 
   async createOrg(data: InsertOrg): Promise<Org> {
+    await ensureTablesExist();
     const [org] = await db.insert(orgs).values(data).returning();
     return org!;
   }
 
   async updateOrg(id: string, data: Partial<InsertOrg>): Promise<Org | undefined> {
+    await ensureTablesExist();
     const [org] = await db.update(orgs)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(orgs.id, id))
@@ -141,16 +149,19 @@ export class DatabaseStorage implements IStorage {
 
   // Invites
   async createInvite(data: InsertInvite): Promise<Invite> {
+    await ensureTablesExist();
     const [invite] = await db.insert(invites).values(data).returning();
     return invite!;
   }
 
   async getInviteByToken(tokenHash: string): Promise<Invite | undefined> {
+    await ensureTablesExist();
     const [invite] = await db.select().from(invites).where(eq(invites.tokenHash, tokenHash));
     return invite;
   }
 
   async acceptInvite(id: string): Promise<void> {
+    await ensureTablesExist();
     await db.update(invites)
       .set({ acceptedAt: new Date() })
       .where(eq(invites.id, id));
@@ -158,40 +169,48 @@ export class DatabaseStorage implements IStorage {
 
   // Audit
   async createAuditLog(data: InsertAuditLog): Promise<AuditLog> {
+    await ensureTablesExist();
     const [log] = await db.insert(auditLogs).values(data).returning();
     return log!;
   }
 
   async getAuditLogs(orgId: string): Promise<AuditLog[]> {
+    await ensureTablesExist();
     return db.select().from(auditLogs)
       .where(eq(auditLogs.orgId, orgId))
       .orderBy(desc(auditLogs.createdAt));
   }
 
   async createConversation(data: InsertConversation): Promise<Conversation> {
+    await ensureTablesExist();
     const [conversation] = await db.insert(conversations).values(data).returning();
     return conversation!;
   }
 
   async getConversation(id: string): Promise<Conversation | undefined> {
+    await ensureTablesExist();
     const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
     return conversation;
   }
 
   async getConversations(): Promise<Conversation[]> {
+    await ensureTablesExist();
     return db.select().from(conversations).orderBy(desc(conversations.updatedAt));
   }
 
   async deleteConversation(id: string): Promise<void> {
+    await ensureTablesExist();
     await db.delete(conversations).where(eq(conversations.id, id));
   }
 
   async createMessage(data: InsertMessage): Promise<Message> {
+    await ensureTablesExist();
     const [message] = await db.insert(messages).values(data).returning();
     return message!;
   }
 
   async getMessages(conversationId: string): Promise<Message[]> {
+    await ensureTablesExist();
     return db.select().from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
@@ -199,20 +218,24 @@ export class DatabaseStorage implements IStorage {
 
   // Trades
   async createTrade(data: InsertTrade): Promise<Trade> {
+    await ensureTablesExist();
     const [trade] = await db.insert(trades).values(data).returning();
     return trade!;
   }
 
   async getTrade(id: string): Promise<Trade | undefined> {
+    await ensureTablesExist();
     const [trade] = await db.select().from(trades).where(eq(trades.id, id));
     return trade;
   }
 
   async getTrades(): Promise<Trade[]> {
+    await ensureTablesExist();
     return db.select().from(trades).orderBy(desc(trades.createdAt));
   }
 
   async updateTrade(id: string, data: Partial<InsertTrade>): Promise<Trade | undefined> {
+    await ensureTablesExist();
     const [trade] = await db.update(trades)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(trades.id, id))
@@ -222,26 +245,31 @@ export class DatabaseStorage implements IStorage {
 
   // Parties
   async createParty(data: InsertParty): Promise<Party> {
+    await ensureTablesExist();
     const [party] = await db.insert(parties).values(data).returning();
     return party!;
   }
 
   async getParty(id: string): Promise<Party | undefined> {
+    await ensureTablesExist();
     const [party] = await db.select().from(parties).where(eq(parties.id, id));
     return party;
   }
 
   async getParties(): Promise<Party[]> {
+    await ensureTablesExist();
     return db.select().from(parties).orderBy(desc(parties.createdAt));
   }
 
   // Trade Parties
   async addPartyToTrade(data: InsertTradeParty): Promise<TradeParty> {
+    await ensureTablesExist();
     const [tp] = await db.insert(tradeParties).values(data).returning();
     return tp!;
   }
 
   async getTradeParties(tradeId: string): Promise<(TradeParty & { party: Party })[]> {
+    await ensureTablesExist();
     const results = await db
       .select()
       .from(tradeParties)
@@ -256,26 +284,31 @@ export class DatabaseStorage implements IStorage {
 
   // Documents
   async createDocument(data: InsertDocument): Promise<Document> {
+    await ensureTablesExist();
     const [doc] = await db.insert(documents).values(data).returning();
     return doc!;
   }
 
   async getDocument(id: string): Promise<Document | undefined> {
+    await ensureTablesExist();
     const [doc] = await db.select().from(documents).where(eq(documents.id, id));
     return doc;
   }
 
   async getTradeDocuments(tradeId: string): Promise<Document[]> {
+    await ensureTablesExist();
     return db.select().from(documents).where(eq(documents.tradeId, tradeId));
   }
 
   // Chat Messages
   async createChatMessage(data: InsertChatMessage): Promise<ChatMessage> {
+    await ensureTablesExist();
     const [msg] = await db.insert(chatMessages).values(data).returning();
     return msg!;
   }
 
   async getChatMessages(tradeId: string | null, mode: string): Promise<ChatMessage[]> {
+    await ensureTablesExist();
     if (tradeId) {
       return db.select().from(chatMessages)
         .where(and(eq(chatMessages.tradeId, tradeId), eq(chatMessages.mode, mode)))

@@ -592,9 +592,17 @@ export default function TradeIntelligence() {
       addComplianceRun({
         tradeId,
         targetEntity: "Trade Counterparty",
-        checks: ["sanctions", "kyc", "documents"],
-        status: "passed",
-        findings: [{ type: "pass", message: "No sanctions matches found" }],
+        checks: [
+          { type: "KYB", status: "pass", reasons: [], provider: "provA", updated_at: new Date().toISOString() },
+          { type: "SANCTIONS", status: "pass", reasons: [], provider: "provA", updated_at: new Date().toISOString() },
+        ],
+        overall: "passed",
+        operational_status: "clear",
+        risk_level: "low",
+        next_actions: [],
+        requirements_pending: 0,
+        report_url: `/reports/compliance/${tradeId}.pdf`,
+        trace_id: `trc_cmp_${Date.now()}`,
       });
       setLocation(`/trade/${tradeId}`);
     } else if (action.type === "funding") {

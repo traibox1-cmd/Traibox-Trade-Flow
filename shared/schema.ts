@@ -206,3 +206,134 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+// ── Compliance v5.0 Tables ──────────────────────────────────────────
+
+export const complianceChecks = pgTable("compliance_checks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // KYC, KYB, SANCTIONS, PEP, ADVERSE_MEDIA, EXPORT, JURISDICTION, ESG, CBAM, AML, INCOTERMS
+  status: text("status").notNull(), // pass, warn, fail
+  score: numeric("score"),
+  reasonsJson: jsonb("reasons_json").default([]),
+  provider: text("provider"),
+  providerRef: text("provider_ref"),
+  policyId: text("policy_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const complianceReports = pgTable("compliance_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  policyId: text("policy_id"),
+  overall: text("overall").notNull(), // passed, warnings, failed
+  riskLevel: text("risk_level").notNull(), // low, medium, high
+  jsonBlob: jsonb("json_blob"),
+  pdfUrl: text("pdf_url"),
+  hash: text("hash"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const sanctionsCache = pgTable("sanctions_cache", {
+  key: varchar("key").primaryKey(),
+  valueJson: jsonb("value_json"),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const exportFlags = pgTable("export_flags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  hsCode: text("hs_code").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditEvents = pgTable("audit_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tradeId: varchar("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  payloadJson: jsonb("payload_json"),
+  hash: text("hash"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type ComplianceCheckRecord = typeof complianceChecks.$inferSelect;
+export type ComplianceReport = typeof complianceReports.$inferSelect;
+export type ExportFlag = typeof exportFlags.$inferSelect;
+export type AuditEventRecord = typeof auditEvents.$inferSelect;
+
+// ─── CBAM Schemas ────────────────────────────────────────────────────────────
+
+export const cbamScopeCheckRequestSchema = z.object({
+  items: z.array(
+    z.object({
+      hs_code: z.string().min(1),
+      description: z.string().optional(),
+    })
+  ).min(1),
+  corridor: z.string().optional(),
+});
+
+export const cbamScopeItemResultSchema = z.object({
+  hs_code: z.string(),
+  in_scope: z.boolean(),
+  category: z.string().nullable(),
+  cn_code: z.string().nullable(),
+  notes: z.string(),
+});
+
+export const cbamScopeResultSchema = z.object({
+  in_scope: z.boolean(),
+  items: z.array(cbamScopeItemResultSchema),
+});
+
+export const cbamRequestItemSchema = z.object({
+  hs_code: z.string().min(1),
+  quantity_tonnes: z.number().positive(),
+  origin_country: z.string().min(1),
+  embedded_emissions_tco2: z.number().nullable().optional(),
+  default_values: z.boolean().default(true),
+});
+
+export const cbamCalculateRequestSchema = z.object({
+  trade_id: z.string().min(1),
+  items: z.array(cbamRequestItemSchema).min(1),
+  reporting_quarter: z.string().optional(),
+});
+
+export const cbamCalculationItemSchema = z.object({
+  hs_code: z.string(),
+  category: z.string(),
+  quantity_tonnes: z.number(),
+  embedded_emissions_tco2: z.number(),
+  emission_source: z.enum(["actual", "default", "mixed"]),
+  cbam_certificates_required: z.number().nullable(),
+  estimated_cost_eur: z.number().nullable(),
+});
+
+export const cbamCalculationSchema = z.object({
+  trade_id: z.string(),
+  in_scope: z.boolean(),
+  items: z.array(cbamCalculationItemSchema),
+  totals: z.object({
+    total_emissions_tco2: z.number(),
+    total_certificates: z.number().nullable(),
+    estimated_total_cost_eur: z.number().nullable(),
+  }),
+  carbon_price_reference: z.object({
+    ets_price_eur_per_tco2: z.number(),
+    as_of: z.string(),
+  }),
+  reporting_obligations: z.array(z.string()),
+  glass_box: z.object({
+    reasons: z.array(z.string()),
+  }),
+  trace_id: z.string(),
+});
+
+export type CBAMScopeCheckRequest = z.infer<typeof cbamScopeCheckRequestSchema>;
+export type CBAMScopeResult = z.infer<typeof cbamScopeResultSchema>;
+export type CBAMCalculateRequest = z.infer<typeof cbamCalculateRequestSchema>;
+export type CBAMCalculation = z.infer<typeof cbamCalculationSchema>;

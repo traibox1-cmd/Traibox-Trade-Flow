@@ -175,7 +175,7 @@ export default function TradePassport() {
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <span className="text-sm font-medium">CBAM / CSRD / SFDR</span>
-                <TBChip tone="neutral" dataTestId="chip-cbam-status">Not required</TBChip>
+                <TBChip tone="warn" dataTestId="chip-cbam-status">Scope check required</TBChip>
               </div>
             </div>
           </TBCard>
